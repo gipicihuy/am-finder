@@ -170,8 +170,7 @@ export function Finder() {
       {phase === "idle" ? (
         <div className="state">
           <strong>Belum ada pencarian.</strong>
-          Link preset dicari di lima tempat ini, sesuai apa yang memang bisa dibuka dari satu
-          link video:
+          Link preset dicari di tempat yang memang bisa dibuka dari satu link video:
           <ul>
             <li>deskripsi video</li>
             <li>bio akun dan link yang terpasang di bio</li>
