@@ -156,13 +156,23 @@ function VideoPreview({
                 </svg>
               )}
             </button>
+            {expanded ? null : (
+              <button type="button" onClick={() => setExpanded(true)} aria-label="Fullscreen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+                </svg>
+              </button>
+            )}
             <button type="button" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 9.5v5h3.2L11 18V6L7.2 9.5H4z" fill="currentColor" stroke="none" />
                 {muted ? (
                   <path d="M15 9.5l5 5M20 9.5l-5 5" />
                 ) : (
-                  <path d="M15 9a4.5 4.5 0 0 1 0 6" />
+                  <>
+                    <path d="M14.5 9.5a3.4 3.4 0 0 1 0 5" />
+                    <path d="M17 7.5a6.6 6.6 0 0 1 0 9" />
+                  </>
                 )}
               </svg>
             </button>
