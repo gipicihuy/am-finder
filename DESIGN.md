@@ -19,7 +19,7 @@
 | Accent-ink | `#04140b` |
 | Accent-soft | `rgba(0, 255, 160, 0.12)` |
 
-Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi utama, fokus keyboard, ornamen section, status berjalan.
+Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi utama, fokus keyboard, ornamen section, status berjalan, judul kolom footer.
 
 ## Type
 - **UI/body:** Plus Jakarta Sans. Alasan: sudah dipakai Givime, jadi satu suara dengan situs induk.
@@ -30,7 +30,10 @@ Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi ut
 - **Halaman:** judul + ornamen 3-garis -> kolom cari -> status (kosong / berjalan / galat) -> hasil -> riwayat lokal -> footer satu baris.
 - **Status nihil:** hanya "Link preset tidak ditemukan." Tanpa merinci tempat yang sudah dicek.
 - **Status berjalan:** spinner + satu baris teks. Tanpa daftar langkah pencarian.
-- **Hasil:** blok meta video sebagai definisi grid tanpa kartu, lalu daftar baris preset (thumb + judul + label fungsi + aksi). Daftar, bukan grid kartu seragam.
+- **Hasil:** blok meta video sebagai definisi grid tanpa kartu (Akun, Komentar, Views, Likes, tanpa baris Video), lalu daftar baris preset (thumb + judul + label fungsi + aksi). Daftar, bukan grid kartu seragam.
+- **Footer:** panel lebar penuh dengan batas atas, mengikuti bentuk footer Givime lain (stalker-ff-givy), tapi isi sendiri: merek + catatan jujur di kiri, dua kolom tautan di kanan, garis bawah dua teks dengan `AM Finder © 2026 Givy` di kiri. Judul kolom memakai aksen karena itu penanda hierarki.
+- **Tombol aksi:** balok aksen dengan alas tekan inset 3px di bawah supaya terasa tombol fisik, naik 1px saat hover, turun 2px saat ditekan. Label pendek `Cari`, mengikuti kata kerja di judul halaman. Bukan pil, bukan gradien, bukan glow.
+- **Uppercase + tracking lebar** hanya untuk judul kolom footer (11px, 0.09em) sebagai penanda hierarki struktural, bukan gaya untuk seluruh label.
 - **RHYTHM 2:** komposisi beda antar blok (grid definisi vs baris daftar vs teks status), tanpa hero dan tanpa section template.
 - **MOTION 1:** transisi hover/fokus <=150ms plus spinner proses yang berhenti saat selesai. Tanpa animasi hias berulang.
 

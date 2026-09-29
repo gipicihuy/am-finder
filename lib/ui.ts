@@ -13,7 +13,12 @@ type UiTexts = {
     loading: string;
     notFound: string;
   };
-  footer: string[];
+  footer: {
+    note: string;
+    columns: { title: string; links: { label: string; href: string }[] }[];
+    bottomLeft: string;
+    bottomRight: string;
+  };
 };
 
 export const ui: UiTexts = raw;

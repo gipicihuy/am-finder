@@ -1,6 +1,5 @@
 import { Finder } from "@/components/Finder";
 import { SectionOrnament } from "@/components/Ornament";
-import { ui } from "@/lib/ui";
 
 export default function HomePage() {
   return (
@@ -16,11 +15,6 @@ export default function HomePage() {
         komentar dibuka satu per satu, lalu dicari link preset Alight Motion di dalamnya.
       </p>
       <Finder />
-      {ui.footer.map((line) => (
-        <p className="footer-note" key={line}>
-          {line}
-        </p>
-      ))}
     </>
   );
 }

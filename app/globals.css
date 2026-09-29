@@ -278,20 +278,28 @@ a:focus-visible {
   justify-content: center;
   gap: 8px;
   min-height: 46px;
-  padding: 12px 22px;
-  border: none;
+  padding: 12px 24px;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--accent-ink);
   font: inherit;
-  font-size: 14.5px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
   cursor: pointer;
-  transition: filter 120ms ease;
+  box-shadow: inset 0 -3px 0 rgba(4, 20, 11, 0.32);
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
 
 .btn-primary:hover {
-  filter: brightness(1.06);
+  background: #26ffab;
+  box-shadow: inset 0 -3px 0 rgba(4, 20, 11, 0.32), 0 3px 0 rgba(4, 20, 11, 0.45);
+}
+
+.btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 0 rgba(4, 20, 11, 0.32);
 }
 
 .btn-primary:disabled {
@@ -407,6 +415,10 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation-duration: 1600ms;
+  }
+  .btn-primary:hover,
+  .btn-primary:active {
+    transform: none;
   }
 }
 
@@ -610,10 +622,90 @@ a:focus-visible {
 }
 
 /* footer */
-.footer-note {
-  margin-top: 36px;
-  padding-top: 14px;
+.site-footer {
+  margin-top: 56px;
+  background: var(--surface);
   border-top: 1px solid var(--border);
+}
+
+.footer-inner {
+  padding-block: 34px 20px;
+}
+
+.footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 28px 40px;
+}
+
+.footer-brand {
+  max-width: 340px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.footer-name {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.footer-note {
+  margin: 0;
   font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.footer-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 34px 44px;
+}
+
+.footer-col {
+  min-width: 138px;
+}
+
+.footer-col-title {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.footer-link {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.footer-link:last-child {
+  margin-bottom: 0;
+}
+
+.footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 26px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 11.5px;
   color: var(--muted);
 }
