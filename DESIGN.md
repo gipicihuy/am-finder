@@ -33,6 +33,13 @@ Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi ut
 - **RHYTHM 2:** komposisi beda antar blok (grid definisi vs baris daftar vs teks status), tanpa hero dan tanpa section template.
 - **MOTION 1:** transisi hover/fokus <=150ms plus spinner proses yang berhenti saat selesai. Tanpa animasi hias berulang.
 
+## Purpose notes (alasan teknik)
+- **Ikon:** hanya satu, kaca pembesar di kolom pencarian. Alasan: menandai fungsi kolom, isinya sama dengan label tombol sebelahnya. Tidak ada ikon bintang/petir/orb.
+- **Ornamen 3-garis** di kepala section: motif identitas yang dipinjam dari Givime, dipakai berulang di tiap section sebagai penanda hierarki, bukan hiasan kosong.
+- **Badge** di baris preset hanya berisi label fungsi: tipe link, sumber penemuan, ukuran file, status pin. Tidak ada badge "AI Powered", "Beta", atau sejenisnya.
+- **Spinner** hanya muncul saat pencarian berjalan dan berhenti begitu selesai (MOTION 1).
+- **Tanpa gradien, tanpa glow kartu, tanpa glass** kecuali transparansi latar sticky header.
+
 ## Forbidden
 - Emoji sebagai dekorasi di UI
 - Gradien biru-ungu, glow kartu, glass di banyak elemen
