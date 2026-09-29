@@ -26,29 +26,25 @@ Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi ut
 - **Display (page title, judul block):** Bricolage Grotesque. Alasan: hierarki dibangun dari beda display vs sans, bukan dari ukuran acak.
 
 ## Layout
-- **Header:** baris tipis, garis rambut 1px di bawah, latar sama dengan halaman. Isinya cuma dua hal: wordmark teks dengan titik aksen 7px di depannya, dan satu tautan nyata (`kode sumber`) di kanan. Tanpa chip kotak, tanpa menu empat item, tanpa pil blur.
+- **Header:** bentuknya diambil dari situs Givime lain (stalker-ff-givy): blok rata tengah max 720px, aksen sudut HUD 2px di kiri-atas dan kanan-bawah, logo Alight Motion + nama merek, satu baris tagline, lalu `• By Givy •` berwarna aksen. Tanpa menu, tanpa sticky, tanpa tautan keluar.
 - **Halaman:** judul + ornamen 3-garis -> kolom cari -> status (kosong / berjalan / galat) -> hasil -> riwayat lokal -> footer kolofon.
 - **Status nihil:** hanya "Link preset tidak ditemukan." Tanpa merinci tempat yang sudah dicek.
 - **Status berjalan:** spinner + satu baris teks. Tanpa daftar langkah pencarian.
 - **Hasil:** blok meta video sebagai definisi grid tanpa kartu (Akun, Komentar, Views, Likes, tanpa baris Video), lalu daftar baris preset (thumb + judul + label fungsi + aksi). Daftar, bukan grid kartu seragam.
-- **Footer:** satu garis rambut, latar sama dengan halaman (tanpa panel kedua, biar tidak terasa seperti blok template). Bentuknya kolofon, bukan peta situs: satu paragraf cara kerja + kredit yang ditulis seperti orang bicara, lalu deretan tautan sebaris dipisah titik, lalu wordmark `AM FINDER` besar dan samar sebagai jangkar visual, ditutup baris paling bawah `AM Finder © 2026 Givy`. Tidak ada kolom, tidak ada judul kolom, tidak ada baris disclaimer hukum.
+- **Footer:** bentuk yang sama dengan footer stalker-ff-givy (situs milik sendiri): panel latar `surface` dengan batas atas, isi dua kolom. Kiri: logo Alight Motion (SVG dari svgrepo, dipakai ulang lewat `AmLogo.tsx`, stroke mengikuti warna aksen) + nama merek + satu paragraf jujur. Kanan: kolom tautan berjudul uppercase ber-aksen (`Explore`, `About`) seperti footer stalker. Baris paling bawah: `© 2026 Givy. All rights reserved.` di kiri, `Not affiliated with TikTok or Alight Motion.` di kanan. Tidak ada tautan `kode sumber` sama sekali.
 - **Tombol aksi:** balok aksen dengan alas tekan inset 3px di bawah supaya terasa tombol fisik, naik 1px saat hover, turun 2px saat ditekan. Label pendek `Cari`, mengikuti kata kerja di judul halaman. Bukan pil, bukan gradien, bukan glow.
-- **Uppercase + tracking lebar** tidak dipakai sama sekali di header/footer. Alasannya: pola judul kolom 11px ber-tracking lebar di atas dua tautan pendek adalah penanda paling cepat terbaca sebagai footer hasil generate; situs nyata memakai `<h2>` biasa, label berkurung, atau kalimat prosa (lihat referensi di bawah).
+- **Uppercase + tracking lebar** dipakai khusus untuk judul kolom footer (11px, 0.08em, warna aksen), mengikuti bentuk footer stalker-ff-givy. Di luar footer tidak ada teks uppercase ber-tracking.
 - **RHYTHM 2:** komposisi beda antar blok (grid definisi vs baris daftar vs teks status), tanpa hero dan tanpa section template.
 - **MOTION 1:** transisi hover/fokus <=150ms plus spinner proses yang berhenti saat selesai. Tanpa animasi hias berulang.
 
 ## Footer & header: alasan dan referensi
-Versi footer sebelumnya (logo + paragraf kiri, dua kolom tautan, baris bawah dua kolom) disebut terlihat seperti hasil generate. Pola itu persis pola default footer template. Riset ulang dibaca langsung dari HTML/CSS situs nyata, lalu dipilih pola berikut:
+Arahnya diputuskan ulang setelah footer versi sebelumnya (kolofon prosa + wordmark raksasa) diminta diganti dengan bentuk milik sendiri. Sumber bentuk: **stalker-ff-givy**, repo situs Givime lain, bagian `SiteFooter.tsx` dan `SiteHeader.tsx`.
 
-- **paco.me** (satu baris motto + tahun, `border-top` saja, nol kolom) dan **danluu.com** (tautan tersebar ke dua ujung, italic, tanpa copyright) -> dipinjam: footer boleh sangat sedikit isinya, dan tautan tidak wajib bergrid.
-- **swyx.io** dan **seangoedecke.com** (satu paragraf, tautan inline dipisah `·`/`│`, tanpa judul kolom) -> dipinjam: seluruh tautan jadi satu baris sebaris.
-- **simonwillison.net** (`#ft` berisi `Disclosures · Colophon · © · tahun`) -> dipinjam: baris meta kecil sebagai penutup, bukan dua kolom kaku.
-- **raredays.com** dan **footer.design** (wordmark/brand besar + kredit satu baris) -> dipinjam: wordmark besar samar sebagai jangkar dasar footer, `AM Finder © 2026 Givy` tetap jadi baris paling bawah.
-- **allenpike.com** dan **raredays.com** (kredit ditulis sebagai kalimat, tahun nempel di dalam kalimat) -> dipinjam: `footer.note` berbentuk prosa jujur, bukan blok disclaimer.
-
-Tanda AI slop yang sengaja dihindari: judul kolom uppercase ber-tracking aksen, grid dua kolom yang tidak dituntut isi, panel latar berbeda hanya untuk empat tautan, baris `© kiri + disclaimer kanan`, menu header yang berisi anchor ke bagian yang sama.
-
-Untuk header: **ray.so** (bar 50px, merek kiri, aksi kanan, tanpa menu) dan **emilkowal.ski** (header cuma dua baris) jadi dasar keputusan header satu baris isinya merek + satu tautan nyata.
+- **Header** menyalin susunan stalker: blok rata tengah, aksen sudut HUD, logo + nama merek + tagline + baris `By Givy`. Logo dipakai untuk Alight Motion.
+- **Footer** menyalin susunan stalker: kiri merek + paragraf, kanan kolom uppercase ber-aksen, bawah dua baris `© ... All rights reserved.` + disclaimer. Judul kolom uppercase ber-aksen disengaja karena itu gaya keluarga situs Givime.
+- **Tanpa `kode sumber`**: tidak ada tautan ke repo di header maupun footer, sesuai permintaan.
+- **Bahasa Inggris** untuk seluruh isi situs (judul, status, tombol, footer), jadi `ui.json` juga berbahasa Inggris.
+- Referensi riset sebelumnya tetap dicatat sebagai pembanding: paco.me dan danluu.com (footer sangat sedikit isi), swyx.io dan seangoedecke.com (tautan inline tanpa judul kolom), simonwillison.net (baris meta kecil), raredays.com (wordmark besar + kredit satu baris). Pola itu tidak dipakai karena permintaannya kembali ke bentuk stalker.
 
 ## Purpose notes (alasan teknik)
 - **Ikon:** hanya satu, kaca pembesar di kolom pencarian. Alasan: menandai fungsi kolom, isinya sama dengan label tombol sebelahnya. Tidak ada ikon bintang/petir/orb.

@@ -7,24 +7,24 @@ import { ui } from "@/lib/ui";
 
 function sourceLabel(source?: string): string | null {
   if (!source) return null;
-  if (source === "description") return "dari deskripsi";
-  if (source === "bio") return "dari bio akun";
-  if (source === "bioLink") return "dari link bio";
-  if (source.startsWith("comment")) return source.includes("pinned") ? "komentar di-pin" : "komentar";
-  if (source === "redirect") return "hasil redirect";
+  if (source === "description") return "from description";
+  if (source === "bio") return "from bio";
+  if (source === "bioLink") return "from bio link";
+  if (source.startsWith("comment")) return source.includes("pinned") ? "pinned comment" : "comment";
+  if (source === "redirect") return "redirect result";
   return source;
 }
 
 function formatCount(value?: number | null): string | null {
   if (value === null || value === undefined) return null;
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} jt`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)} rb`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)} K`;
   return String(value);
 }
 
 function presetLabel(preset: PresetLink): string {
   if (preset.title) return preset.title;
-  return preset.type === "5mb" ? "Preset 5MB" : "File XML";
+  return preset.type === "5mb" ? "5MB preset" : "XML file";
 }
 
 function presetTypeLabel(preset: PresetLink): string {
@@ -70,15 +70,15 @@ export function ResultView({ result }: { result: FindResult }) {
 
   return (
     <>
-      <section className="video-meta" aria-label="Data video">
+      <section className="video-meta" aria-label="Video data">
         <dl className="meta-grid">
           <div className="meta-item">
-            <dt>Akun</dt>
-            <dd>{result.author || "tanpa akun"}</dd>
+            <dt>Account</dt>
+            <dd>{result.author || "no account"}</dd>
           </div>
           {comments ? (
             <div className="meta-item">
-              <dt>Komentar</dt>
+              <dt>Comments</dt>
               <dd>{comments}</dd>
             </div>
           ) : null}
@@ -99,15 +99,15 @@ export function ResultView({ result }: { result: FindResult }) {
       </section>
 
       {presets.length > 0 ? (
-        <section aria-label="Link preset">
+        <section aria-label="Preset links">
           <div className="section-head">
             <h2 className="section-title">
               <span className="section-ornament" aria-hidden="true">
                 <SectionOrnament />
               </span>
-              Link preset
+              Preset links
             </h2>
-            <span className="section-note">{presets.length} link</span>
+            <span className="section-note">{presets.length} links</span>
           </div>
 
           <div className="preset-list">
@@ -129,8 +129,8 @@ export function ResultView({ result }: { result: FindResult }) {
                       <span className="badge badge-type">{presetTypeLabel(preset)}</span>
                       {source ? <span className="badge">{source}</span> : null}
                       {preset.size ? <span className="badge">{preset.size}</span> : null}
-                      {preset.pinned ? <span className="badge">di-pin</span> : null}
-                      {preset.byAuthor ? <span className="badge">dari akun ini</span> : null}
+                      {preset.pinned ? <span className="badge">pinned</span> : null}
+                      {preset.byAuthor ? <span className="badge">by this account</span> : null}
                     </div>
                     <p className="preset-url">{preset.detail ? `${preset.detail} · ` : ""}{preset.url}</p>
                     <div className="preset-actions">
@@ -150,7 +150,7 @@ export function ResultView({ result }: { result: FindResult }) {
           <strong>{ui.states.notFound}</strong>
           {others.length > 0 ? (
             <>
-              Link lain yang ikut terkumpul:
+              Other links that were also found:
               <ul>
                 {others.map((item) => (
                   <li key={item.url}>

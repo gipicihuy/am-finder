@@ -48,7 +48,7 @@ export function Finder() {
       sourceRef.current?.close();
       finishedRef.current = true;
       setPhase("error");
-      setError("Linknya bukan dari TikTok. Tempel link video TikTok dulu.");
+      setError("That link is not from TikTok. Paste a TikTok video link first.");
       return;
     }
 
@@ -71,14 +71,14 @@ export function Finder() {
         const data = JSON.parse((event as MessageEvent).data) as FindResult;
         if (data.ok === false) {
           setPhase("error");
-          setError(data.error || "scraper tidak bisa memproses link ini");
+          setError(data.error || "the scraper could not process this link");
           return;
         }
         setResult(data);
         setPhase("done");
       } catch {
         setPhase("error");
-        setError("balasan server tidak terbaca");
+        setError("unreadable response from server");
       }
     });
 
@@ -90,16 +90,16 @@ export function Finder() {
         source.close();
         setPhase("error");
         try {
-          setError(JSON.parse(data).message || "proses gagal");
+          setError(JSON.parse(data).message || "something went wrong, try again");
         } catch {
-          setError("proses gagal");
+          setError("something went wrong, try again");
         }
         return;
       }
       if (source.readyState === EventSource.CLOSED) {
         finishedRef.current = true;
         setPhase("error");
-        setError("koneksi terputus sebelum selesai, coba lagi");
+        setError("connection closed before it finished, try again");
       }
     });
   }
@@ -115,7 +115,7 @@ export function Finder() {
       <div className="search-wrap">
         <form className="search-form" role="search" onSubmit={onSubmit}>
           <label className="sr-only" htmlFor="tt">
-            Link video TikTok
+            TikTok video link
           </label>
           <span className="search-field">
             <span className="search-icon" aria-hidden="true">
@@ -141,7 +141,7 @@ export function Finder() {
               <button
                 type="button"
                 className="clear-btn"
-                aria-label="Hapus link"
+                aria-label="Clear link"
                 onClick={() => {
                   setValue("");
                   inputRef.current?.focus();
@@ -176,12 +176,12 @@ export function Finder() {
 
       {phase === "idle" ? (
         <div className="state">
-          <strong>Belum ada pencarian.</strong>
-          Link preset dicari di tempat yang memang bisa dibuka dari satu link video:
+          <strong>No search yet.</strong>
+          Preset links are looked up in places that can be opened from a single video link:
           <ul>
-            <li>deskripsi video</li>
-            <li>bio akun dan link yang terpasang di bio</li>
-            <li>komentar, termasuk yang di-pin dan balasannya</li>
+            <li>video description</li>
+            <li>account bio and the link in it</li>
+            <li>comments, including pinned ones and replies</li>
           </ul>
         </div>
       ) : null}
@@ -197,7 +197,7 @@ export function Finder() {
 
       {phase === "error" ? (
         <div className="state state-error" role="alert">
-          <strong>Pencarian berhenti.</strong>
+          <strong>Search stopped.</strong>
           {error}
         </div>
       ) : null}

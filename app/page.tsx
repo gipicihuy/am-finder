@@ -8,11 +8,11 @@ export default function HomePage() {
         <span className="section-ornament" aria-hidden="true">
           <SectionOrnament />
         </span>
-        Cari link preset
+        Find preset links
       </h1>
       <p className="page-sub">
-        Tempel link video TikTok. Deskripsi video, bio akun, link di bio, komentar, dan balasan
-        komentar dibuka satu per satu, lalu dicari link preset Alight Motion di dalamnya.
+        Paste a TikTok video link. The description, account bio, bio link, comments and replies are
+        opened one by one, then scanned for Alight Motion preset links.
       </p>
       <Finder />
     </>

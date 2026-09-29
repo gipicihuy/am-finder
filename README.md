@@ -47,46 +47,56 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
 ```json
 {
   "buttons": {
-    "search": "Cari",
-    "searching": "Sedang mencari",
-    "copy": "Salin link",
-    "copied": "Tersalin",
-    "openPreset": "Buka preset",
-    "openFile": "Ambil file"
+    "search": "Search",
+    "searching": "Searching",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "openPreset": "Open preset",
+    "openFile": "Get file"
   },
   "states": {
-    "loading": "Sedang mencari",
-    "notFound": "Link preset tidak ditemukan"
+    "loading": "Searching",
+    "notFound": "Preset link not found"
   },
   "header": {
     "brand": "AM Finder",
-    "links": [
-      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" }
-    ]
+    "tagline": "Find Alight Motion presets from any TikTok link",
+    "byline": "• By Givy •"
   },
   "footer": {
-    "note": "Satu halaman, tanpa akun dan tanpa iklan. Dibuat Givy di 2026. Kalau link preset tidak ada di sebuah video, memang tidak ada di sana.",
-    "links": [
-      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" },
-      { "label": "laporkan masalah", "href": "https://github.com/gipicihuy/am-finder/issues" },
-      { "label": "kolom pencarian", "href": "#tt" },
-      { "label": "ke atas", "href": "#top" }
+    "brand": "AM Finder",
+    "note": "Paste a TikTok link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
+    "columns": [
+      {
+        "title": "Explore",
+        "items": [
+          { "label": "Search box", "href": "#tt" },
+          { "label": "Back to top", "href": "#top" }
+        ]
+      },
+      {
+        "title": "About",
+        "items": [{ "label": "Free to use" }, { "label": "No sign-up" }]
+      }
     ],
-    "wordmark": "AM FINDER",
-    "copyright": "AM Finder © 2026 Givy"
+    "copyright": "© 2026 Givy. All rights reserved.",
+    "disclaimer": "Not affiliated with TikTok or Alight Motion."
   }
 }
 ```
 
-- `buttons.*` = nama tombol. `search` dipakai saat idle, `searching` saat proses jalan, `openPreset` untuk link 5MB, `openFile` untuk file XML.
-- `states.loading` = tulisan di indikator loading, `states.notFound` = tulisan saat link preset tidak ada.
-- `header.brand` = nama merek di bar atas, `header.links` = tautan kecil di sebelah kanannya.
-- `footer.note` = satu paragraf kolofon berisi cara kerja alat dan siapa pembuatnya. Tulis seperti orang bicara, bukan kalimat promosi.
-- `footer.links` = deretan tautan sebaris dipisah titik. `footer.wordmark` = tulisan besar samar di dasar footer (hiasan, disembunyikan dari pembaca layar), `footer.copyright` = baris paling bawah.
-- `href` yang diawali `#` menggulir ke bagian halaman itu; sisanya dibuka di tab baru. Jangan hapus `id="tt"` dan `id="top"` dari kodenya.
-- Jumlah tautan header dan footer bebas diatur, mau ditambah atau dikurangi.
-- Kunci di JSON ini wajib lengkap. Kalau ada kunci yang dihapus, `npm run build` langsung gagal dengan pesan yang jelas, jadi tidak ada teks yang hilang diam-diam.
-- Sudah selesai edit, jalankan ulang `npm run dev` (atau `npm run build` lalu `npm start`). Isi JSON dibaca saat kompilasi, jadi perubahan baru terlihat setelah build ulang.
+Seluruh tampilan situs ditulis dalam bahasa Inggris, jadi isi `ui.json` juga berbahasa Inggris.
+
+- `buttons.*` = button labels. `search` runs while idle, `searching` while a search runs, `openPreset` for 5MB links, `openFile` for XML files.
+- `states.loading` = spinner caption, `states.notFound` = caption shown when no preset link exists.
+- `header.brand` = brand name in the top block, `header.tagline` = one line under it, `header.byline` = the "By Givy" line in accent color.
+- `footer.brand` = brand name next to the Alight Motion mark, `footer.note` = short honest description paragraph, `footer.columns` = link columns (uppercase accent titles; `items` with `href` become links, without `href` they render as plain lines).
+- `footer.copyright` and `footer.disclaimer` = the two lines on the bottom bar.
+- `href` starting with `#` scrolls to that part of the page, anything else opens in a new tab. Do not delete `id="tt"` and `id="top"` from the code.
+- Columns and items can be added or removed freely.
+- Every key in this JSON must stay complete. Deleting a key fails `npm run build` with a clear message, so no text disappears silently.
+- After editing, restart `npm run dev` (or run `npm run build` then `npm start`). The JSON is read at compile time, so changes show up after a rebuild.
+
 
 ## Struktur
 
@@ -99,7 +109,8 @@ app/
 components/
   Finder.tsx          # form, riwayat, keadaan aplikasi
   ResultView.tsx      # kartu hasil dan baris preset
-  SiteFooter.tsx      # kolofon, tautan sebaris, wordmark besar
+  SiteFooter.tsx      # footer panel merek + kolom tautan
+  AmLogo.tsx          # logo Alight Motion (SVG inline)
   Ornament.tsx        # ornamen SVG dekoratif
 lib/
   ui.ts               # pembaca ui.json bertipe
