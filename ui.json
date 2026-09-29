@@ -11,25 +11,21 @@
     "loading": "Sedang mencari",
     "notFound": "Link preset tidak ditemukan"
   },
+  "header": {
+    "brand": "AM Finder",
+    "links": [
+      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" }
+    ]
+  },
   "footer": {
-    "note": "Hasil mengikuti link yang kreator bagikan di TikTok. Kalau link preset tidak dipasang di mana pun yang tadi dicek, halaman ini tidak bisa menghasilkan link itu sendiri.",
-    "columns": [
-      {
-        "title": "Jelajahi",
-        "links": [
-          { "label": "Kolom pencarian", "href": "#tt" },
-          { "label": "Ke atas", "href": "#top" }
-        ]
-      },
-      {
-        "title": "Proyek",
-        "links": [
-          { "label": "Kode sumber", "href": "https://github.com/gipicihuy/am-finder" },
-          { "label": "Laporkan masalah", "href": "https://github.com/gipicihuy/am-finder/issues" }
-        ]
-      }
+    "note": "Satu halaman, tanpa akun dan tanpa iklan. Dibuat Givy di 2026. Kalau link preset tidak ada di sebuah video, memang tidak ada di sana.",
+    "links": [
+      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" },
+      { "label": "laporkan masalah", "href": "https://github.com/gipicihuy/am-finder/issues" },
+      { "label": "kolom pencarian", "href": "#tt" },
+      { "label": "ke atas", "href": "#top" }
     ],
-    "bottomLeft": "AM Finder © 2026 Givy",
-    "bottomRight": "Link preset yang tampil berasal dari kreator yang membagikannya."
+    "wordmark": "AM FINDER",
+    "copyright": "AM Finder © 2026 Givy"
   }
 }

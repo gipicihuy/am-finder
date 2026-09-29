@@ -19,23 +19,36 @@
 | Accent-ink | `#04140b` |
 | Accent-soft | `rgba(0, 255, 160, 0.12)` |
 
-Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi utama, fokus keyboard, ornamen section, status berjalan, judul kolom footer.
+Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi utama, fokus keyboard, ornamen section, status berjalan, titik merek di header, tautan footer saat hover.
 
 ## Type
 - **UI/body:** Plus Jakarta Sans. Alasan: sudah dipakai Givime, jadi satu suara dengan situs induk.
 - **Display (page title, judul block):** Bricolage Grotesque. Alasan: hierarki dibangun dari beda display vs sans, bukan dari ukuran acak.
 
 ## Layout
-- **Header:** wordmark teks saja (tidak ada aset logo buatan).
-- **Halaman:** judul + ornamen 3-garis -> kolom cari -> status (kosong / berjalan / galat) -> hasil -> riwayat lokal -> footer satu baris.
+- **Header:** baris tipis, garis rambut 1px di bawah, latar sama dengan halaman. Isinya cuma dua hal: wordmark teks dengan titik aksen 7px di depannya, dan satu tautan nyata (`kode sumber`) di kanan. Tanpa chip kotak, tanpa menu empat item, tanpa pil blur.
+- **Halaman:** judul + ornamen 3-garis -> kolom cari -> status (kosong / berjalan / galat) -> hasil -> riwayat lokal -> footer kolofon.
 - **Status nihil:** hanya "Link preset tidak ditemukan." Tanpa merinci tempat yang sudah dicek.
 - **Status berjalan:** spinner + satu baris teks. Tanpa daftar langkah pencarian.
 - **Hasil:** blok meta video sebagai definisi grid tanpa kartu (Akun, Komentar, Views, Likes, tanpa baris Video), lalu daftar baris preset (thumb + judul + label fungsi + aksi). Daftar, bukan grid kartu seragam.
-- **Footer:** panel lebar penuh dengan batas atas, mengikuti bentuk footer Givime lain (stalker-ff-givy), tapi isi sendiri: merek + catatan jujur di kiri, dua kolom tautan di kanan, garis bawah dua teks dengan `AM Finder © 2026 Givy` di kiri. Judul kolom memakai aksen karena itu penanda hierarki.
+- **Footer:** satu garis rambut, latar sama dengan halaman (tanpa panel kedua, biar tidak terasa seperti blok template). Bentuknya kolofon, bukan peta situs: satu paragraf cara kerja + kredit yang ditulis seperti orang bicara, lalu deretan tautan sebaris dipisah titik, lalu wordmark `AM FINDER` besar dan samar sebagai jangkar visual, ditutup baris paling bawah `AM Finder © 2026 Givy`. Tidak ada kolom, tidak ada judul kolom, tidak ada baris disclaimer hukum.
 - **Tombol aksi:** balok aksen dengan alas tekan inset 3px di bawah supaya terasa tombol fisik, naik 1px saat hover, turun 2px saat ditekan. Label pendek `Cari`, mengikuti kata kerja di judul halaman. Bukan pil, bukan gradien, bukan glow.
-- **Uppercase + tracking lebar** hanya untuk judul kolom footer (11px, 0.09em) sebagai penanda hierarki struktural, bukan gaya untuk seluruh label.
+- **Uppercase + tracking lebar** tidak dipakai sama sekali di header/footer. Alasannya: pola judul kolom 11px ber-tracking lebar di atas dua tautan pendek adalah penanda paling cepat terbaca sebagai footer hasil generate; situs nyata memakai `<h2>` biasa, label berkurung, atau kalimat prosa (lihat referensi di bawah).
 - **RHYTHM 2:** komposisi beda antar blok (grid definisi vs baris daftar vs teks status), tanpa hero dan tanpa section template.
 - **MOTION 1:** transisi hover/fokus <=150ms plus spinner proses yang berhenti saat selesai. Tanpa animasi hias berulang.
+
+## Footer & header: alasan dan referensi
+Versi footer sebelumnya (logo + paragraf kiri, dua kolom tautan, baris bawah dua kolom) disebut terlihat seperti hasil generate. Pola itu persis pola default footer template. Riset ulang dibaca langsung dari HTML/CSS situs nyata, lalu dipilih pola berikut:
+
+- **paco.me** (satu baris motto + tahun, `border-top` saja, nol kolom) dan **danluu.com** (tautan tersebar ke dua ujung, italic, tanpa copyright) -> dipinjam: footer boleh sangat sedikit isinya, dan tautan tidak wajib bergrid.
+- **swyx.io** dan **seangoedecke.com** (satu paragraf, tautan inline dipisah `·`/`│`, tanpa judul kolom) -> dipinjam: seluruh tautan jadi satu baris sebaris.
+- **simonwillison.net** (`#ft` berisi `Disclosures · Colophon · © · tahun`) -> dipinjam: baris meta kecil sebagai penutup, bukan dua kolom kaku.
+- **raredays.com** dan **footer.design** (wordmark/brand besar + kredit satu baris) -> dipinjam: wordmark besar samar sebagai jangkar dasar footer, `AM Finder © 2026 Givy` tetap jadi baris paling bawah.
+- **allenpike.com** dan **raredays.com** (kredit ditulis sebagai kalimat, tahun nempel di dalam kalimat) -> dipinjam: `footer.note` berbentuk prosa jujur, bukan blok disclaimer.
+
+Tanda AI slop yang sengaja dihindari: judul kolom uppercase ber-tracking aksen, grid dua kolom yang tidak dituntut isi, panel latar berbeda hanya untuk empat tautan, baris `© kiri + disclaimer kanan`, menu header yang berisi anchor ke bagian yang sama.
+
+Untuk header: **ray.so** (bar 50px, merek kiri, aksi kanan, tanpa menu) dan **emilkowal.ski** (header cuma dua baris) jadi dasar keputusan header satu baris isinya merek + satu tautan nyata.
 
 ## Purpose notes (alasan teknik)
 - **Ikon:** hanya satu, kaca pembesar di kolom pencarian. Alasan: menandai fungsi kolom, isinya sama dengan label tombol sebelahnya. Tidak ada ikon bintang/petir/orb.
@@ -45,7 +58,7 @@ Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi ut
 - **Tanpa gradien, tanpa glow kartu, tanpa glass** kecuali transparansi latar sticky header.
 
 ## Teks yang bisa diubah
-- Label tombol dan tulisan footer dikumpulkan di `ui.json` supaya bisa diedah tanpa menyentuh kode. Kuncinya bertipe di `lib/ui.ts`.
+- Label tombol, tulisan status, nama merek header, dan isi footer dikumpulkan di `ui.json` supaya bisa diedah tanpa menyentuh kode. Kuncinya bertipe di `lib/ui.ts`.
 
 ## Forbidden
 - Emoji sebagai dekorasi di UI

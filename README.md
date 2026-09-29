@@ -40,9 +40,9 @@ npm run build      # build produksi
 npm start          # jalankan build produksi
 ```
 
-## Ubah teks tombol dan footer
+## Ubah teks tombol, header, dan footer
 
-Semua label tombol, tulisan status, dan isi footer ada di **`ui.json`** di root proyek:
+Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json`** di root proyek:
 
 ```json
 {
@@ -58,35 +58,33 @@ Semua label tombol, tulisan status, dan isi footer ada di **`ui.json`** di root 
     "loading": "Sedang mencari",
     "notFound": "Link preset tidak ditemukan"
   },
+  "header": {
+    "brand": "AM Finder",
+    "links": [
+      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" }
+    ]
+  },
   "footer": {
-    "note": "Paragraf pendek di kolom kiri footer.",
-    "columns": [
-      {
-        "title": "Jelajahi",
-        "links": [
-          { "label": "Kolom pencarian", "href": "#tt" },
-          { "label": "Ke atas", "href": "#top" }
-        ]
-      },
-      {
-        "title": "Proyek",
-        "links": [
-          { "label": "Kode sumber", "href": "https://github.com/gipicihuy/am-finder" },
-          { "label": "Laporkan masalah", "href": "https://github.com/gipicihuy/am-finder/issues" }
-        ]
-      }
+    "note": "Satu halaman, tanpa akun dan tanpa iklan. Dibuat Givy di 2026. Kalau link preset tidak ada di sebuah video, memang tidak ada di sana.",
+    "links": [
+      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" },
+      { "label": "laporkan masalah", "href": "https://github.com/gipicihuy/am-finder/issues" },
+      { "label": "kolom pencarian", "href": "#tt" },
+      { "label": "ke atas", "href": "#top" }
     ],
-    "bottomLeft": "AM Finder © 2026 Givy",
-    "bottomRight": "Kalimat kecil di sebelah kanan garis bawah."
+    "wordmark": "AM FINDER",
+    "copyright": "AM Finder © 2026 Givy"
   }
 }
 ```
 
 - `buttons.*` = nama tombol. `search` dipakai saat idle, `searching` saat proses jalan, `openPreset` untuk link 5MB, `openFile` untuk file XML.
 - `states.loading` = tulisan di indikator loading, `states.notFound` = tulisan saat link preset tidak ada.
-- `footer.note` = paragraf kiri, `footer.columns` = daftar kolom tautan (judul kolom memakai warna aksen), `footer.bottomLeft` dan `footer.bottomRight` = dua teks di garis paling bawah.
+- `header.brand` = nama merek di bar atas, `header.links` = tautan kecil di sebelah kanannya.
+- `footer.note` = satu paragraf kolofon berisi cara kerja alat dan siapa pembuatnya. Tulis seperti orang bicara, bukan kalimat promosi.
+- `footer.links` = deretan tautan sebaris dipisah titik. `footer.wordmark` = tulisan besar samar di dasar footer (hiasan, disembunyikan dari pembaca layar), `footer.copyright` = baris paling bawah.
 - `href` yang diawali `#` menggulir ke bagian halaman itu; sisanya dibuka di tab baru. Jangan hapus `id="tt"` dan `id="top"` dari kodenya.
-- Kolom footer bebas ditambah atau dikurangi, mau satu kolom juga boleh.
+- Jumlah tautan header dan footer bebas diatur, mau ditambah atau dikurangi.
 - Kunci di JSON ini wajib lengkap. Kalau ada kunci yang dihapus, `npm run build` langsung gagal dengan pesan yang jelas, jadi tidak ada teks yang hilang diam-diam.
 - Sudah selesai edit, jalankan ulang `npm run dev` (atau `npm run build` lalu `npm start`). Isi JSON dibaca saat kompilasi, jadi perubahan baru terlihat setelah build ulang.
 
@@ -96,12 +94,12 @@ Semua label tombol, tulisan status, dan isi footer ada di **`ui.json`** di root 
 app/
   api/find/route.ts   # endpoint SSE, memanggil scraper
   page.tsx            # halaman utama
-  layout.tsx          # kerangka halaman, memanggil footer
+  layout.tsx          # kerangka halaman: header atas dan footer bawah
   globals.css         # token warna, tipografi, dan gaya
 components/
   Finder.tsx          # form, riwayat, keadaan aplikasi
   ResultView.tsx      # kartu hasil dan baris preset
-  SiteFooter.tsx      # footer kolom dan garis bawah
+  SiteFooter.tsx      # kolofon, tautan sebaris, wordmark besar
   Ornament.tsx        # ornamen SVG dekoratif
 lib/
   ui.ts               # pembaca ui.json bertipe
