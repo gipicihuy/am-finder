@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
 import { ui } from "@/lib/ui";
@@ -50,7 +50,16 @@ function CopyButton({ url }: { url: string }) {
 }
 
 export function ResultView({ result }: { result: FindResult }) {
+  const [allowMotion, setAllowMotion] = useState(true);
+
+  useEffect(() => {
+    setAllowMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
+
   const presets = result.presetLinks ?? [];
+  const avatar = result.authorDetail?.avatar;
+  const cover = result.video?.cover;
+  const playUrl = result.video?.playUrl;
   const stats = result.video?.stats;
   const views = formatCount(stats?.views);
   const likes = formatCount(stats?.likes);
@@ -60,11 +69,33 @@ export function ResultView({ result }: { result: FindResult }) {
   return (
     <>
       <section className="video-meta" aria-label="Video data">
-        <dl className="meta-grid">
-          <div className="meta-item">
-            <dt>Account</dt>
-            <dd>{result.author || "no account"}</dd>
-          </div>
+        <div className="meta-panel">
+          {cover || playUrl ? (
+            <div className="video-preview">
+              {playUrl ? (
+                <video
+                  src={playUrl}
+                  poster={cover}
+                  autoPlay={allowMotion}
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  aria-label="Video preview"
+                />
+              ) : (
+                <img src={cover} alt="" loading="lazy" />
+              )}
+            </div>
+          ) : null}
+          <dl className="meta-grid">
+            <div className="meta-item">
+              <dt>Account</dt>
+              <dd className="meta-account">
+                {avatar ? <img className="meta-avatar" src={avatar} alt="" loading="lazy" /> : null}
+                <span>{result.author || "no account"}</span>
+              </dd>
+            </div>
           {comments ? (
             <div className="meta-item">
               <dt>Comments</dt>
@@ -83,7 +114,8 @@ export function ResultView({ result }: { result: FindResult }) {
               <dd>{likes}</dd>
             </div>
           ) : null}
-        </dl>
+          </dl>
+        </div>
         {description ? <p className="meta-desc">{description}</p> : null}
       </section>
 
