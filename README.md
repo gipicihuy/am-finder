@@ -49,6 +49,7 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
   "buttons": {
     "search": "Search",
     "searching": "Searching",
+    "paste": "Paste link",
     "copy": "Copy link",
     "copied": "Copied",
     "openPreset": "Open preset",
@@ -87,7 +88,7 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
 
 Seluruh tampilan situs ditulis dalam bahasa Inggris, jadi isi `ui.json` juga berbahasa Inggris.
 
-- `buttons.*` = button labels. `search` runs while idle, `searching` while a search runs, `openPreset` for 5MB links, `openFile` for XML files.
+- `buttons.*` = button labels. `search` runs while idle, `searching` while a search runs, `paste` = label of the paste-from-clipboard button at the right side of the field, `openPreset` for 5MB links, `openFile` for XML files.
 - `states.loading` = spinner caption, `states.notFound` = caption shown when no preset link exists.
 - `header.brand` = brand name in the top block, `header.tagline` = one line under it, `header.byline` = the "By Givy" line in accent color.
 - `footer.brand` = brand name next to the Alight Motion mark, `footer.note` = short honest description paragraph, `footer.columns` = link columns (uppercase accent titles; `items` with `href` become links, without `href` they render as plain lines).

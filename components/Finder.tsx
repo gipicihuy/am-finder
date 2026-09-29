@@ -110,6 +110,15 @@ export function Finder() {
     search(value);
   }
 
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setValue(text.trim());
+    } catch {
+      inputRef.current?.focus();
+    }
+  }
+
   return (
     <>
       <div className="search-wrap">
@@ -153,6 +162,18 @@ export function Finder() {
                 </svg>
               </button>
             ) : null}
+            <button
+              type="button"
+              className="paste-btn"
+              aria-label={ui.buttons.paste}
+              title={ui.buttons.paste}
+              onClick={pasteFromClipboard}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="8" y="2" width="8" height="4" rx="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              </svg>
+            </button>
           </span>
           <button className="btn-primary" type="submit" disabled={phase === "running"}>
             {phase === "running" ? ui.buttons.searching : ui.buttons.search}

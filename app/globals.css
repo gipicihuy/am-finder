@@ -126,8 +126,8 @@ img {
   position: relative;
   width: 100%;
   max-width: 720px;
-  margin: 6px auto 26px;
-  padding: 26px 22px 18px;
+  margin: 4px auto 16px;
+  padding: 24px 22px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -198,8 +198,7 @@ a:focus-visible {
 }
 
 .main {
-  padding-block: 20px 40px;
-  min-height: calc(100vh - 52px);
+  padding-block: 14px 6px;
 }
 
 /* page head */
@@ -290,7 +289,7 @@ a:focus-visible {
   width: 100%;
   font: inherit;
   font-size: 15px;
-  padding: 13px 40px 13px 40px;
+  padding: 13px 44px 13px 40px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -309,7 +308,7 @@ a:focus-visible {
 
 .clear-btn {
   position: absolute;
-  right: 8px;
+  right: 44px;
   top: 50%;
   transform: translateY(-50%);
   width: 30px;
@@ -325,6 +324,29 @@ a:focus-visible {
 }
 
 .clear-btn:hover {
+  color: var(--foreground);
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+.paste-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.paste-btn:hover {
   color: var(--foreground);
   background: var(--surface-3);
   border-color: var(--border);
@@ -401,7 +423,7 @@ a:focus-visible {
 
 /* status blocks */
 .state {
-  margin-top: 22px;
+  margin-top: 16px;
   padding: 18px;
   border: 1px dashed var(--border);
   border-radius: var(--radius);
@@ -649,9 +671,17 @@ a:focus-visible {
 /* riwayat */
 .chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 7px;
-  margin-top: 18px;
+  margin-top: 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
 }
 
 .chips:empty {
@@ -666,7 +696,8 @@ a:focus-visible {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 6px 12px;
-  max-width: 100%;
+  flex: 0 0 auto;
+  max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -686,7 +717,7 @@ a:focus-visible {
 
 /* footer */
 .site-footer {
-  margin-top: 48px;
+  margin-top: 24px;
   background: var(--surface);
   border-top: 1px solid var(--border);
 }

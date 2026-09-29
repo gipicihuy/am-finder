@@ -11,6 +11,7 @@ type UiTexts = {
   buttons: {
     search: string;
     searching: string;
+    paste: string;
     copy: string;
     copied: string;
     openPreset: string;
