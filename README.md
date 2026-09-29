@@ -7,11 +7,13 @@ Tempel link video TikTok, aplikasi menelusuri deskripsi akun, halaman link-in-bi
 ## Fitur
 
 - Cari link preset dari link video TikTok
-- Proses berjalan tampil sebagai log yang mengalir, jadi terlihat sedang mengecek apa
+- Saat pencarian jalan hanya ada indikator loading, tanpa rincian langkah yang sedang dibuka
 - Hasil berupa kartu preset: link 5mb, link xml Google Drive, judul, ukuran file, dan sumbernya
-- Status kosong yang jujur kalau link preset memang tidak ada di video itu
+- Kalau link preset tidak ada, cukup ditulis tidak ditemukan
 - Riwayat pencarian tersimpan di peramban, tanpa akun
 - Pilihan link lain (tautan di bio, link-in-bio) ikut ditampilkan kalau ada
+- Tombol silang di kolom pencarian untuk menghapus link sekaligus
+- Label meta memakai `Views` dan `Likes`
 - Tampilan rapat di layar ponsel, tanpa geser samping
 
 ## Cara pakai
@@ -38,6 +40,37 @@ npm run build      # build produksi
 npm start          # jalankan build produksi
 ```
 
+## Ubah teks tombol dan footer
+
+Semua label tombol dan tulisan footer ada di **`ui.json`** di root proyek:
+
+```json
+{
+  "buttons": {
+    "search": "Cari preset",
+    "searching": "Sedang mencari",
+    "copy": "Salin link",
+    "copied": "Tersalin",
+    "openPreset": "Buka preset",
+    "openFile": "Ambil file"
+  },
+  "states": {
+    "loading": "Sedang mencari",
+    "notFound": "Link preset tidak ditemukan."
+  },
+  "footer": [
+        "Tulisan footer baris pertama.",
+    "Baris kedua bebas ditambah atau dihapus."
+  ]
+}
+```
+
+- `buttons.*` = nama tombol. `search` dipakai saat idle, `searching` saat proses jalan, `openPreset` untuk link 5MB, `openFile` untuk file XML.
+- `states.loading` = tulisan di indikator loading, `states.notFound` = tulisan saat link preset tidak ada.
+- `footer` = daftar baris. Mau satu baris atau lima, tinggal tambah string di dalam kotak siku.
+- Kunci di JSON ini wajib lengkap. Kalau ada kunci yang dihapus, `npm run build` langsung gagal dengan pesan yang jelas, jadi tidak ada teks yang hilang diam-diam.
+- Sudah selesai edit, jalankan ulang `npm run dev` (atau `npm run build` lalu `npm start`). Isai JSON dibaca saat kompilasi, jadi perubahan baru terlihat setelah build ulang.
+
 ## Struktur
 
 ```
@@ -48,6 +81,8 @@ app/
 components/
   Finder.tsx          # form, log, riwayat, keadaan aplikasi
   ResultView.tsx      # kartu hasil dan baris preset
+lib/
+  ui.ts               # pembaca ui.json bertipe
   Ornament.tsx        # ornamen SVG dekoratif
 lib/
   amfinder.js         # penelusur link preset (dijalankan via child process)

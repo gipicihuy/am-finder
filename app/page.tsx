@@ -1,5 +1,6 @@
 import { Finder } from "@/components/Finder";
 import { SectionOrnament } from "@/components/Ornament";
+import { ui } from "@/lib/ui";
 
 export default function HomePage() {
   return (
@@ -15,10 +16,11 @@ export default function HomePage() {
         komentar dibuka satu per satu, lalu dicari link preset Alight Motion di dalamnya.
       </p>
       <Finder />
-      <p className="footer-note">
-        Hasil mengikuti link yang kreator bagikan di TikTok. Kalau link preset tidak dipasang di
-        mana pun yang tadi dicek, halaman ini tidak bisa menghasilkan link itu sendiri.
-      </p>
+      {ui.footer.map((line) => (
+        <p className="footer-note" key={line}>
+          {line}
+        </p>
+      ))}
     </>
   );
 }
