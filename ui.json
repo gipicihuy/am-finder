@@ -2,6 +2,7 @@
   "buttons": {
     "search": "Search",
     "searching": "Searching",
+    "paste": "Paste link",
     "copy": "Copy link",
     "copied": "Copied",
     "openPreset": "Open preset",
@@ -23,13 +24,26 @@
       {
         "title": "Explore",
         "items": [
-          { "label": "Search box", "href": "#tt" },
-          { "label": "Back to top", "href": "#top" }
+          {
+            "label": "Search box",
+            "href": "#tt"
+          },
+          {
+            "label": "Back to top",
+            "href": "#top"
+          }
         ]
       },
       {
         "title": "About",
-        "items": [{ "label": "Free to use" }, { "label": "No sign-up" }]
+        "items": [
+          {
+            "label": "Free to use"
+          },
+          {
+            "label": "No sign-up"
+          }
+        ]
       }
     ],
     "copyright": "© 2026 Givy. All rights reserved.",
