@@ -227,7 +227,7 @@ a:focus-visible {
   width: 100%;
   font: inherit;
   font-size: 15px;
-  padding: 13px 14px 13px 40px;
+  padding: 13px 40px 13px 40px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -242,6 +242,34 @@ a:focus-visible {
 .search-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.clear-btn:hover {
+  color: var(--foreground);
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+.clear-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .btn-primary {
@@ -380,27 +408,6 @@ a:focus-visible {
   .spinner {
     animation-duration: 1600ms;
   }
-}
-
-.run-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.run-list li {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--muted);
-  overflow-wrap: anywhere;
-}
-
-.run-list li:last-child {
-  color: var(--foreground);
 }
 
 /* meta video: definisi grid tanpa kartu */

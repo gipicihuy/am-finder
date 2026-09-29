@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
+import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
 
 type Phase = "idle" | "running" | "done" | "error";
@@ -11,11 +12,11 @@ const HISTORY_KEY = "amfinder:history";
 export function Finder() {
   const [value, setValue] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [logs, setLogs] = useState<string[]>([]);
   const [result, setResult] = useState<FindResult | null>(null);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const sourceRef = useRef<EventSource | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export function Finder() {
       sourceRef.current?.close();
       finishedRef.current = true;
       setPhase("error");
-      setError("Linknya bukan dari TikTok. Tempel link video, biasanya berakhiran /video/1234567890.");
+      setError("Linknya bukan dari TikTok. Tempel link video TikTok dulu.");
       return;
     }
 
@@ -56,22 +57,11 @@ export function Finder() {
     remember(target);
     setValue(target);
     setPhase("running");
-    setLogs([]);
     setResult(null);
     setError("");
 
     const source = new EventSource(`/api/find?url=${encodeURIComponent(target)}`);
     sourceRef.current = source;
-
-    source.addEventListener("log", (event) => {
-      if (finishedRef.current) return;
-      try {
-        const text = JSON.parse((event as MessageEvent).data);
-        if (typeof text === "string") setLogs((prev) => [...prev, text]);
-      } catch {
-        /* baris rusak dilewati */
-      }
-    });
 
     source.addEventListener("result", (event) => {
       if (finishedRef.current) return;
@@ -136,19 +126,36 @@ export function Finder() {
             </span>
             <input
               id="tt"
+              ref={inputRef}
               className="search-input"
               type="url"
               name="url"
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              placeholder="https://www.tiktok.com/@akun/video/1234567890"
+              placeholder="https://vt.tiktok.com/xxx"
               value={value}
               onChange={(event) => setValue(event.target.value)}
             />
+            {value ? (
+              <button
+                type="button"
+                className="clear-btn"
+                aria-label="Hapus link"
+                onClick={() => {
+                  setValue("");
+                  inputRef.current?.focus();
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            ) : null}
           </span>
           <button className="btn-primary" type="submit" disabled={phase === "running"}>
-            {phase === "running" ? "Sedang mencari" : "Cari preset"}
+            {phase === "running" ? ui.buttons.searching : ui.buttons.search}
           </button>
         </form>
         <div className="chips">
@@ -183,13 +190,8 @@ export function Finder() {
         <div className="run" aria-live="polite">
           <div className="run-head">
             <span className="spinner" aria-hidden="true" />
-            Membuka link video dan mencari preset
+            {ui.states.loading}
           </div>
-          <ul className="run-list">
-            {logs.map((line, index) => (
-              <li key={`${index}-${line}`}>{line}</li>
-            ))}
-          </ul>
         </div>
       ) : null}
 

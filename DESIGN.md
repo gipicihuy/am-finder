@@ -1,7 +1,7 @@
 # DESIGN.md - AM Finder
 
 ## Direction
-**Alat kerja untuk editor AM.** Bukan landing page: buka -> tempel link TikTok -> lihat proses scraping jalan -> dapat daftar link preset. Satu halaman, tanpa navigasi tujuan lain, tanpa section promosi. Identitas visual diambil dari Givime (situs milik sendiri): header sticky gelap, ornamen 3-garis di kepala section, definisi grid tanpa kartu, aksen tunggal.
+**Alat kerja untuk editor AM.** Bukan landing page: buka -> tempel link TikTok -> lihat indikator loading -> dapat daftar link preset. Satu halaman, tanpa navigasi tujuan lain, tanpa section promosi. Identitas visual diambil dari Givime (situs milik sendiri): header sticky gelap, ornamen 3-garis di kepala section, definisi grid tanpa kartu, aksen tunggal.
 
 `Dial: ENERGY 2 / RHYTHM 2 / MOTION 1`
 
@@ -28,7 +28,8 @@ Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi ut
 ## Layout
 - **Header:** wordmark teks saja (tidak ada aset logo buatan).
 - **Halaman:** judul + ornamen 3-garis -> kolom cari -> status (kosong / berjalan / galat) -> hasil -> riwayat lokal -> footer satu baris.
-- **Status kosong:** menyebut tempat yang benar-benar dicek (deskripsi, bio, link bio, komentar, balasan) sesuai isi scraper.
+- **Status nihil:** hanya "Link preset tidak ditemukan." Tanpa merinci tempat yang sudah dicek.
+- **Status berjalan:** spinner + satu baris teks. Tanpa daftar langkah pencarian.
 - **Hasil:** blok meta video sebagai definisi grid tanpa kartu, lalu daftar baris preset (thumb + judul + label fungsi + aksi). Daftar, bukan grid kartu seragam.
 - **RHYTHM 2:** komposisi beda antar blok (grid definisi vs baris daftar vs teks status), tanpa hero dan tanpa section template.
 - **MOTION 1:** transisi hover/fokus <=150ms plus spinner proses yang berhenti saat selesai. Tanpa animasi hias berulang.
@@ -39,6 +40,9 @@ Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi ut
 - **Badge** di baris preset hanya berisi label fungsi: tipe link, sumber penemuan, ukuran file, status pin. Tidak ada badge "AI Powered", "Beta", atau sejenisnya.
 - **Spinner** hanya muncul saat pencarian berjalan dan berhenti begitu selesai (MOTION 1).
 - **Tanpa gradien, tanpa glow kartu, tanpa glass** kecuali transparansi latar sticky header.
+
+## Teks yang bisa diubah
+- Label tombol dan tulisan footer dikumpulkan di `ui.json` supaya bisa diedah tanpa menyentuh kode. Kuncinya bertipe di `lib/ui.ts`.
 
 ## Forbidden
 - Emoji sebagai dekorasi di UI

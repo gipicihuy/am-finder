@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
+import { ui } from "@/lib/ui";
 
 function sourceLabel(source?: string): string | null {
   if (!source) return null;
@@ -53,7 +54,7 @@ function CopyButton({ url }: { url: string }) {
 
   return (
     <button type="button" className={`text-btn${done ? " is-done" : ""}`} onClick={copy}>
-      {done ? "Tersalin" : "Salin link"}
+      {done ? ui.buttons.copied : ui.buttons.copy}
     </button>
   );
 }
@@ -87,13 +88,13 @@ export function ResultView({ result }: { result: FindResult }) {
           ) : null}
           {views ? (
             <div className="meta-item">
-              <dt>Tayangan</dt>
+              <dt>Views</dt>
               <dd>{views}</dd>
             </div>
           ) : null}
           {likes ? (
             <div className="meta-item">
-              <dt>Suka</dt>
+              <dt>Likes</dt>
               <dd>{likes}</dd>
             </div>
           ) : null}
@@ -144,7 +145,7 @@ export function ResultView({ result }: { result: FindResult }) {
                     <p className="preset-url">{preset.detail ? `${preset.detail} · ` : ""}{preset.url}</p>
                     <div className="preset-actions">
                       <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
-                        {preset.type === "5mb" ? "Buka preset" : "Ambil file"}
+                        {preset.type === "5mb" ? ui.buttons.openPreset : ui.buttons.openFile}
                       </a>
                       <CopyButton url={preset.url} />
                     </div>
@@ -156,8 +157,7 @@ export function ResultView({ result }: { result: FindResult }) {
         </section>
       ) : (
         <div className="state">
-          <strong>Link preset tidak ditemukan.</strong>
-          {result.message}
+          <strong>{ui.states.notFound}</strong>
           {others.length > 0 ? (
             <>
               Link lain yang ikut terkumpul:
