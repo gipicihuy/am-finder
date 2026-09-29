@@ -132,11 +132,15 @@ function VideoPreview({
           playsInline
           preload="metadata"
           aria-label="Video preview"
+          title="Open preview"
+          onClick={() => {
+            if (!expanded) setExpanded(true);
+          }}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
         />
       ) : (
-        <img src={poster} alt="" loading="lazy" />
+        <img src={poster} alt="" loading="lazy" title="Open preview" onClick={() => setExpanded(true)} />
       )}
       <div className="video-tools">
         {src ? (
@@ -162,13 +166,6 @@ function VideoPreview({
                 )}
               </svg>
             </button>
-            {expanded ? null : (
-              <button type="button" onClick={() => setExpanded(true)} aria-label="Expand">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-                </svg>
-              </button>
-            )}
           </>
         ) : null}
         </div>
@@ -239,7 +236,7 @@ export function ResultView({ result }: { result: FindResult }) {
       </section>
 
       {presets.length > 0 ? (
-        <section aria-label="Preset links">
+        <section className="preset-section" aria-label="Preset links">
           <div className="section-head">
             <h2 className="section-title">
               <span className="section-ornament" aria-hidden="true">
