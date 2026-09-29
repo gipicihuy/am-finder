@@ -1,2 +1,2 @@
-# fh4nhub
-apa lah
+# am finder by givy
+untuk mendapatkan link preset alight motion dari link video tiktok
