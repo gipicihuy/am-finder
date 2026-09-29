@@ -11,7 +11,7 @@
   "states": {
     "loading": "Searching",
     "notFound": "Preset link not found",
-    "howTitle": "HOW IT WORKS",
+    "howTitle": "Step by step",
     "howSteps": [
       "Paste a TikTok video link",
       "AM Finder scans the video, bio and comments",
