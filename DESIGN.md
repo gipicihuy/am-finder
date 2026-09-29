@@ -1,4 +1,4 @@
-# DESIGN.md - AM Finder
+# DESIGN.md - AM Preset Finder
 
 ## Direction
 **Alat kerja untuk editor AM.** Bukan landing page: buka -> tempel link TikTok -> lihat indikator loading -> dapat daftar link preset. Satu halaman, tanpa navigasi tujuan lain, tanpa section promosi. Identitas visual diambil dari Givime (situs milik sendiri): header sticky gelap, ornamen 3-garis di kepala section, definisi grid tanpa kartu, aksen tunggal.

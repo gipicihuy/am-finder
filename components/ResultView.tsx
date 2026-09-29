@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
 import { ui } from "@/lib/ui";
@@ -49,6 +49,110 @@ function CopyButton({ url }: { url: string }) {
   );
 }
 
+function VideoPreview({
+  src,
+  poster,
+  width,
+  height,
+  allowMotion,
+}: {
+  src?: string;
+  poster?: string;
+  width?: number;
+  height?: number;
+  allowMotion: boolean;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src || !allowMotion) return;
+    const attempt = video.play();
+    if (attempt && typeof attempt.catch === "function") attempt.catch(() => undefined);
+  }, [src, allowMotion]);
+
+  function togglePlay() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => undefined);
+    else video.pause();
+  }
+
+  function toggleMute() {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setMuted(video.muted);
+  }
+
+  function fullscreen() {
+    const box = boxRef.current;
+    if (!box) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+    else if (box.requestFullscreen) box.requestFullscreen().catch(() => undefined);
+  }
+
+  if (!src && !poster) return null;
+
+  const ratio = width && height ? `${width} / ${height}` : "9 / 16";
+
+  return (
+    <div className="video-preview" ref={boxRef} style={{ aspectRatio: ratio }}>
+      {src ? (
+        <video
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          autoPlay={allowMotion}
+          loop
+          playsInline
+          preload="metadata"
+          aria-label="Video preview"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+        />
+      ) : (
+        <img src={poster} alt="" loading="lazy" />
+      )}
+      <div className="video-tools">
+        {src ? (
+          <>
+            <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+              {playing ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7 4.5h3.4v15H7zM13.6 4.5H17v15h-3.4z" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7.5 4.5 18 12 7.5 19.5z" />
+                </svg>
+              )}
+            </button>
+            <button type="button" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 9.5v5h3.2L11 18V6L7.2 9.5H4z" fill="currentColor" stroke="none" />
+                {muted ? (
+                  <path d="M15 9.5l5 5M20 9.5l-5 5" />
+                ) : (
+                  <path d="M15 9a4.5 4.5 0 0 1 0 6" />
+                )}
+              </svg>
+            </button>
+            <button type="button" onClick={fullscreen} aria-label="Fullscreen">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+              </svg>
+            </button>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function ResultView({ result }: { result: FindResult }) {
   const [allowMotion, setAllowMotion] = useState(true);
 
@@ -68,27 +172,8 @@ export function ResultView({ result }: { result: FindResult }) {
 
   return (
     <>
-      <section className="video-meta" aria-label="Video data">
-        <div className="meta-panel">
-          {cover || playUrl ? (
-            <div className="video-preview">
-              {playUrl ? (
-                <video
-                  src={playUrl}
-                  poster={cover}
-                  autoPlay={allowMotion}
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  aria-label="Video preview"
-                />
-              ) : (
-                <img src={cover} alt="" loading="lazy" />
-              )}
-            </div>
-          ) : null}
-          <dl className="meta-grid">
+      <section className="video-meta" aria-label="Content info">
+        <dl className="meta-grid">
             <div className="meta-item">
               <dt>Account</dt>
               <dd className="meta-account">
@@ -114,9 +199,19 @@ export function ResultView({ result }: { result: FindResult }) {
               <dd>{likes}</dd>
             </div>
           ) : null}
-          </dl>
-        </div>
-        {description ? <p className="meta-desc">{description}</p> : null}
+        </dl>
+        {cover || playUrl || description ? (
+          <div className="content-row">
+            <VideoPreview
+              src={playUrl}
+              poster={cover}
+              width={result.video?.width}
+              height={result.video?.height}
+              allowMotion={allowMotion}
+            />
+            {description ? <p className="meta-desc">{description}</p> : null}
+          </div>
+        ) : null}
       </section>
 
       {presets.length > 0 ? (

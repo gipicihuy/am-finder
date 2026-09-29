@@ -27,7 +27,14 @@ export type FindResult = {
   message?: string;
   presetLinks?: PresetLink[];
   otherLinks?: { url: string; source?: string; detail?: string }[];
-  video?: { description?: string; stats?: VideoStats; cover?: string; playUrl?: string };
+  video?: {
+    description?: string;
+    stats?: VideoStats;
+    cover?: string;
+    playUrl?: string;
+    width?: number;
+    height?: number;
+  };
   authorDetail?: {
     uniqueId?: string;
     nickname?: string;

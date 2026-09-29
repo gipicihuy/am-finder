@@ -5,7 +5,7 @@ import { ui } from "@/lib/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AM Finder · Alight Motion preset links from TikTok",
+  title: "AM Preset Finder · Alight Motion preset links from TikTok",
   description:
     "Paste a TikTok video link and get the Alight Motion preset links from its description, bio, comments and link in bio.",
 };
