@@ -22,8 +22,12 @@
 Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi utama, fokus keyboard, ornamen section, status berjalan, titik merek di header, tautan footer saat hover.
 
 ## Type
-- **UI/body:** Plus Jakarta Sans. Alasan: sudah dipakai Givime, jadi satu suara dengan situs induk.
-- **Display (page title, judul block):** Bricolage Grotesque. Alasan: hierarki dibangun dari beda display vs sans, bukan dari ukuran acak.
+Font sendiri dari paket `Red_Corner_fonts.zip` (keluarga AXGC), dipasang lokal lewat `@font-face` di `public/fonts/`, tanpa font eksternal.
+
+- **UI/body:** AXGC 400 (regular) untuk paragraf, 500 (medium) untuk label, 600 (semibold) untuk nilai meta.
+- **Display (judul halaman, nama merek, judul section):** AXGC 700 (bold). Alasan: hierarki dibangun dari beda berat huruf dalam satu keluarga, bukan campur dua font.
+- **Tombol aksi dan judul kolom footer:** AXGC 800 (extrabold) supaya terbaca sebagai elemen berat.
+- Bobot thin/light/black dan `condensed.ttf` sengaja tidak dipasang, belum ada tempat yang butuh.
 
 ## Layout
 - **Header:** bentuknya diambil dari situs Givime lain (stalker-ff-givy): blok rata tengah max 720px, aksen sudut HUD 2px di kiri-atas dan kanan-bawah, logo Alight Motion + nama merek, satu baris tagline, lalu `• By Givy •` berwarna aksen. Tanpa menu, tanpa sticky, tanpa tautan keluar.
