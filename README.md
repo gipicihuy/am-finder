@@ -116,6 +116,7 @@ lib/
   ui.ts               # pembaca ui.json bertipe
   types.ts            # tipe data hasil
   amfinder.js         # penelusur link preset (dijalankan via child process)
+public/fonts/         # font AXGC (regular sampai extrabold, dari Red_Corner_fonts.zip)
 ui.json               # label tombol, teks status, isi footer
 DESIGN.md             # catatan arah desain
 ```
