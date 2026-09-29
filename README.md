@@ -61,18 +61,18 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
     "howTitle": "Step by step",
     "howSteps": [
       "Paste a TikTok video link",
-      "AM Finder scans the video, bio and comments",
+      "AM Preset Finder scans the video, bio and comments",
       "Preset links are extracted automatically",
       "Copy the preset you need"
     ]
   },
   "header": {
-    "brand": "AM Finder",
+    "brand": "AM Preset Finder",
     "tagline": "Find Alight Motion presets from any TikTok link",
     "byline": "• By Givy •"
   },
   "footer": {
-    "brand": "AM Finder",
+    "brand": "AM Preset Finder",
     "note": "Paste a TikTok link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
     "columns": [
       {
