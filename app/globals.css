@@ -451,6 +451,46 @@ a:focus-visible {
   margin-bottom: 3px;
 }
 
+/* how it works */
+.how {
+  margin-top: 24px;
+  max-width: 60ch;
+}
+
+.how-title {
+  margin: 0 0 13px;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--foreground);
+}
+
+.how-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.how-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.how-num {
+  flex: 0 0 auto;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .state-error {
   border: 1px solid rgba(255, 95, 109, 0.5);
   border-style: solid;
