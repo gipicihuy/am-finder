@@ -1,31 +1,38 @@
 {
   "buttons": {
-    "search": "Cari",
-    "searching": "Sedang mencari",
-    "copy": "Salin link",
-    "copied": "Tersalin",
-    "openPreset": "Buka preset",
-    "openFile": "Ambil file"
+    "search": "Search",
+    "searching": "Searching",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "openPreset": "Open preset",
+    "openFile": "Get file"
   },
   "states": {
-    "loading": "Sedang mencari",
-    "notFound": "Link preset tidak ditemukan"
+    "loading": "Searching",
+    "notFound": "Preset link not found"
   },
   "header": {
     "brand": "AM Finder",
-    "links": [
-      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" }
-    ]
+    "tagline": "Find Alight Motion presets from any TikTok link",
+    "byline": "• By Givy •"
   },
   "footer": {
-    "note": "Satu halaman, tanpa akun dan tanpa iklan. Dibuat Givy di 2026. Kalau link preset tidak ada di sebuah video, memang tidak ada di sana.",
-    "links": [
-      { "label": "kode sumber", "href": "https://github.com/gipicihuy/am-finder" },
-      { "label": "laporkan masalah", "href": "https://github.com/gipicihuy/am-finder/issues" },
-      { "label": "kolom pencarian", "href": "#tt" },
-      { "label": "ke atas", "href": "#top" }
+    "brand": "AM Finder",
+    "note": "Paste a TikTok link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
+    "columns": [
+      {
+        "title": "Explore",
+        "items": [
+          { "label": "Search box", "href": "#tt" },
+          { "label": "Back to top", "href": "#top" }
+        ]
+      },
+      {
+        "title": "About",
+        "items": [{ "label": "Free to use" }, { "label": "No sign-up" }]
+      }
     ],
-    "wordmark": "AM FINDER",
-    "copyright": "AM Finder © 2026 Givy"
+    "copyright": "© 2026 Givy. All rights reserved.",
+    "disclaimer": "Not affiliated with TikTok or Alight Motion."
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
 import { ui } from "@/lib/ui";
+import { AmLogo } from "@/components/AmLogo";
 
 function followAnchor(event: React.MouseEvent<HTMLAnchorElement>, href: string) {
   if (!href.startsWith("#")) return;
@@ -14,40 +14,51 @@ function followAnchor(event: React.MouseEvent<HTMLAnchorElement>, href: string) 
 }
 
 export function SiteFooter() {
-  const links = ui.footer.links;
-
   return (
     <footer className="site-footer">
       <div className="shell footer-inner">
-        <div className="footer-colophon">
-          <p className="footer-note">{ui.footer.note}</p>
-          <p className="footer-links">
-            {links.map((link, index) => (
-              <Fragment key={link.href}>
-                {index > 0 && (
-                  <span className="footer-sep" aria-hidden="true">
-                    ·
-                  </span>
+        <div className="footer-top">
+          <div className="footer-brand">
+            <div className="footer-logo">
+              <span className="footer-logo-mark">
+                <AmLogo size={24} />
+              </span>
+              <span className="footer-name">{ui.footer.brand}</span>
+            </div>
+            <p className="footer-note">{ui.footer.note}</p>
+          </div>
+
+          <div className="footer-cols">
+            {ui.footer.columns.map((column) => (
+              <div className="footer-col" key={column.title}>
+                <p className="footer-col-title">{column.title}</p>
+                {column.items.map((item) =>
+                  item.href ? (
+                    <a
+                      key={item.label}
+                      className="footer-link"
+                      href={item.href}
+                      onClick={(event) => followAnchor(event, item.href!)}
+                      target={item.href.startsWith("#") ? undefined : "_blank"}
+                      rel={item.href.startsWith("#") ? undefined : "noopener noreferrer"}
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <p className="footer-line" key={item.label}>
+                      {item.label}
+                    </p>
+                  ),
                 )}
-                <a
-                  className="footer-link"
-                  href={link.href}
-                  onClick={(event) => followAnchor(event, link.href)}
-                  target={link.href.startsWith("#") ? undefined : "_blank"}
-                  rel={link.href.startsWith("#") ? undefined : "noopener noreferrer"}
-                >
-                  {link.label}
-                </a>
-              </Fragment>
+              </div>
             ))}
-          </p>
+          </div>
         </div>
 
-        <p className="footer-mark" aria-hidden="true">
-          {ui.footer.wordmark}
-        </p>
-
-        <p className="footer-legal">{ui.footer.copyright}</p>
+        <div className="footer-bottom">
+          <p>{ui.footer.copyright}</p>
+          <p>{ui.footer.disclaimer}</p>
+        </div>
       </div>
     </footer>
   );

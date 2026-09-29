@@ -1,6 +1,11 @@
 import raw from "@/ui.json";
 
-type UiLink = { label: string; href: string };
+type UiLink = { label: string; href?: string };
+
+type UiColumn = {
+  title: string;
+  items: UiLink[];
+};
 
 type UiTexts = {
   buttons: {
@@ -17,13 +22,15 @@ type UiTexts = {
   };
   header: {
     brand: string;
-    links: UiLink[];
+    tagline: string;
+    byline: string;
   };
   footer: {
+    brand: string;
     note: string;
-    links: UiLink[];
-    wordmark: string;
+    columns: UiColumn[];
     copyright: string;
+    disclaimer: string;
   };
 };
 
