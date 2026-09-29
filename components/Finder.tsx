@@ -196,15 +196,19 @@ export function Finder() {
       </div>
 
       {phase === "idle" ? (
-        <div className="state">
-          <strong>No search yet.</strong>
-          Preset links are looked up in places that can be opened from a single video link:
-          <ul>
-            <li>video description</li>
-            <li>account bio and the link in it</li>
-            <li>comments, including pinned ones and replies</li>
-          </ul>
-        </div>
+        <section className="how">
+          <h2 className="how-title">{ui.states.howTitle}</h2>
+          <ol className="how-list">
+            {ui.states.howSteps.map((step, index) => (
+              <li key={step}>
+                <span className="how-num" aria-hidden="true">
+                  {String.fromCodePoint(0x2460 + index)}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </section>
       ) : null}
 
       {phase === "running" ? (

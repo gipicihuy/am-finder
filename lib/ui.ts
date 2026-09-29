@@ -20,6 +20,8 @@ type UiTexts = {
   states: {
     loading: string;
     notFound: string;
+    howTitle: string;
+    howSteps: string[];
   };
   header: {
     brand: string;

@@ -10,7 +10,14 @@
   },
   "states": {
     "loading": "Searching",
-    "notFound": "Preset link not found"
+    "notFound": "Preset link not found",
+    "howTitle": "HOW IT WORKS",
+    "howSteps": [
+      "Paste a TikTok video link",
+      "AM Finder scans the video, bio and comments",
+      "Preset links are extracted automatically",
+      "Copy the preset you need"
+    ]
   },
   "header": {
     "brand": "AM Finder",

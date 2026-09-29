@@ -32,12 +32,13 @@ Font sendiri dari paket `Red_Corner_fonts.zip` (keluarga AXGC), dipasang lokal l
 ## Layout
 - **Header:** bentuknya diambil dari situs Givime lain (stalker-ff-givy): blok rata tengah max 720px, aksen sudut HUD 2px di kiri-atas dan kanan-bawah, logo Alight Motion + nama merek, satu baris tagline, lalu `• By Givy •` berwarna aksen. Tanpa menu, tanpa sticky, tanpa tautan keluar.
 - **Halaman:** judul + ornamen 3-garis -> kolom cari -> status (kosong / berjalan / galat) -> hasil -> riwayat lokal -> footer kolofon.
-- **Status nihil:** hanya "Link preset tidak ditemukan." Tanpa merinci tempat yang sudah dicek.
+- **Status nihil:** hanya "Preset link not found". Tanpa merinci tempat yang sudah dicek.
+- **Status awal (sebelum pencarian):** blok `HOW IT WORKS` tanpa kotak: judul uppercase 12px + empat langkah bernomor bulatan ① ② ③ ④, angka aksen, teks muted. Bukan container berlatar, bukan daftar berpembulat bawaan.
 - **Status berjalan:** spinner + satu baris teks. Tanpa daftar langkah pencarian.
 - **Hasil:** blok meta video sebagai definisi grid tanpa kartu (Akun, Komentar, Views, Likes, tanpa baris Video), lalu daftar baris preset (thumb + judul + label fungsi + aksi). Daftar, bukan grid kartu seragam.
 - **Footer:** bentuk yang sama dengan footer stalker-ff-givy (situs milik sendiri): panel latar `surface` dengan batas atas, isi dua kolom. Kiri: logo Alight Motion (SVG dari svgrepo, dipakai ulang lewat `AmLogo.tsx`, stroke mengikuti warna aksen) + nama merek + satu paragraf jujur. Kanan: kolom tautan berjudul uppercase ber-aksen (`Explore`, `About`) seperti footer stalker. Baris paling bawah: `© 2026 Givy. All rights reserved.` di kiri, `Not affiliated with TikTok or Alight Motion.` di kanan. Tidak ada tautan `kode sumber` sama sekali.
 - **Tombol aksi:** balok aksen dengan alas tekan inset 3px di bawah supaya terasa tombol fisik, naik 1px saat hover, turun 2px saat ditekan. Label pendek `Cari`, mengikuti kata kerja di judul halaman. Bukan pil, bukan gradien, bukan glow.
-- **Uppercase + tracking lebar** dipakai khusus untuk judul kolom footer (11px, 0.08em, warna aksen), mengikuti bentuk footer stalker-ff-givy. Di luar footer tidak ada teks uppercase ber-tracking.
+- **Uppercase + tracking lebar** dipakai hanya di dua tempat: judul kolom footer (11px, 0.08em, aksen) sesuai bentuk footer stalker-ff-givy, dan judul blok `HOW IT WORKS` (12px, 0.16em, ink). Judul terasa berat karena berat huruf 800, bukan karena ukuran besar.
 - **RHYTHM 2:** komposisi beda antar blok (grid definisi vs baris daftar vs teks status), tanpa hero dan tanpa section template.
 - **MOTION 1:** transisi hover/fokus <=150ms plus spinner proses yang berhenti saat selesai. Tanpa animasi hias berulang.
 
