@@ -56,7 +56,7 @@ Semua label tombol, tulisan status, dan isi footer ada di **`ui.json`** di root 
   },
   "states": {
     "loading": "Sedang mencari",
-    "notFound": "Link preset tidak ditemukan."
+    "notFound": "Link preset tidak ditemukan"
   },
   "footer": {
     "note": "Paragraf pendek di kolom kiri footer.",
