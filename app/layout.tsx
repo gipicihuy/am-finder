@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { SiteFooter } from "@/components/SiteFooter";
 import "./globals.css";
 
 const sans = Plus_Jakarta_Sans({
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="id">
       <body className={`${sans.variable} ${display.variable} min-h-screen antialiased`}>
-        <header className="site-header">
+        <header className="site-header" id="top">
           <div className="shell header-inner">
             <a href="/" className="logo" aria-label="AM Finder, halaman utama">
               <span className="logo-glyph" aria-hidden="true">
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </header>
         <main className="shell main">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );

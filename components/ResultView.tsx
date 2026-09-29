@@ -76,14 +76,10 @@ export function ResultView({ result }: { result: FindResult }) {
             <dt>Akun</dt>
             <dd>{result.author || "tanpa akun"}</dd>
           </div>
-          {result.videoUrl ? (
+          {comments ? (
             <div className="meta-item">
-              <dt>Video</dt>
-              <dd>
-                <a href={result.videoUrl} target="_blank" rel="noopener noreferrer">
-                  buka di TikTok
-                </a>
-              </dd>
+              <dt>Komentar</dt>
+              <dd>{comments}</dd>
             </div>
           ) : null}
           {views ? (
@@ -96,12 +92,6 @@ export function ResultView({ result }: { result: FindResult }) {
             <div className="meta-item">
               <dt>Likes</dt>
               <dd>{likes}</dd>
-            </div>
-          ) : null}
-          {comments ? (
-            <div className="meta-item">
-              <dt>Komentar</dt>
-              <dd>{comments}</dd>
             </div>
           ) : null}
         </dl>
