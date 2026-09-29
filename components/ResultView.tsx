@@ -114,6 +114,14 @@ function VideoPreview({
         ref={boxRef}
         style={{ aspectRatio: ratio }}
       >
+      {expanded ? (
+        <button type="button" className="video-close" onClick={() => setExpanded(false)} aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      ) : null}
       {src ? (
         <video
           ref={videoRef}
@@ -154,14 +162,7 @@ function VideoPreview({
                 )}
               </svg>
             </button>
-            {expanded ? (
-              <button type="button" onClick={() => setExpanded(false)} aria-label="Close">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
-              </button>
-            ) : (
+            {expanded ? null : (
               <button type="button" onClick={() => setExpanded(true)} aria-label="Expand">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
@@ -196,6 +197,7 @@ export function ResultView({ result }: { result: FindResult }) {
   return (
     <>
       <section className="video-meta" aria-label="Content info">
+        <div className="content-head">
         <VideoPreview
           src={playUrl}
           poster={cover}
@@ -203,6 +205,7 @@ export function ResultView({ result }: { result: FindResult }) {
           height={result.video?.height}
           allowMotion={allowMotion}
         />
+        <div className="content-main">
         {description ? <p className="meta-desc">{description}</p> : null}
         <dl className="meta-grid">
             <div className="meta-item">
@@ -231,6 +234,8 @@ export function ResultView({ result }: { result: FindResult }) {
             </div>
           ) : null}
         </dl>
+        </div>
+        </div>
       </section>
 
       {presets.length > 0 ? (
