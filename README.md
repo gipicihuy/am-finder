@@ -132,7 +132,7 @@ DESIGN.md             # catatan arah desain
 
 ## Cara kerja singkat
 
-`app/api/find/route.ts` menerima `?url=...`, memvalidasi, lalu menjalankan `node lib/amfinder.js <url> --raw --all`. Log penelusuran dibaca dari stderr dan dikirim ke peramban lewat Server-Sent Events; hasil JSON dibaca dari stdout dan dikirim sebagai event terakhir. Maksimal 3 pencarian berjalan bersamaan.
+Hasil `--all` juga memuat `authorDetail.avatar` (foto profil kreator), `video.cover`, dan `video.playUrl` (klip video) supaya UI bisa menampilkan preview. `app/api/find/route.ts` menerima `?url=...`, memvalidasi, lalu menjalankan `node lib/amfinder.js <url> --raw --all`. Log penelusuran dibaca dari stderr dan dikirim ke peramban lewat Server-Sent Events; hasil JSON dibaca dari stdout dan dikirim sebagai event terakhir. Maksimal 3 pencarian berjalan bersamaan.
 
 ## Catatan
 
