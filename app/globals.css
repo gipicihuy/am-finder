@@ -308,29 +308,6 @@ a:focus-visible {
 
 .clear-btn {
   position: absolute;
-  right: 44px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.clear-btn:hover {
-  color: var(--foreground);
-  background: var(--surface-3);
-  border-color: var(--border);
-}
-
-.paste-btn {
-  position: absolute;
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
@@ -346,7 +323,7 @@ a:focus-visible {
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
-.paste-btn:hover {
+.clear-btn:hover {
   color: var(--foreground);
   background: var(--surface-3);
   border-color: var(--border);
