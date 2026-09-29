@@ -202,9 +202,9 @@ export function Finder() {
             {ui.states.howSteps.map((step, index) => (
               <li key={step}>
                 <span className="how-num" aria-hidden="true">
-                  {String.fromCodePoint(0x2460 + index)}
+                  {index + 1}
                 </span>
-                {step}
+                <span>{step}</span>
               </li>
             ))}
           </ol>

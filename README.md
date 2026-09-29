@@ -58,7 +58,7 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
   "states": {
     "loading": "Searching",
     "notFound": "Preset link not found",
-    "howTitle": "HOW IT WORKS",
+    "howTitle": "Step by step",
     "howSteps": [
       "Paste a TikTok video link",
       "AM Finder scans the video, bio and comments",
@@ -97,7 +97,7 @@ Seluruh tampilan situs ditulis dalam bahasa Inggris, jadi isi `ui.json` juga ber
 
 - `buttons.*` = button labels. `search` runs while idle, `searching` while a search runs, `paste` = label of the paste-from-clipboard button at the right side of the field, `openPreset` for 5MB links, `openFile` for XML files.
 - `states.loading` = spinner caption, `states.notFound` = caption shown when no preset link exists.
-- `states.howTitle` = heading above the idle steps (`HOW IT WORKS`), `states.howSteps` = the numbered steps shown before the first search. Numbers 1 to 4 are drawn as ① ② ③ ④ automatically.
+- `states.howTitle` = heading above the idle steps (`Step by step`), `states.howSteps` = the numbered steps shown before the first search. The numbers are drawn as accent circles (26px), not as text glyphs.
 - `header.brand` = brand name in the top block, `header.tagline` = one line under it, `header.byline` = the "By Givy" line in accent color.
 - `footer.brand` = brand name next to the Alight Motion mark, `footer.note` = short honest description paragraph, `footer.columns` = link columns (uppercase accent titles; `items` with `href` become links, without `href` they render as plain lines).
 - `footer.copyright` and `footer.disclaimer` = the two lines on the bottom bar.
