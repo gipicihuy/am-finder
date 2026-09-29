@@ -66,6 +66,20 @@ function VideoPreview({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [expanded]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -88,19 +102,18 @@ function VideoPreview({
     setMuted(video.muted);
   }
 
-  function fullscreen() {
-    const box = boxRef.current;
-    if (!box) return;
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
-    else if (box.requestFullscreen) box.requestFullscreen().catch(() => undefined);
-  }
-
   if (!src && !poster) return null;
 
   const ratio = width && height ? `${width} / ${height}` : "9 / 16";
 
   return (
-    <div className="video-preview" ref={boxRef} style={{ aspectRatio: ratio }}>
+    <>
+      {expanded ? <div className="preview-backdrop" onClick={() => setExpanded(false)} /> : null}
+      <div
+        className={`video-preview${expanded ? " is-open" : ""}`}
+        ref={boxRef}
+        style={{ aspectRatio: ratio }}
+      >
       {src ? (
         <video
           ref={videoRef}
@@ -141,15 +154,25 @@ function VideoPreview({
                 )}
               </svg>
             </button>
-            <button type="button" onClick={fullscreen} aria-label="Fullscreen">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-              </svg>
-            </button>
+            {expanded ? (
+              <button type="button" onClick={() => setExpanded(false)} aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            ) : (
+              <button type="button" onClick={() => setExpanded(true)} aria-label="Expand">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+                </svg>
+              </button>
+            )}
           </>
         ) : null}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -173,6 +196,14 @@ export function ResultView({ result }: { result: FindResult }) {
   return (
     <>
       <section className="video-meta" aria-label="Content info">
+        <VideoPreview
+          src={playUrl}
+          poster={cover}
+          width={result.video?.width}
+          height={result.video?.height}
+          allowMotion={allowMotion}
+        />
+        {description ? <p className="meta-desc">{description}</p> : null}
         <dl className="meta-grid">
             <div className="meta-item">
               <dt>Account</dt>
@@ -200,18 +231,6 @@ export function ResultView({ result }: { result: FindResult }) {
             </div>
           ) : null}
         </dl>
-        {cover || playUrl || description ? (
-          <div className="content-row">
-            <VideoPreview
-              src={playUrl}
-              poster={cover}
-              width={result.video?.width}
-              height={result.video?.height}
-              allowMotion={allowMotion}
-            />
-            {description ? <p className="meta-desc">{description}</p> : null}
-          </div>
-        ) : null}
       </section>
 
       {presets.length > 0 ? (
