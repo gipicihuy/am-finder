@@ -1,5 +1,7 @@
 import raw from "@/ui.json";
 
+type UiLink = { label: string; href: string };
+
 type UiTexts = {
   buttons: {
     search: string;
@@ -13,11 +15,15 @@ type UiTexts = {
     loading: string;
     notFound: string;
   };
+  header: {
+    brand: string;
+    links: UiLink[];
+  };
   footer: {
     note: string;
-    columns: { title: string; links: { label: string; href: string }[] }[];
-    bottomLeft: string;
-    bottomRight: string;
+    links: UiLink[];
+    wordmark: string;
+    copyright: string;
   };
 };
 

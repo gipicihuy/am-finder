@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ui } from "@/lib/ui";
 import "./globals.css";
 
 const sans = Plus_Jakarta_Sans({
@@ -27,12 +28,23 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${sans.variable} ${display.variable} min-h-screen antialiased`}>
         <header className="site-header" id="top">
           <div className="shell header-inner">
-            <a href="/" className="logo" aria-label="AM Finder, halaman utama">
-              <span className="logo-glyph" aria-hidden="true">
-                AM
-              </span>
-              <span>AM Finder</span>
+            <a href="/" className="logo" aria-label={`${ui.header.brand}, halaman utama`}>
+              <span className="logo-dot" aria-hidden="true" />
+              {ui.header.brand}
             </a>
+            <nav className="header-links" aria-label="Tautan situs">
+              {ui.header.links.map((link) => (
+                <a
+                  key={link.href}
+                  className="header-link"
+                  href={link.href}
+                  target={link.href.startsWith("#") ? undefined : "_blank"}
+                  rel={link.href.startsWith("#") ? undefined : "noopener noreferrer"}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
           </div>
         </header>
         <main className="shell main">{children}</main>
