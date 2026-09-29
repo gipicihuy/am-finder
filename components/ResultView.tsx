@@ -5,16 +5,6 @@ import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
 import { ui } from "@/lib/ui";
 
-function sourceLabel(source?: string): string | null {
-  if (!source) return null;
-  if (source === "description") return "from description";
-  if (source === "bio") return "from bio";
-  if (source === "bioLink") return "from bio link";
-  if (source.startsWith("comment")) return source.includes("pinned") ? "pinned comment" : "comment";
-  if (source === "redirect") return "redirect result";
-  return source;
-}
-
 function formatCount(value?: number | null): string | null {
   if (value === null || value === undefined) return null;
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} M`;
@@ -28,7 +18,7 @@ function presetLabel(preset: PresetLink): string {
 }
 
 function presetTypeLabel(preset: PresetLink): string {
-  return preset.type === "5mb" ? "5MB link" : "XML";
+  return preset.type === "5mb" ? "5MB" : "XML";
 }
 
 function CopyButton({ url }: { url: string }) {
@@ -61,7 +51,6 @@ function CopyButton({ url }: { url: string }) {
 
 export function ResultView({ result }: { result: FindResult }) {
   const presets = result.presetLinks ?? [];
-  const others = result.otherLinks ?? [];
   const stats = result.video?.stats;
   const views = formatCount(stats?.views);
   const likes = formatCount(stats?.likes);
@@ -105,14 +94,12 @@ export function ResultView({ result }: { result: FindResult }) {
               <span className="section-ornament" aria-hidden="true">
                 <SectionOrnament />
               </span>
-              Preset links
+              Preset links ({presets.length})
             </h2>
-            <span className="section-note">{presets.length} links</span>
           </div>
 
           <div className="preset-list">
             {presets.map((preset) => {
-              const source = sourceLabel(preset.source);
               return (
                 <article className="preset-row" key={`${preset.type}-${preset.url}`}>
                   {preset.thumb ? (
@@ -127,12 +114,12 @@ export function ResultView({ result }: { result: FindResult }) {
                     <h3 className="preset-title">{presetLabel(preset)}</h3>
                     <div className="preset-badges">
                       <span className="badge badge-type">{presetTypeLabel(preset)}</span>
-                      {source ? <span className="badge">{source}</span> : null}
                       {preset.size ? <span className="badge">{preset.size}</span> : null}
                       {preset.pinned ? <span className="badge">pinned</span> : null}
                       {preset.byAuthor ? <span className="badge">by this account</span> : null}
                     </div>
-                    <p className="preset-url">{preset.detail ? `${preset.detail} · ` : ""}{preset.url}</p>
+                    {preset.detail ? <p className="preset-detail">{preset.detail}</p> : null}
+                    <p className="preset-url">{preset.url}</p>
                     <div className="preset-actions">
                       <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
                         {preset.type === "5mb" ? ui.buttons.openPreset : ui.buttons.openFile}
@@ -146,23 +133,8 @@ export function ResultView({ result }: { result: FindResult }) {
           </div>
         </section>
       ) : (
-        <div className="state">
-          <strong>{ui.states.notFound}</strong>
-          {others.length > 0 ? (
-            <>
-              Other links that were also found:
-              <ul>
-                {others.map((item) => (
-                  <li key={item.url}>
-                    <a href={item.url} target="_blank" rel="noopener noreferrer">
-                      {item.url}
-                    </a>
-                    {item.source ? ` (${sourceLabel(item.source) ?? item.source})` : null}
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
+        <div className="state state-miss" role="status">
+          <strong>❌ {ui.states.notFound}</strong>
         </div>
       )}
     </>
