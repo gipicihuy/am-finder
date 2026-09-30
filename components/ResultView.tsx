@@ -194,7 +194,7 @@ export function ResultView({ result }: { result: FindResult }) {
   const presets = result.presetLinks ?? [];
   const avatar = result.authorDetail?.avatar;
   const cover = result.video?.cover;
-  const playUrl = result.video?.playUrl;
+  const playUrl = result.video?.playUrlNoWm || result.video?.playUrl;
   const stats = result.video?.stats;
   const views = formatCount(stats?.views);
   const likes = formatCount(stats?.likes);
