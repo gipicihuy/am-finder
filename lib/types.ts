@@ -32,6 +32,7 @@ export type FindResult = {
     stats?: VideoStats;
     cover?: string;
     playUrl?: string;
+    playUrlNoWm?: string;
     width?: number;
     height?: number;
   };
