@@ -50,9 +50,9 @@
   --foreground: #f2f2f3;
   --muted: #9b9ba3;
   --border: #2c2c33;
-  --accent: #00ffa0;
+  --accent: #05FAA8;
   --accent-ink: #04140b;
-  --accent-soft: rgba(0, 255, 160, 0.12);
+  --accent-soft: rgba(5, 250, 168, 0.12);
   --radius: 8px;
   --radius-sm: 6px;
 }
@@ -672,7 +672,7 @@ a:focus-visible {
 
 .video-tools button:hover {
   color: var(--accent);
-  border-color: rgba(0, 255, 160, 0.5);
+  border-color: rgba(5, 250, 168, 0.5);
 }
 
 .video-preview.is-open .video-tools button {
@@ -767,7 +767,7 @@ a:focus-visible {
 }
 
 .preset-row:hover {
-  border-color: rgba(0, 255, 160, 0.45);
+  border-color: rgba(5, 250, 168, 0.45);
 }
 
 .preset-thumb {
@@ -825,7 +825,7 @@ a:focus-visible {
 }
 
 .badge-type {
-  border-color: rgba(0, 255, 160, 0.45);
+  border-color: rgba(5, 250, 168, 0.45);
   background: var(--accent-soft);
   color: var(--accent);
 }
