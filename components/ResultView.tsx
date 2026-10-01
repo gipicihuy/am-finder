@@ -130,6 +130,7 @@ function VideoPreview({
           autoPlay={allowMotion}
           loop
           playsInline
+          disableRemotePlayback
           preload="metadata"
           aria-label="Video preview"
           title="Open preview"
