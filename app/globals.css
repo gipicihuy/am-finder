@@ -828,6 +828,14 @@ a:focus-visible {
   color: var(--accent);
 }
 
+.section-count {
+  min-width: 22px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0;
+  padding: 2px 7px;
+}
+
 .preset-detail {
   margin: 0;
   font-size: 12.5px;

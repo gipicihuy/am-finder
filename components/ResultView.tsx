@@ -256,7 +256,8 @@ export function ResultView({ result }: { result: FindResult }) {
               <span className="section-ornament" aria-hidden="true">
                 <SectionOrnament />
               </span>
-              Preset links ({presets.length})
+              Preset links
+              <span className="badge badge-type section-count">{presets.length}</span>
             </h2>
           </div>
 
