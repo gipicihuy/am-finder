@@ -64,6 +64,7 @@ function VideoPreview({
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fillRef = useRef<HTMLSpanElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -139,13 +140,22 @@ function VideoPreview({
           }}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
+          onTimeUpdate={(event) => {
+            const video = event.currentTarget;
+            if (fillRef.current && video.duration) {
+              fillRef.current.style.width = `${(video.currentTime / video.duration) * 100}%`;
+            }
+          }}
         />
       ) : (
         <img src={poster} alt="" loading="lazy" title="Open preview" onClick={() => setExpanded(true)} />
       )}
-      <div className="video-tools">
-        {src ? (
-          <>
+      {src ? (
+        <>
+          <div className="video-progress" aria-hidden="true">
+            <span ref={fillRef} />
+          </div>
+          <div className="video-tools">
             <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
               {playing ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -157,13 +167,6 @@ function VideoPreview({
                 </svg>
               )}
             </button>
-            {expanded ? null : (
-              <button type="button" onClick={() => setExpanded(true)} aria-label="Fullscreen">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-                </svg>
-              </button>
-            )}
             <button type="button" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 9.5v5h3.2L11 18V6L7.2 9.5H4z" fill="currentColor" stroke="none" />
@@ -177,9 +180,9 @@ function VideoPreview({
                 )}
               </svg>
             </button>
-          </>
-        ) : null}
-        </div>
+          </div>
+        </>
+      ) : null}
       </div>
     </>
   );
