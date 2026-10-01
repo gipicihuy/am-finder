@@ -829,11 +829,13 @@ a:focus-visible {
 }
 
 .section-count {
-  min-width: 22px;
+  min-width: 30px;
   text-align: center;
-  font-size: 12px;
+  font-size: 15px;
+  line-height: 1.2;
   letter-spacing: 0;
-  padding: 2px 7px;
+  padding: 4px 10px;
+  border-radius: 8px;
 }
 
 .preset-detail {
