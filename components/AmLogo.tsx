@@ -10,16 +10,16 @@ export function AmLogo({ size = 26 }: { size?: number }) {
       aria-hidden="true"
       focusable="false"
     >
-      <g stroke="var(--foreground)" strokeWidth={2}>
-        <path d="M4 14V8a4 4 0 0 1 4-4h6" />
-        <path d="M34 4h6a4 4 0 0 1 4 4v6" />
-        <path d="M44 34v6a4 4 0 0 1-4 4h-6" />
-        <path d="M14 44H8a4 4 0 0 1-4-4v-6" />
+      <g stroke="var(--foreground)" strokeWidth={2.4}>
+        <path d="M3 12V7a4 4 0 0 1 4-4h5" />
+        <path d="M36 3h5a4 4 0 0 1 4 4v5" />
+        <path d="M45 36v5a4 4 0 0 1-4 4h-5" />
+        <path d="M12 45H7a4 4 0 0 1-4-4v-5" />
       </g>
       <g
         stroke="currentColor"
-        strokeWidth={3.4}
-        transform="translate(24 24) scale(0.56) translate(-24 -25.7)"
+        strokeWidth={2.9}
+        transform="translate(24 24) scale(0.8) translate(-24 -25.7)"
       >
         <path d="M43.5,28.3294a19.5,19.5,0,0,0-39,0" />
         <path d="M18.4694,32.593a6.9229,6.9229,0,0,0,9.79-9.7905" />
