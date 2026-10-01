@@ -19,7 +19,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <span className="hud-corner hud-br" aria-hidden="true" />
           <div className="brand-row">
             <span className="brand-mark">
-              <AmLogo size={26} />
+              <AmLogo size={34} />
             </span>
             <span className="brand-name">{ui.header.brand}</span>
           </div>
