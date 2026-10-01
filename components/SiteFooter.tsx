@@ -21,7 +21,7 @@ export function SiteFooter() {
           <div className="footer-brand">
             <div className="footer-logo">
               <span className="footer-logo-mark">
-                <AmLogo size={30} />
+                <AmLogo size={24} />
               </span>
               <span className="footer-name">{ui.footer.brand}</span>
             </div>
