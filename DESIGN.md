@@ -15,9 +15,9 @@
 | Ink | `#f2f2f3` |
 | Muted | `#9b9ba3` |
 | Border | `#2c2c33` |
-| Accent | `#00ffa0` |
+| Accent | `#05FAA8` |
 | Accent-ink | `#04140b` |
-| Accent-soft | `rgba(0, 255, 160, 0.12)` |
+| Accent-soft | `rgba(5, 250, 168, 0.12)` |
 
 Cap: 1 aksen + netral. Aksen hanya di satu momen kunci per layar: tombol aksi utama, fokus keyboard, ornamen section, status berjalan, titik merek di header, tautan footer saat hover.
 
