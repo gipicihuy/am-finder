@@ -596,7 +596,7 @@ a:focus-visible {
 
 .video-preview {
   position: relative;
-  width: clamp(96px, 26vw, 124px);
+  width: clamp(160px, 36vw, 210px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -981,4 +981,16 @@ a:focus-visible {
   margin: 0;
   font-size: 11.5px;
   color: var(--muted);
+}
+
+/* mobile: preview di tengah atas, info di bawahnya */
+@media (max-width: 560px) {
+  .content-head {
+    justify-content: center;
+  }
+
+  .video-preview:not(.is-open) {
+    width: min(58vw, 220px);
+    margin: 0 auto;
+  }
 }
