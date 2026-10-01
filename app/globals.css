@@ -146,6 +146,7 @@ img {
   left: 0;
   border-top: 2px solid var(--accent);
   border-left: 2px solid var(--accent);
+  border-top-left-radius: 22px;
 }
 
 .hud-br {
@@ -153,6 +154,7 @@ img {
   right: 0;
   border-bottom: 2px solid var(--accent);
   border-right: 2px solid var(--accent);
+  border-bottom-right-radius: 22px;
 }
 
 .brand-row {
