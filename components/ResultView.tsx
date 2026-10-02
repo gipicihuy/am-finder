@@ -267,9 +267,18 @@ export function ResultView({ result }: { result: FindResult }) {
                 <article className="preset-row" key={`${preset.type}-${preset.url}`}>
                   {preset.thumb ? (
                     <img className="preset-thumb" src={preset.thumb} alt="" loading="lazy" />
+                  ) : preset.type === "xml" ? (
+                    <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 2.75h8.25L18 6.5v14.75H6z" />
+                        <path d="M14.25 2.75V6.5H18" />
+                        <path d="M8.75 12.25h6.5M8.75 15h6.5M8.75 17.75h4" />
+                      </svg>
+                      <b>XML</b>
+                    </span>
                   ) : (
                     <span className="preset-thumb preset-thumb-ph" aria-hidden="true">
-                      {preset.type === "5mb" ? "5MB" : "XML"}
+                      5MB
                     </span>
                   )}
 
