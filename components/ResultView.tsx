@@ -12,6 +12,16 @@ function formatCount(value?: number | null): string | null {
   return String(value);
 }
 
+function ratioBox(ratio?: string) {
+  const m = ratio?.match(/^(\d{1,3}):(\d{1,3})$/);
+  const max = 46;
+  if (!m) return { w: max, h: max };
+  const rw = Number(m[1]);
+  const rh = Number(m[2]);
+  if (rw >= rh) return { w: max, h: Math.max(16, Math.round((max * rh) / rw)) };
+  return { w: Math.max(16, Math.round((max * rw) / rh)), h: max };
+}
+
 function presetLabel(preset: PresetLink): string {
   if (preset.title) return preset.title;
   return preset.type === "5mb" ? "5MB preset" : "XML file";
@@ -188,6 +198,34 @@ function VideoPreview({
   );
 }
 
+function RatioFrame({ ratio }: { ratio?: string }) {
+  const { w, h } = ratioBox(ratio);
+  const L = Math.max(6, Math.round(Math.min(w, h) * 0.3));
+  const fs = Math.max(9, Math.min(13, Math.round(Math.min(w * 0.34, h * 0.42))));
+  return (
+    <svg className="ratio-frame" width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
+      <g stroke="currentColor" strokeWidth={1.6} strokeLinecap="square">
+        <path d={`M0 ${L}L0 0L${L} 0`} />
+        <path d={`M${w - L} 0L${w} 0L${w} ${L}`} />
+        <path d={`M${w} ${h - L}L${w} ${h}L${w - L} ${h}`} />
+        <path d={`M${L} ${h}L0 ${h}L0 ${h - L}`} />
+      </g>
+      <text
+        x={w / 2}
+        y={h / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={fs}
+        fontWeight={800}
+        letterSpacing="-0.03em"
+        fill="var(--foreground)"
+      >
+        {ratio || "XML"}
+      </text>
+    </svg>
+  );
+}
+
 export function ResultView({ result }: { result: FindResult }) {
   const [allowMotion, setAllowMotion] = useState(true);
 
@@ -269,12 +307,7 @@ export function ResultView({ result }: { result: FindResult }) {
                     <img className="preset-thumb" src={preset.thumb} alt="" loading="lazy" />
                   ) : preset.type === "xml" ? (
                     <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
-                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M6 2.75h8.25L18 6.5v14.75H6z" />
-                        <path d="M14.25 2.75V6.5H18" />
-                        <path d="M8.75 12.25h6.5M8.75 15h6.5M8.75 17.75h4" />
-                      </svg>
-                      <b>XML</b>
+                      <RatioFrame ratio={preset.ratio} />
                     </span>
                   ) : (
                     <span className="preset-thumb preset-thumb-ph" aria-hidden="true">

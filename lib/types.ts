@@ -5,6 +5,7 @@ export type PresetLink = {
   url: string;
   title?: string;
   size?: string;
+  ratio?: string;
   thumb?: string;
   source?: string;
   detail?: string;

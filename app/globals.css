@@ -780,20 +780,8 @@ a:focus-visible {
   object-fit: cover;
 }
 
-.preset-thumb-file {
-  flex-direction: column;
-  gap: 5px;
-}
-
-.preset-thumb-file svg {
+.preset-thumb-ph.preset-thumb-file {
   color: var(--accent);
-}
-
-.preset-thumb-file b {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--muted);
 }
 
 .preset-thumb-ph {
