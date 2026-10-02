@@ -23,6 +23,17 @@ Tempel link video TikTok, aplikasi menelusuri deskripsi akun, halaman link-in-bi
 3. Tekan `Cari preset`
 4. Tunggu log berjalan, hasilnya muncul sendiri
 
+## Log kunjungan ke Telegram (opsional)
+
+Setiap kunjungan halaman dan setiap link yang ditempel dikirim ke bot Telegram, lengkap dengan IP dan user agent. Isi dua variabel environment ini (bisa lewat secret variables di host kamu):
+
+| Variabel | Isi |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | token dari @BotFather |
+| `TELEGRAM_CHAT_ID` | id chat penerima log |
+
+Kalau salah satu belum diisi, log tetap dicetak ke console server dengan format `[track] visit ip=... path=...` dan `[track] search ip=... link=...`, lalu pengiriman Telegram dilewati. Request pengunjung tidak pernah menunggu Telegram lebih dari 4 detik dan error dikirim diam-diam.
+
 ## Stack
 
 - Next.js 15 (App Router) dan React 19

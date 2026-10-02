@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
+import { sendLog } from "../../../lib/track";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,8 @@ export async function GET(request: Request) {
   if (!target) {
     return Response.json({ ok: false, error: "link TikTok tidak valid" }, { status: 400 });
   }
+
+  void sendLog("search", request.headers, { link: target }).catch(() => {});
 
   try {
     await acquire();
