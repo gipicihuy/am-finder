@@ -14,7 +14,7 @@ function formatCount(value?: number | null): string | null {
 
 function ratioBox(ratio?: string) {
   const m = ratio?.match(/^(\d{1,3}):(\d{1,3})$/);
-  const max = 46;
+  const max = 60;
   if (!m) return { w: max, h: max };
   const rw = Number(m[1]);
   const rh = Number(m[2]);
@@ -200,8 +200,8 @@ function VideoPreview({
 
 function RatioFrame({ ratio }: { ratio?: string }) {
   const { w, h } = ratioBox(ratio);
-  const L = Math.max(6, Math.round(Math.min(w, h) * 0.3));
-  const fs = Math.max(9, Math.min(13, Math.round(Math.min(w * 0.34, h * 0.42))));
+  const L = Math.max(8, Math.round(Math.min(w, h) * 0.3));
+  const fs = Math.max(11, Math.min(16, Math.round(Math.min(w * 0.36, h * 0.44))));
   return (
     <svg className="ratio-frame" width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
       <g stroke="currentColor" strokeWidth={1.6} strokeLinecap="square">
