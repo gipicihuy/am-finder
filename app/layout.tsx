@@ -4,11 +4,8 @@ import { AmLogo } from "@/components/AmLogo";
 import { ui } from "@/lib/ui";
 import "./globals.css";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
+// Domain utama. amfinder.cc.cd dan www.amfinder.web.id juga mengarah ke situs ini.
+const siteUrl = "https://amfinder.web.id";
 
 const siteTitle = "AM Preset Finder · Alight Motion preset links from TikTok";
 const siteDescription =
