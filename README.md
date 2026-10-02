@@ -25,14 +25,20 @@ Tempel link video TikTok, aplikasi menelusuri deskripsi akun, halaman link-in-bi
 
 ## Log kunjungan ke Telegram (opsional)
 
-Setiap kunjungan halaman dan setiap link yang ditempel dikirim ke bot Telegram, lengkap dengan IP dan user agent. Isi dua variabel environment ini (bisa lewat secret variables di host kamu):
+Setiap kunjungan halaman (`POST /api/track`, dipanggil dari browser) dan setiap link yang ditempel dikirim ke bot Telegram berisi:
+
+- IP, **kota**, negara, dan ISP (geo lookup `ip-api.com`, di-cache per IP)
+- device, browser, dan **baterai hp** dari Battery Status API (`navigator.getBattery`, kalau browser tidak mendukung tampil `-`)
+- waktu dalam WIB
+
+Isi dua variabel environment ini (bisa lewat secret variables di host kamu):
 
 | Variabel | Isi |
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | token dari @BotFather |
 | `TELEGRAM_CHAT_ID` | id chat penerima log |
 
-Kalau salah satu belum diisi, log tetap dicetak ke console server dengan format `[track] visit ip=... path=...` dan `[track] search ip=... link=...`, lalu pengiriman Telegram dilewati. Request pengunjung tidak pernah menunggu Telegram lebih dari 4 detik dan error dikirim diam-diam.
+Kalau salah satu belum diisi, log tetap dicetak ke console server dengan format `[track] visit ip=... city=... battery=...` dan `[track] search ip=... city=... link=... battery=...`, lalu pengiriman Telegram dilewati. Request pengunjung tidak pernah menunggu geo/Telegram lebih dari beberapa detik dan error dikirim diam-diam.
 
 ## Stack
 

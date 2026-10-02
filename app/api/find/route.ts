@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { sendLog } from "../../../lib/track";
+import { normalizeBattery, sendLog } from "../../../lib/track";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,12 +51,19 @@ function encode(event: string, data: unknown) {
 }
 
 export async function GET(request: Request) {
-  const target = normalizeTarget(new URL(request.url).searchParams.get("url"));
+  const params = new URL(request.url).searchParams;
+  const target = normalizeTarget(params.get("url"));
   if (!target) {
     return Response.json({ ok: false, error: "link TikTok tidak valid" }, { status: 400 });
   }
 
-  void sendLog("search", request.headers, { link: target }).catch(() => {});
+  const battery = params.has("bat")
+    ? normalizeBattery({
+        level: Number(params.get("bat")),
+        charging: params.get("chg") === "1",
+      })
+    : undefined;
+  void sendLog("search", request.headers, { link: target, battery }).catch(() => {});
 
   try {
     await acquire();

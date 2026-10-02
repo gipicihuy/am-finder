@@ -7,6 +7,21 @@ import { ResultView } from "@/components/ResultView";
 
 type Phase = "idle" | "running" | "done" | "error";
 
+type Battery = { level: number; charging: boolean };
+
+async function readBattery(): Promise<Battery | null> {
+  const nav = navigator as Navigator & {
+    getBattery?: () => Promise<{ level: number; charging: boolean }>;
+  };
+  if (typeof nav.getBattery !== "function") return null;
+  try {
+    const status = await nav.getBattery();
+    return { level: Math.round(status.level * 100), charging: status.charging };
+  } catch {
+    return null;
+  }
+}
+
 const HISTORY_KEY = "amfinder:history";
 
 export function Finder() {
@@ -18,6 +33,7 @@ export function Finder() {
   const sourceRef = useRef<EventSource | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
+  const batteryRef = useRef<Battery | null>(null);
 
   useEffect(() => {
     try {
@@ -26,7 +42,24 @@ export function Finder() {
     } catch {
       setHistory([]);
     }
-    return () => sourceRef.current?.close();
+    let cancelled = false;
+    void readBattery().then(battery => {
+      if (cancelled) return;
+      batteryRef.current = battery;
+      try {
+        void fetch("/api/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: location.pathname, battery }),
+        });
+      } catch {
+        /* log visit bukan kebutuhan utama */
+      }
+    });
+    return () => {
+      cancelled = true;
+      sourceRef.current?.close();
+    };
   }, []);
 
   function remember(link: string) {
@@ -60,7 +93,13 @@ export function Finder() {
     setResult(null);
     setError("");
 
-    const source = new EventSource(`/api/find?url=${encodeURIComponent(target)}`);
+    const battery = batteryRef.current;
+    const batteryQuery = battery
+      ? `&bat=${battery.level}&chg=${battery.charging ? 1 : 0}`
+      : "";
+    const source = new EventSource(
+      `/api/find?url=${encodeURIComponent(target)}${batteryQuery}`
+    );
     sourceRef.current = source;
 
     source.addEventListener("result", (event) => {
