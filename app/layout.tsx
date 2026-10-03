@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { AmLogo } from "@/components/AmLogo";
+import { SupportModal } from "@/components/SupportModal";
 import { ui } from "@/lib/ui";
 import "./globals.css";
 
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </header>
         <main className="shell main">{children}</main>
         <SiteFooter />
+        <SupportModal />
       </body>
     </html>
   );
