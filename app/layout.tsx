@@ -28,7 +28,6 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: `${siteUrl}/`,
     siteName: "AM Preset Finder",
     title: siteTitle,
     description: siteDescription,
@@ -55,8 +54,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="id">
       <head>
-        {/* Ditulis manual: Next menghapus trailing slash pada canonical root. */}
+        {/* Ditulis manual: Next menghapus trailing slash pada canonical/og:url root. */}
         <link rel="canonical" href={`${siteUrl}/`} />
+        <meta property="og:url" content={`${siteUrl}/`} />
       </head>
       <body className="min-h-screen antialiased">
         <script
