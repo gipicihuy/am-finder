@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-const HOLD_MS = 3800; // lama toast terlihat penuh
+const HOLD_MS = 5750; // lama toast terlihat penuh (+ EXIT_MS = total 6 detik)
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
 
 /**
- * Notifikasi kecil (toast) di bawah-tengah layar saat preset ditemukan.
+ * Notifikasi kecil (toast) di atas-tengah layar saat preset ditemukan.
  * Dirender hanya saat hasil ada, jadi tiap pencarian baru memunculkannya lagi.
  * Tidak menangkap klik dan tidak mengubah layout.
  */
