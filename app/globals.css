@@ -1121,6 +1121,14 @@ a:focus-visible {
   text-decoration: none;
 }
 
+/* a:hover global mewarnai teks jadi hijau; di tombol hijau itu bikin teks hilang */
+.support-primary:hover,
+.support-primary:focus,
+.support-primary:active,
+.support-primary:visited {
+  color: var(--accent-ink);
+}
+
 .support-later {
   min-height: 42px;
   padding: 10px 16px;

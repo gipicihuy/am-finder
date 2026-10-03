@@ -63,9 +63,6 @@ export function SupportModal() {
     <div
       className="support-overlay"
       data-nosnippet
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
-      }}
     >
       <div
         ref={dialogRef}
