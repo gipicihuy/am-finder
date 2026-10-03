@@ -26,17 +26,11 @@ export function FoundToast({ count }: { count: number }) {
 
   return (
     <div className={phase === "out" ? "found-toast is-leaving" : "found-toast"} role="status" aria-live="polite">
-      <svg
-        className="found-toast-icon"
-        width="14"
-        height="14"
-        viewBox="0 0 16 16"
-        fill="none"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <span className="found-toast-icon" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" focusable="false">
+          <path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
       <span>{count} preset ditemukan</span>
     </div>
   );
