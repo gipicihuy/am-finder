@@ -236,7 +236,7 @@ export function Finder() {
       </div>
 
       {phase === "idle" ? (
-        <section className="how">
+        <section className="how" data-nosnippet>
           <h2 className="how-title">{ui.states.howTitle}</h2>
           <ol className="how-list">
             {ui.states.howSteps.map((step, index) => (
