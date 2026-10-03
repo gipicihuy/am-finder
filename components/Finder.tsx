@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
+import { FoundToast } from "@/components/FoundToast";
 
 type Phase = "idle" | "running" | "done" | "error";
 
@@ -268,6 +269,10 @@ export function Finder() {
       ) : null}
 
       {phase === "done" && result ? <ResultView result={result} /> : null}
+
+      {phase === "done" && result && (result.presetLinks?.length ?? 0) > 0 ? (
+        <FoundToast count={result.presetLinks?.length ?? 0} />
+      ) : null}
     </>
   );
 }

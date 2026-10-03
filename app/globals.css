@@ -1162,3 +1162,47 @@ a:focus-visible {
     animation: none;
   }
 }
+
+/* notifikasi preset ditemukan */
+.found-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  z-index: 90;
+  max-width: calc(100vw - 32px);
+  padding: 10px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: found-toast 3600ms ease both;
+}
+
+@keyframes found-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  7%,
+  90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .found-toast {
+    animation: none;
+  }
+}
