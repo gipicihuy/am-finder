@@ -28,6 +28,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
+    url: `${siteUrl}/`,
     siteName: "AM Preset Finder",
     title: siteTitle,
     description: siteDescription,
