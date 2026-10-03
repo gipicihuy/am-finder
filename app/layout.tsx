@@ -41,6 +41,15 @@ export const metadata: Metadata = {
   },
 };
 
+// Structured data: membantu Google memahami nama situs (WebSite).
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "AM Preset Finder",
+  url: `${siteUrl}/`,
+  inLanguage: "en",
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
@@ -49,6 +58,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="canonical" href={`${siteUrl}/`} />
       </head>
       <body className="min-h-screen antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
+        />
         <header className="site-header" id="top">
           <span className="hud-corner hud-tl" aria-hidden="true" />
           <span className="hud-corner hud-br" aria-hidden="true" />
