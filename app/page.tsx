@@ -10,7 +10,7 @@ export default function HomePage() {
         </span>
         Find preset links
       </h1>
-      <p className="page-sub">
+      <p className="page-sub" data-nosnippet>
         Paste a TikTok video link. The description, account bio, bio link, comments and replies are
         opened one by one, then scanned for Alight Motion preset links.
       </p>
