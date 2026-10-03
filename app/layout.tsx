@@ -7,7 +7,7 @@ import "./globals.css";
 // Domain utama. amfinder.cc.cd dan www.amfinder.web.id juga mengarah ke situs ini.
 const siteUrl = "https://amfinder.web.id";
 
-const siteTitle = "AM Preset Finder · Alight Motion preset links from TikTok";
+const siteTitle = "AM Preset Finder";
 const siteDescription =
   "Paste a TikTok video link and get the Alight Motion preset links from its description, bio, comments and link in bio.";
 
