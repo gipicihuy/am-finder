@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: siteTitle,
   description: siteDescription,
+  authors: [{ name: "Givy", url: "https://www.tiktok.com/@givydev" }],
+  creator: "Givy",
   // Favicon eksplisit untuk Google: harus kelipatan 48px (48x48 dan 192x192), bukan 16x16.
   icons: {
     icon: [
@@ -43,12 +45,22 @@ export const metadata: Metadata = {
 };
 
 // Structured data: membantu Google memahami nama situs (WebSite).
+const creatorJsonLd = {
+  "@type": "Person",
+  name: "Givy",
+  alternateName: "givydev",
+  jobTitle: "Vibe coder",
+  nationality: { "@type": "Country", name: "Indonesia" },
+  sameAs: ["https://www.tiktok.com/@givydev"],
+};
+
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "AM Preset Finder",
   url: `${siteUrl}/`,
   inLanguage: "en",
+  creator: creatorJsonLd,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
