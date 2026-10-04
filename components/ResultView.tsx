@@ -275,6 +275,17 @@ export function ResultView({ result }: { result: FindResult }) {
   const comments = formatCount(stats?.comments);
   const description = result.video?.description?.trim();
 
+  const missText =
+    result.checked?.context === "none" ? ui.states.notFound : ui.states.noLink;
+
+  if (presets.length === 0) {
+    return (
+      <div className="state state-miss" role="status">
+        <strong>❌ {missText}</strong>
+      </div>
+    );
+  }
+
   return (
     <>
       <section className="video-meta" aria-label="Content info">
@@ -319,8 +330,7 @@ export function ResultView({ result }: { result: FindResult }) {
         </div>
       </section>
 
-      {presets.length > 0 ? (
-        <section className="preset-section" aria-label="Preset links">
+      <section className="preset-section" aria-label="Preset links">
           <div className="section-head">
             <h2 className="section-title">
               <span className="section-ornament" aria-hidden="true">
@@ -358,12 +368,7 @@ export function ResultView({ result }: { result: FindResult }) {
               );
             })}
           </div>
-        </section>
-      ) : (
-        <div className="state state-miss" role="status">
-          <strong>❌ {ui.states.notFound}</strong>
-        </div>
-      )}
+      </section>
     </>
   );
 }
