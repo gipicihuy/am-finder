@@ -1266,13 +1266,15 @@ a:focus-visible {
   top: calc(env(safe-area-inset-top, 0px) + 12px);
   left: 50%;
   z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   max-width: calc(100vw - 32px);
-  padding: 10px 16px 10px 14px;
-  /* satu keluarga dengan toast saluran WhatsApp: latar gelap solid + garis aksen di kiri, tanpa ikon */
-  border: 1px solid rgba(5, 250, 168, 0.28);
-  border-left: 3px solid var(--accent);
+  padding: 8px 14px 8px 8px;
+  /* pasangan hijau dari kotak .state-miss: latar hijau gelap solid + border aksen + teks terang */
+  border: 1px solid rgba(5, 250, 168, 0.6);
   border-radius: var(--radius);
-  background: #0c1f19;
+  background: #1b3832;
   color: #d9fff1;
   font-size: 13.5px;
   font-weight: 700;
@@ -1288,8 +1290,16 @@ a:focus-visible {
   animation: found-toast-out 250ms ease-in forwards;
 }
 
-.found-toast-count {
-  color: var(--accent);
+.found-toast-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 @keyframes found-toast-in {
