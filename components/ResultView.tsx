@@ -279,9 +279,28 @@ export function ResultView({ result }: { result: FindResult }) {
     result.checked?.context === "none" ? ui.states.notFound : ui.states.noLink;
 
   if (presets.length === 0) {
+    const shares = result.shareLinks ?? [];
     return (
       <div className="state state-miss" role="status">
         <strong>❌ {missText}</strong>
+        {shares.length ? (
+          <div className="miss-sources">
+            <p className="miss-sources-title">{ui.states.shareSources}</p>
+            <div className="miss-sources-list">
+              {shares.map((share) => (
+                <a
+                  key={share.url}
+                  className="btn-share"
+                  href={share.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {share.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }

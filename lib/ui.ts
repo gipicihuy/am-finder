@@ -21,6 +21,7 @@ type UiTexts = {
     loading: string;
     notFound: string;
     noLink: string;
+    shareSources: string;
     howTitle: string;
     howSteps: string[];
   };
