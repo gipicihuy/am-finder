@@ -1027,6 +1027,30 @@ a:focus-visible {
   color: var(--muted);
 }
 
+/* ikon TikTok di samping copyright: hanya ikon, area klik 24px tanpa menambah tinggi footer */
+.footer-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-block: -4px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  transition: color 120ms ease;
+}
+
+.footer-social:hover,
+.footer-social:focus-visible {
+  color: var(--accent);
+}
+
 /* mobile: preview di tengah atas, info di bawahnya */
 @media (max-width: 560px) {
   .content-head {
