@@ -77,9 +77,9 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
     "notFound": "Video TikTok ini tidak mengandung preset!",
     "noLink": "Link preset tidak ditemukan!",
     "shareSources": "Sumber lain",
-    "shareChat": "Chat WhatsApp",
-    "shareChannel": "Saluran WhatsApp",
-    "shareGroup": "Grup WhatsApp",
+    "shareChat": "Chat WA",
+    "shareChannel": "Saluran WA",
+    "shareGroup": "Grup WA",
     "shareTelegram": "Telegram",
     "howTitle": "Step by step",
     "howSteps": [
