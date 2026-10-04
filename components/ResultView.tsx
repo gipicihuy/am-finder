@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
 import { ui } from "@/lib/ui";
@@ -32,16 +32,20 @@ function presetTypeLabel(preset: PresetLink): string {
 }
 
 function PresetThumb({ preset }: { preset: PresetLink }) {
-  const [failed, setFailed] = useState(false);
+  const sources = useMemo(
+    () => [...new Set([preset.thumb, ...(preset.thumbs ?? [])].filter(Boolean) as string[])],
+    [preset],
+  );
+  const [index, setIndex] = useState(0);
 
-  if (preset.thumb && !failed) {
+  if (index < sources.length) {
     return (
       <img
         className="preset-thumb"
-        src={preset.thumb}
+        src={sources[index]}
         alt=""
         loading="lazy"
-        onError={() => setFailed(true)}
+        onError={() => setIndex((i) => i + 1)}
       />
     );
   }

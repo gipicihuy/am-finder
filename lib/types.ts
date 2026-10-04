@@ -7,6 +7,7 @@ export type PresetLink = {
   size?: string;
   ratio?: string;
   thumb?: string;
+  thumbs?: string[];
   source?: string;
   detail?: string;
   byAuthor?: boolean;
