@@ -76,6 +76,7 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
     "loading": "Searching",
     "notFound": "Video TikTok ini tidak mengandung preset!",
     "noLink": "Link preset tidak ditemukan!",
+    "shareSources": "Sumber lain",
     "howTitle": "Step by step",
     "howSteps": [
       "Paste a TikTok video link",
