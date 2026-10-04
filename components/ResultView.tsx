@@ -31,6 +31,34 @@ function presetTypeLabel(preset: PresetLink): string {
   return preset.type === "5mb" ? "5MB" : "XML";
 }
 
+function PresetThumb({ preset }: { preset: PresetLink }) {
+  const [failed, setFailed] = useState(false);
+
+  if (preset.thumb && !failed) {
+    return (
+      <img
+        className="preset-thumb"
+        src={preset.thumb}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  if (preset.type === "xml") {
+    return (
+      <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
+        <RatioFrame ratio={preset.ratio} />
+      </span>
+    );
+  }
+  return (
+    <span className="preset-thumb preset-thumb-ph" aria-hidden="true">
+      5MB
+    </span>
+  );
+}
+
 function CopyButton({ url }: { url: string }) {
   const [done, setDone] = useState(false);
 
@@ -303,17 +331,7 @@ export function ResultView({ result }: { result: FindResult }) {
             {presets.map((preset) => {
               return (
                 <article className="preset-row" key={`${preset.type}-${preset.url}`}>
-                  {preset.thumb ? (
-                    <img className="preset-thumb" src={preset.thumb} alt="" loading="lazy" />
-                  ) : preset.type === "xml" ? (
-                    <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
-                      <RatioFrame ratio={preset.ratio} />
-                    </span>
-                  ) : (
-                    <span className="preset-thumb preset-thumb-ph" aria-hidden="true">
-                      5MB
-                    </span>
-                  )}
+                  <PresetThumb preset={preset} />
 
                   <div className="preset-body">
                     <h3 className="preset-title">{presetLabel(preset)}</h3>
