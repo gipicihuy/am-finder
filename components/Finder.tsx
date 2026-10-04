@@ -5,6 +5,7 @@ import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
 import { FoundToast } from "@/components/FoundToast";
+import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 
 type Phase = "idle" | "running" | "done" | "error";
 
@@ -90,6 +91,7 @@ export function Finder() {
     finishedRef.current = false;
     remember(target);
     setValue(target);
+    window.dispatchEvent(new Event(SEARCH_STARTED_EVENT));
     setPhase("running");
     setResult(null);
     setError("");
