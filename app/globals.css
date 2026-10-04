@@ -507,28 +507,60 @@ a:focus-visible {
 
 .miss-sources-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
 }
 
-.btn-share {
-  display: inline-flex;
+.share-row {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 32px;
-  padding: 6px 12px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--foreground);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   transition: border-color 120ms ease, filter 120ms ease;
 }
 
-.btn-share:hover {
+.share-row:hover {
   border-color: var(--accent);
-  filter: brightness(1.08);
+  color: var(--foreground);
+  filter: brightness(1.06);
+}
+
+.share-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.share-icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.share-icon img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-3);
+}
+
+.share-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .state-error {
