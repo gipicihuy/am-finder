@@ -15,8 +15,8 @@ function shareLabel(share: ShareLink): string {
       ? `${ui.states.shareTelegram} (${share.username})`
       : ui.states.shareTelegram;
   }
-  if (share.kind === "group") return share.title || ui.states.shareGroup;
-  return share.title || ui.states.shareChannel;
+  const base = share.kind === "group" ? ui.states.shareGroup : ui.states.shareChannel;
+  return share.title ? `${base} (${share.title})` : base;
 }
 
 function ShareIcon({ share }: { share: ShareLink }) {
