@@ -1436,10 +1436,12 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* layar sempit: toast "preset ditemukan" ada di tengah atas, jadi turunkan sedikit agar tidak menumpuk */
-@media (max-width: 640px) {
-  body:has(.found-toast) .wa-toast {
-    top: calc(env(safe-area-inset-top, 0px) + 58px);
+/* layar sempit (toast saling bertabrakan): toast "preset ditemukan" ditaruh tepat di bawah toast saluran WhatsApp.
+   Atribut dan --wa-toast-h dipasang oleh WaChannelToast saat toast itu tampil. */
+@media (max-width: 860px) {
+  html[data-wa-toast] .found-toast {
+    top: calc(env(safe-area-inset-top, 0px) + 16px + var(--wa-toast-h, 76px) + 8px);
+    transition: top 200ms ease;
   }
 }
 

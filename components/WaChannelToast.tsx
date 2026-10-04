@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WhatsAppIcon } from "@/components/ShareIcons";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 
@@ -14,6 +14,7 @@ const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
  */
 export function WaChannelToast() {
   const [phase, setPhase] = useState<"idle" | "in" | "out" | "gone">("idle");
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onSearchStarted() {
@@ -29,12 +30,32 @@ export function WaChannelToast() {
     return () => window.clearTimeout(remove);
   }, [phase]);
 
+  // Beritahu halaman bahwa toast ini tampil (atribut + tinggi kartu), supaya toast
+  // "preset ditemukan" di layar sempit ditaruh tepat di bawahnya, bukan menumpuk.
+  useEffect(() => {
+    if (phase === "idle" || phase === "gone") return;
+    const el = rootRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const update = () => root.style.setProperty("--wa-toast-h", `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    root.dataset.waToast = "1";
+    update();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    observer?.observe(el);
+    return () => {
+      observer?.disconnect();
+      delete root.dataset.waToast;
+      root.style.removeProperty("--wa-toast-h");
+    };
+  }, [phase]);
+
   const close = useCallback(() => setPhase((current) => (current === "in" ? "out" : current)), []);
 
   if (phase === "idle" || phase === "gone") return null;
 
   return (
     <div
+      ref={rootRef}
       className={phase === "out" ? "wa-toast is-leaving" : "wa-toast"}
       role="group"
       aria-label="Saluran WhatsApp AM Finder"
