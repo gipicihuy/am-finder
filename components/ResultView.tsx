@@ -300,7 +300,9 @@ export function ResultView({ result }: { result: FindResult }) {
   const description = result.video?.description?.trim();
 
   const missText =
-    result.checked?.context === "none" ? ui.states.notFound : ui.states.noLink;
+    result.shareLinks?.length || result.checked?.context !== "none"
+      ? ui.states.noLink
+      : ui.states.notFound;
 
   if (presets.length === 0) {
     const shares = result.shareLinks ?? [];
