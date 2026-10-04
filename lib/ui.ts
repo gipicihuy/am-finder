@@ -22,6 +22,10 @@ type UiTexts = {
     notFound: string;
     noLink: string;
     shareSources: string;
+    shareChat: string;
+    shareChannel: string;
+    shareGroup: string;
+    shareTelegram: string;
     howTitle: string;
     howSteps: string[];
   };

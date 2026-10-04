@@ -39,7 +39,13 @@ export type FindResult = {
     context?: "core" | "support" | "none";
     invalidLinks?: number;
   };
-  shareLinks?: { url: string; label: string; kind: "whatsapp" | "telegram" }[];
+  shareLinks?: {
+    url: string;
+    kind: "chat" | "channel" | "group" | "telegram";
+    title?: string;
+    avatar?: string;
+    username?: string;
+  }[];
   presetLinks?: PresetLink[];
   otherLinks?: { url: string; source?: string; detail?: string }[];
   video?: {

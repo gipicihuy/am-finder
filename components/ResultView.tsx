@@ -3,7 +3,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
+import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { ui } from "@/lib/ui";
+
+type ShareLink = NonNullable<FindResult["shareLinks"]>[number];
+
+function shareLabel(share: ShareLink): string {
+  if (share.kind === "chat") return ui.states.shareChat;
+  if (share.kind === "telegram") {
+    return share.username
+      ? `${ui.states.shareTelegram} (${share.username})`
+      : ui.states.shareTelegram;
+  }
+  if (share.kind === "group") return share.title || ui.states.shareGroup;
+  return share.title || ui.states.shareChannel;
+}
+
+function ShareIcon({ share }: { share: ShareLink }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (share.kind === "telegram") return <TelegramIcon />;
+  if (share.avatar && !imgFailed) {
+    return <img src={share.avatar} alt="" onError={() => setImgFailed(true)} />;
+  }
+  return <WhatsAppIcon />;
+}
 
 function formatCount(value?: number | null): string | null {
   if (value === null || value === undefined) return null;
@@ -290,12 +314,15 @@ export function ResultView({ result }: { result: FindResult }) {
               {shares.map((share) => (
                 <a
                   key={share.url}
-                  className="btn-share"
+                  className="share-row"
                   href={share.url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {share.label}
+                  <span className="share-icon">
+                    <ShareIcon share={share} />
+                  </span>
+                  <span className="share-label">{shareLabel(share)}</span>
                 </a>
               ))}
             </div>
