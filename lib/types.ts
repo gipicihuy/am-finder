@@ -8,6 +8,7 @@ export type PresetLink = {
   ratio?: string;
   thumb?: string;
   thumbs?: string[];
+  verified?: boolean;
   source?: string;
   detail?: string;
   byAuthor?: boolean;
@@ -27,6 +28,7 @@ export type FindResult = {
   author?: string | null;
   videoUrl?: string;
   message?: string;
+  context?: { level: "core" | "support" | "none"; matched: string[] };
   presetLinks?: PresetLink[];
   otherLinks?: { url: string; source?: string; detail?: string }[];
   video?: {
