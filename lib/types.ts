@@ -29,6 +29,16 @@ export type FindResult = {
   videoUrl?: string;
   message?: string;
   context?: { level: "core" | "support" | "none"; matched: string[] };
+  checked?: {
+    description?: boolean;
+    bio?: boolean;
+    bioLinkPage?: boolean;
+    linkInBio?: number;
+    comments?: number;
+    replies?: number;
+    context?: "core" | "support" | "none";
+    invalidLinks?: number;
+  };
   presetLinks?: PresetLink[];
   otherLinks?: { url: string; source?: string; detail?: string }[];
   video?: {

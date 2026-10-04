@@ -20,6 +20,7 @@ type UiTexts = {
   states: {
     loading: string;
     notFound: string;
+    noLink: string;
     howTitle: string;
     howSteps: string[];
   };
