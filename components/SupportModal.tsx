@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SUPPORT_DISMISSED_EVENT } from "@/lib/promo-events";
 
 const SUPPORT_URL = "https://sociabuzz.com/givyo/tribe";
 
@@ -21,6 +22,12 @@ export function SupportModal() {
 
   const close = useCallback(() => setOpen(false), []);
 
+  // Ditutup tanpa klik "Beri Dukungan": kabari komponen lain (toast saluran WhatsApp).
+  const dismiss = useCallback(() => {
+    setOpen(false);
+    window.dispatchEvent(new Event(SUPPORT_DISMISSED_EVENT));
+  }, []);
+
   useEffect(() => {
     if (!open) return;
 
@@ -32,7 +39,7 @@ export function SupportModal() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        setOpen(false);
+        dismiss();
         return;
       }
       if (event.key !== "Tab") return;
@@ -55,7 +62,7 @@ export function SupportModal() {
       document.body.style.overflow = previousOverflow;
       lastFocused.current?.focus?.();
     };
-  }, [open]);
+  }, [open, dismiss]);
 
   if (!open) return null;
 
@@ -72,7 +79,7 @@ export function SupportModal() {
         aria-labelledby="support-title"
         aria-describedby="support-desc"
       >
-        <button type="button" className="support-close" onClick={close} aria-label="Tutup">
+        <button type="button" className="support-close" onClick={dismiss} aria-label="Tutup">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
             <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
@@ -97,7 +104,7 @@ export function SupportModal() {
           >
             ☕ Beri Dukungan
           </a>
-          <button type="button" className="support-later" onClick={close}>
+          <button type="button" className="support-later" onClick={dismiss}>
             Nanti aja
           </button>
         </div>
