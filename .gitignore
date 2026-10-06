@@ -6,3 +6,12 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 lib/amfinder.cache.json
+
+# Build APK & kunci signing - jangan pernah masuk repo
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+dist/
+*.jks
+*.keystore

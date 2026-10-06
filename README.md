@@ -163,3 +163,26 @@ Hasil `--all` juga memuat `authorDetail.avatar` (foto profil kreator), `video.co
 - Tidak semua video punya link preset. Keadaan kosong bukan kegagalan, memang tidak ada link di video itu.
 - Link preset berasal dari unggahan kreator lain, bukan dari aplikasi ini.
 - Hasil penelusuran disimpan sementara di `lib/amfinder.cache.json` (sudah masuk `.gitignore`).
+
+## APK Android
+
+Aplikasi Android (WebView pembungkus situs) ada di folder `android/` dan dibangun oleh GitHub Actions:
+
+1. Buka tab **Actions → Build APK → Run workflow** (atau push perubahan di `android/`).
+2. Setelah selesai, buka run-nya → bagian **Artifacts** → unduh `amfinder-apk`.
+3. Install APK itu di HP (Play Protect akan menawarkan "Tetap install" karena sideload).
+
+Butuh 4 secrets di **Settings → Secrets and variables → Actions**:
+
+| Secret | Isi |
+| --- | --- |
+| `KEYSTORE` | isi file `amfinder.keystore.jks` dalam base64 (`base64 -w0 amfinder.keystore.jks`) |
+| `KEY_ALIAS` | `amfinder` |
+| `KEYSTORE_PASSWORD` | password keystore |
+| `KEY_PASSWORD` | password kunci |
+
+Catatan:
+
+- Keystore disimpan **di luar repo** (sudah masuk `.gitignore`). Jangan sampai hilang — tanpa dia, rilis berikutnya tidak bisa ditandatangani dengan identitas yang sama.
+- Situs `https://amfinder.web.id` sengaja **tidak memuat ajakan unduh APK**. Distribusi APK dilakukan lewat link Tutwuri yang dibagikan di channel WhatsApp, komentar, atau status — bukan dari halaman situs.
+- Update situs biasa tidak butuh build ulang APK; WebView selalu memuat URL terbaru. Build ulang hanya saat icon/nama/versi berubah.

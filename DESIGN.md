@@ -67,3 +67,13 @@ Arahnya diputuskan ulang setelah footer versi sebelumnya (kolofon prosa + wordma
 - Angka klaim yang bukan data asli (views/likes hanya kalau datang dari scraper)
 - Nav atau link menuju halaman yang tidak ada
 - FAQ, testimoni, section "cara kerja 3 langkah"
+- Ajakan mengunduh atau memasang APK di dalam situs (lihat bagian APK Android)
+
+## APK Android
+
+- Kode aplikasi ada di `android/`: WebView tunggal yang membuka `https://amfinder.web.id`, tanpa library eksternal. Paket `com.givy.amfinder`, label `AM Finder`, minSdk 26 / targetSdk 35, izin hanya `INTERNET` + `ACCESS_NETWORK_STATE`.
+- Icon memakai aset dari `public/icon-192.png`: PNG per density (`mipmap-*`), foreground 432px untuk adaptive icon, latar `#0F0F10` diambil dari warna dominan logo.
+- Build jalan di GitHub Actions (`.github/workflows/apk.yml`), tombol `workflow_dispatch`. Signing penuh v1/v2/v3 lewat `ilharp/sign-android-release` memakai 4 GitHub Secrets: `KEYSTORE` (base64 isi `.jks`), `KEY_ALIAS`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`.
+- Keystore `.jks` tidak pernah masuk repo (sudah masuk `.gitignore`) — disimpan di penyimpanan lokal sebagai `amfinder.keystore.jks`. Kehilangan file ini berarti tidak bisa merilis versi berikutnya dengan tanda tangan yang sama.
+- Distribusi APK: unduh artifact dari Actions, unggah ke hosting file, lalu bagikan lewat link Tutwuri di channel WhatsApp / komentar / status. **Situs tidak boleh memuat CTA unduh APK** — situs tetap alat murni.
+- WebView membuka link selain `amfinder.web.id` di peramban eksternal, tombol Back mundur di dalam situs, layar "Gak ada koneksi" muncul kalau muat utama gagal.
