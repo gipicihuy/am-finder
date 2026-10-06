@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AM Finder</string>
+    <string name="offline_title">Gak ada koneksi</string>
+    <string name="offline_body">Cek internet kamu, lalu ketuk layar untuk muat ulang.</string>
+</resources>
