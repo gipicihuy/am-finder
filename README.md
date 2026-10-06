@@ -186,3 +186,9 @@ Catatan:
 - Keystore disimpan **di luar repo** (sudah masuk `.gitignore`). Jangan sampai hilang — tanpa dia, rilis berikutnya tidak bisa ditandatangani dengan identitas yang sama.
 - Situs `https://amfinder.web.id` sengaja **tidak memuat ajakan unduh APK**. Distribusi APK dilakukan lewat link Tutwuri yang dibagikan di channel WhatsApp, komentar, atau status — bukan dari halaman situs.
 - Update situs biasa tidak butuh build ulang APK; WebView selalu memuat URL terbaru. Build ulang hanya saat icon/nama/versi berubah.
+
+### Loading screen APK
+
+Saat app dibuka, `VideoView` memutar `android/app/src/main/res/raw/loading.mp4` (loop, senyap) sambil WebView memuat situs, plus garis progres tipis warna aksen di tepi atas yang ngikuti progres unduhan halaman yang asli. Splash fade out setelah halaman pertama selesai (tampil minimum 1 detik).
+
+Video dibuat dengan [Remotion](https://github.com/remotion-dev/remotion) (project di luar repo, komposisi `Loading`, 1080x1920/30fps/5 dtk). Untuk mengganti animasi: render ulang MP4, timpa `android/app/src/main/res/raw/loading.mp4`, push — workflow `Build APK` jalan otomatis.

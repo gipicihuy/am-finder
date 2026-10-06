@@ -11,7 +11,7 @@
         android:allowBackup="true"
         android:usesCleartextTraffic="false"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.AMFinder">
 
         <activity
             android:name=".MainActivity"

@@ -10,8 +10,8 @@ android {
         applicationId "com.givy.amfinder"
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
     }
 
     // Signing release dilakukan di CI lewat ilharp/sign-android-release
@@ -23,9 +23,6 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (System.getenv("AMFINDER_KEYSTORE")) {
-                signingConfig signingConfigs.release
-            }
         }
     }
 
