@@ -155,10 +155,25 @@ export function Finder() {
   async function pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
-      if (text) setValue(text.trim());
+      if (text) {
+        setValue(text.trim());
+        return;
+      }
     } catch {
-      inputRef.current?.focus();
+      // WebView (APK) nolak clipboard-read permission — fallback ke bridge native
     }
+    try {
+      const bridge = (window as { AndroidClipboard?: { read?: () => string } })
+        .AndroidClipboard;
+      const text = bridge?.read?.();
+      if (text) {
+        setValue(text.trim());
+        return;
+      }
+    } catch {
+      // bridge gak ada (buka via browser biasa)
+    }
+    inputRef.current?.focus();
   }
 
   return (
