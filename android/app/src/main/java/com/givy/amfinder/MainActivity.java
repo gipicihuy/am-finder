@@ -8,11 +8,13 @@ import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -87,6 +89,36 @@ public class MainActivity extends Activity {
         root.addView(progressTrack, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(3), Gravity.TOP));
         setContentView(root);
+        root.setBackgroundColor(BG);
+        web.setBackgroundColor(BG);
+
+        // Edge-to-edge (dipaksa targetSdk 35 di Android 15+): WebView & panel offline
+        // wajib dapat inset biar konten nggak ketimpa status/navigation bar.
+        // Splash sengaja TANPA inset biar video tetap full-screen sampai tepi.
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            int top, bottom, left, right;
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                top = bars.top;
+                bottom = bars.bottom;
+                left = bars.left;
+                right = bars.right;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+                left = insets.getSystemWindowInsetLeft();
+                right = insets.getSystemWindowInsetRight();
+            }
+            web.setPadding(left, top, right, bottom);
+            offlinePanel.setPadding(64 + left, 64 + top, 64 + right, 64 + bottom);
+            FrameLayout.LayoutParams pl = (FrameLayout.LayoutParams) progressTrack.getLayoutParams();
+            if (pl.topMargin != top) {
+                pl.topMargin = top;
+                progressTrack.setLayoutParams(pl);
+            }
+            return WindowInsets.CONSUMED;
+        });
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
