@@ -94,6 +94,7 @@ public class MainActivity extends Activity {
 
         // Edge-to-edge (dipaksa targetSdk 35 di Android 15+): WebView & panel offline
         // wajib dapat inset biar konten nggak ketimpa status/navigation bar.
+        // WebView NGGAK ngecilin area konten dari padding → pakai margin.
         // Splash sengaja TANPA inset biar video tetap full-screen sampai tepi.
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             int top, bottom, left, right;
@@ -110,7 +111,15 @@ public class MainActivity extends Activity {
                 left = insets.getSystemWindowInsetLeft();
                 right = insets.getSystemWindowInsetRight();
             }
-            web.setPadding(left, top, right, bottom);
+            FrameLayout.LayoutParams wl = (FrameLayout.LayoutParams) web.getLayoutParams();
+            if (wl.leftMargin != left || wl.topMargin != top
+                    || wl.rightMargin != right || wl.bottomMargin != bottom) {
+                wl.leftMargin = left;
+                wl.topMargin = top;
+                wl.rightMargin = right;
+                wl.bottomMargin = bottom;
+                web.setLayoutParams(wl);
+            }
             offlinePanel.setPadding(64 + left, 64 + top, 64 + right, 64 + bottom);
             FrameLayout.LayoutParams pl = (FrameLayout.LayoutParams) progressTrack.getLayoutParams();
             if (pl.topMargin != top) {
