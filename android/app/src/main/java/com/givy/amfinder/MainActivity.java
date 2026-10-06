@@ -2,6 +2,8 @@ package com.givy.amfinder;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
@@ -21,6 +23,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -50,6 +53,7 @@ public class MainActivity extends Activity {
     private int lastVideoPos;
     private boolean videoReachedEnd;
     private boolean pageLoaded;
+    private volatile String currentUrl;
     private Runnable completeProgressTask;
 
     private final Runnable splashFinisher = new Runnable() {
@@ -140,6 +144,30 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
 
+        // navigator.clipboard.readText() ditolak di WebView (gak ada UI permission
+        // clipboard-read), jadi tombol paste di site butuh bridge native ini.
+        // Cuma jalan kalo halaman aktif emang domain amfinder.web.id.
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public String read() {
+                try {
+                    String url = currentUrl;
+                    if (url == null) return "";
+                    String host = Uri.parse(url).getHost();
+                    host = host == null ? "" : host.toLowerCase();
+                    if (!host.equals(HOST) && !host.endsWith("." + HOST)) return "";
+                    ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    if (cm == null || !cm.hasPrimaryClip()) return "";
+                    ClipData d = cm.getPrimaryClip();
+                    if (d == null || d.getItemCount() == 0) return "";
+                    CharSequence t = d.getItemAt(0).coerceToText(MainActivity.this);
+                    return t == null ? "" : t.toString();
+                } catch (Exception e) {
+                    return "";
+                }
+            }
+        }, "AndroidClipboard");
+
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
@@ -153,6 +181,7 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                currentUrl = url;
                 showProgress();
             }
 
