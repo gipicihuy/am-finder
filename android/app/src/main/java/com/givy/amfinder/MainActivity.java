@@ -31,7 +31,8 @@ public class MainActivity extends Activity {
     private static final String HOST = "amfinder.web.id";
     private static final int ACCENT = 0xFF05FAA8;
     private static final int BG = 0xFF0F0F10;
-    private static final long MIN_SPLASH_MS = 1000;
+    private static final long MAX_SPLASH_MS = 10000;
+    private static final long VIDEO_END_MARGIN_MS = 350;
 
     private WebView web;
     private FrameLayout splash;
@@ -43,8 +44,30 @@ public class MainActivity extends Activity {
     private long splashStart;
     private boolean splashHidden;
     private boolean videoReady;
-    private boolean firstPageLoaded;
+    private long videoDurationMs;
+    private int lastVideoPos;
+    private boolean videoReachedEnd;
+    private boolean pageLoaded;
     private Runnable completeProgressTask;
+
+    private final Runnable splashFinisher = new Runnable() {
+        @Override
+        public void run() {
+            if (splashHidden) return;
+            if (videoReady && videoDurationMs > 0 && video != null) {
+                int pos = video.getCurrentPosition();
+                if (pos + 200 < lastVideoPos) videoReachedEnd = true;
+                if (pos >= videoDurationMs - VIDEO_END_MARGIN_MS) videoReachedEnd = true;
+                lastVideoPos = pos;
+            }
+            boolean timedOut = SystemClock.uptimeMillis() - splashStart >= MAX_SPLASH_MS;
+            if ((pageLoaded && videoReachedEnd) || timedOut) {
+                hideSplash();
+                return;
+            }
+            splash.postDelayed(this, 80);
+        }
+    };
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -106,7 +129,7 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError err) {
                 if (req.isForMainFrame()) {
-                    hideSplash(true);
+                    hideSplash();
                     cancelProgress();
                     showOffline();
                 }
@@ -114,10 +137,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (!firstPageLoaded) {
-                    firstPageLoaded = true;
-                    hideSplash(false);
-                }
+                if (!pageLoaded) pageLoaded = true;
                 completeProgress();
             }
         });
@@ -136,6 +156,7 @@ public class MainActivity extends Activity {
         } else {
             web.restoreState(savedInstanceState);
         }
+        splash.post(splashFinisher);
     }
 
     private FrameLayout buildSplash() {
@@ -146,6 +167,7 @@ public class MainActivity extends Activity {
         video.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.loading));
         video.setOnPreparedListener(mp -> {
             videoReady = true;
+            videoDurationMs = mp.getDuration();
             mp.setLooping(true);
             mp.setVolume(0f, 0f);
             mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
@@ -153,7 +175,7 @@ public class MainActivity extends Activity {
         });
         video.setOnErrorListener((mp, what, extra) -> {
             videoReady = false;
-            hideSplash(true);
+            hideSplash();
             return true;
         });
 
@@ -220,17 +242,14 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void hideSplash(boolean immediate) {
+    private void hideSplash() {
         if (splashHidden) return;
         splashHidden = true;
-        long elapsed = SystemClock.uptimeMillis() - splashStart;
-        long wait = immediate ? 0 : Math.max(0, MIN_SPLASH_MS - elapsed);
-        splash.postDelayed(() -> {
-            splash.animate().alpha(0f).setDuration(280).withEndAction(() -> {
-                splash.setVisibility(View.GONE);
-                if (video != null) video.stopPlayback();
-            }).start();
-        }, wait);
+        splash.removeCallbacks(splashFinisher);
+        splash.animate().alpha(0f).setDuration(280).withEndAction(() -> {
+            splash.setVisibility(View.GONE);
+            if (video != null) video.stopPlayback();
+        }).start();
     }
 
     private boolean openExternal(Uri uri) {

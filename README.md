@@ -189,6 +189,6 @@ Catatan:
 
 ### Loading screen APK
 
-Saat app dibuka, `VideoView` memutar `android/app/src/main/res/raw/loading.mp4` (loop, senyap) sambil WebView memuat situs, plus garis progres tipis warna aksen di tepi atas yang ngikuti progres unduhan halaman yang asli. Splash fade out setelah halaman pertama selesai (tampil minimum 1 detik).
+Saat app dibuka, `VideoView` memutar `android/app/src/main/res/raw/loading.mp4` (loop, senyap) sambil WebView memuat situs, plus garis progres tipis warna aksen di tepi atas yang ngikuti progres unduhan halaman yang asli. Splash baru fade out setelah halaman pertama termuat **dan** video selesai diputar (animasi tidak pernah kepotong; kalau internet lambat video loop), maksimum 10 detik, dan langsung hilang kalau gagal muat.
 
 Video dibuat dengan [Remotion](https://github.com/remotion-dev/remotion) (project di luar repo, komposisi `Loading`, 1080x1920/30fps/5 dtk). Untuk mengganti animasi: render ulang MP4, timpa `android/app/src/main/res/raw/loading.mp4`, push — workflow `Build APK` jalan otomatis.
