@@ -266,6 +266,23 @@ export async function GET(request: Request) {
           items,
         });
 
+        // mode=pick: cuma cari kandidat, pengecekan preset dilakukan klien per video
+        // yang dipilih (lewat /api/find).
+        if (params.get("mode") === "pick") {
+          push("result", {
+            ok: true,
+            query,
+            engine: searchRes.engine ?? "auto",
+            fromCache: !!searchRes.fromCache,
+            candidates: items.length,
+            videos: [],
+            foundCount: 0,
+            elapsedMs: Date.now() - t0,
+          });
+          finish();
+          return;
+        }
+
         if (!items.length) {
           push("result", {
             ok: true,
