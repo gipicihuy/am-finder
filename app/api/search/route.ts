@@ -264,7 +264,10 @@ export async function GET(request: Request) {
         }
         if (closed) return;
 
-        const items = (searchRes.items || []).slice(0, top);
+        // mode=pick kirim lebih banyak kandidat (12) biar frontend bisa
+        // paginasi "Tampilkan lebih banyak" 3 per batch. Mode lain tetap `top`.
+        const pickMode = params.get("mode") === "pick";
+        const items = (searchRes.items || []).slice(0, pickMode ? 12 : top);
         push("candidates", {
           query,
           engine: searchRes.engine ?? "auto",
@@ -274,7 +277,7 @@ export async function GET(request: Request) {
 
         // mode=pick: cuma cari kandidat, pengecekan preset dilakukan klien per video
         // yang dipilih (lewat /api/find).
-        if (params.get("mode") === "pick") {
+        if (pickMode) {
           push("result", {
             ok: true,
             query,

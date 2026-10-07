@@ -65,6 +65,7 @@ export default function SearchTest() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const [cands, setCands] = useState<Candidate[]>([]);
+  const [candLimit, setCandLimit] = useState(3);
   const [searchedQuery, setSearchedQuery] = useState("");
   const [openUrl, setOpenUrl] = useState("");
   const [details, setDetails] = useState<Record<string, Detail>>({});
@@ -127,6 +128,7 @@ export default function SearchTest() {
         return;
       }
       setCands(items);
+      setCandLimit(3);
       setSearchedQuery(query);
       setDetails({});
     });
@@ -275,7 +277,7 @@ export default function SearchTest() {
               <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>
                 {cands.length} video{cands.length > 1 ? "s" : ""}
               </h2>
-              {cands.map((c) => (
+              {cands.slice(0, candLimit).map((c) => (
                 <button
                   key={c.url}
                   type="button"
@@ -340,6 +342,27 @@ export default function SearchTest() {
                   <ChevronRight />
                 </button>
               ))}
+              {cands.length > candLimit && (
+                <button
+                  type="button"
+                  onClick={() => setCandLimit((limit) => limit + 3)}
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    marginTop: 4,
+                    borderRadius: 14,
+                    background: SURFACE,
+                    border: `1px solid ${BORDER}`,
+                    color: ACCENT,
+                    font: "inherit",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Tampilkan lebih banyak
+                </button>
+              )}
             </section>
           )}
         </>
