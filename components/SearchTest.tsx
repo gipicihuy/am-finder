@@ -77,18 +77,6 @@ export default function SearchTest() {
     };
   }, []);
 
-  // Backdrop loading: kunci scroll halaman selama overlay aktif,
-  // posisi scroll dipegang (overflow hidden gak ngubah posisi), lepas otomatis selesai.
-  useEffect(() => {
-    const running = openUrl !== "" && details[openUrl]?.state === "running";
-    if (!running) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [openUrl, details]);
-
   function search() {
     const query = q.trim();
     if (query.length < 3 || searching) return;
@@ -359,19 +347,7 @@ export default function SearchTest() {
             <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
           )}
           {current?.state === "running" && (
-            <div
-              role="status"
-              aria-live="polite"
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 9999,
-                background: "rgba(0, 0, 0, 0.72)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div role="status" style={{ marginTop: 16 }}>
               <BrandScan />
             </div>
           )}
