@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
+import { ui } from "@/lib/ui";
 
 const BG = "#0F0F10";
 const SURFACE = "#17171A";
@@ -76,6 +77,18 @@ export default function SearchTest() {
       checkRef.current?.close();
     };
   }, []);
+
+  // Selama loading full-screen: kunci scroll (posisi halaman dipegang),
+  // dilepas otomatis begitu pencarian selesai / komponen unmount.
+  useEffect(() => {
+    const running = openUrl !== "" && details[openUrl]?.state === "running";
+    if (!running) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [openUrl, details]);
 
   function search() {
     const query = q.trim();
@@ -347,8 +360,33 @@ export default function SearchTest() {
             <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
           )}
           {current?.state === "running" && (
-            <div role="status" style={{ marginTop: 16 }}>
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                background: "#000000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <BrandScan />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 18,
+                  textAlign: "center",
+                  fontSize: 11,
+                  color: "#5C5C63",
+                }}
+              >
+                {ui.footer.copyright}
+              </div>
             </div>
           )}
           {current?.state === "error" && (
