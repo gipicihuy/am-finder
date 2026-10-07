@@ -5,6 +5,7 @@ import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
 import { FoundToast } from "@/components/FoundToast";
+import BrandScan from "./BrandScan";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 
 type Phase = "idle" | "running" | "done" | "error";
@@ -63,6 +64,17 @@ export function Finder() {
       sourceRef.current?.close();
     };
   }, []);
+
+  // Selama loading full-screen: kunci scroll, dilepas otomatis begitu
+  // pencarian selesai / komponen unmount.
+  useEffect(() => {
+    if (phase !== "running") return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [phase]);
 
   function remember(link: string) {
     const next = [link, ...history.filter((item) => item !== link)].slice(0, 6);
@@ -270,10 +282,32 @@ export function Finder() {
       ) : null}
 
       {phase === "running" ? (
-        <div className="run" aria-live="polite">
-          <div className="run-head">
-            <span className="spinner" aria-hidden="true" />
-            {ui.states.loading}
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "#000000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <BrandScan />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 18,
+              textAlign: "center",
+              fontSize: 11,
+              color: "#5C5C63",
+            }}
+          >
+            {ui.footer.copyright}
           </div>
         </div>
       ) : null}
