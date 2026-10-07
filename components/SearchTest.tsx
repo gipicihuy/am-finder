@@ -28,8 +28,8 @@ type Detail = {
 
 const ChevronLeft = () => (
   <svg
-    width="22"
-    height="22"
+    width="20"
+    height="20"
     viewBox="0 0 20 20"
     fill="none"
     stroke="currentColor"
@@ -335,11 +335,12 @@ export default function SearchTest() {
         <>
           <button
             type="button"
-            aria-label="Back to videos"
-            style={{ ...linkBtn, display: "flex", alignItems: "center", width: 44, padding: 0 }}
+            aria-label="Kembali ke daftar video"
+            style={{ ...linkBtn, display: "flex", alignItems: "center", gap: 2, marginLeft: -4 }}
             onClick={closeVideo}
           >
             <ChevronLeft />
+            Kembali
           </button>
           {candidate && searchedQuery && (
             <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
