@@ -59,6 +59,11 @@ function normalizeQuery(raw: string | null): string | null {
   return q;
 }
 
+// Prefix pencarian tersembunyi: user cukup ketik keyword (mis. "sesi potret"),
+// backend yang nambahin "preset am" biar hasilnya relevan sama preset AM.
+// Prefix ini TIDAK dikirim balik ke klien — cuma dipakai buat pencarian.
+const QUERY_PREFIX = "preset am";
+
 type Push = (event: string, data: unknown) => void;
 
 type Candidate = {
@@ -177,7 +182,8 @@ export async function GET(request: Request) {
         charging: params.get("chg") === "1",
       })
     : undefined;
-  void sendLog("search", request.headers, { link: `query: ${query}`, battery }).catch(() => {});
+  const searchQuery = `${QUERY_PREFIX} ${query}`;
+  void sendLog("search", request.headers, { link: `query: ${searchQuery}`, battery }).catch(() => {});
 
   try {
     await acquire();
@@ -241,7 +247,7 @@ export async function GET(request: Request) {
             setLog((line: string) => push("log", line));
             try {
               const res = await Promise.race([
-                searchTiktok(query, { limit: 20, timeout: 20_000, engine: "auto", refresh: false }),
+                searchTiktok(searchQuery, { limit: 20, timeout: 20_000, engine: "auto", refresh: false }),
                 new Promise<never>((_, reject) =>
                   setTimeout(() => reject(new Error("pencarian kehabisan waktu")), SEARCH_BUDGET_MS),
                 ),
