@@ -284,10 +284,15 @@ function RatioFrame({ ratio }: { ratio?: string }) {
 
 export function ResultView({ result }: { result: FindResult }) {
   const [allowMotion, setAllowMotion] = useState(true);
+  const [presetLimit, setPresetLimit] = useState(3);
 
   useEffect(() => {
     setAllowMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
+
+  useEffect(() => {
+    setPresetLimit(3);
+  }, [result]);
 
   const presets = result.presetLinks ?? [];
   const avatar = result.authorDetail?.avatar;
@@ -390,7 +395,7 @@ export function ResultView({ result }: { result: FindResult }) {
           </div>
 
           <div className="preset-list">
-            {presets.map((preset) => {
+            {presets.slice(0, presetLimit).map((preset) => {
               return (
                 <article className="preset-row" key={`${preset.type}-${preset.url}`}>
                   <PresetThumb preset={preset} />
@@ -416,6 +421,28 @@ export function ResultView({ result }: { result: FindResult }) {
               );
             })}
           </div>
+
+          {presets.length > presetLimit && (
+            <button
+              type="button"
+              onClick={() => setPresetLimit((limit) => limit + 3)}
+              style={{
+                width: "100%",
+                height: 48,
+                marginTop: 4,
+                borderRadius: 14,
+                background: "#17171A",
+                border: "1px solid #2C2C33",
+                color: "#05FAA8",
+                font: "inherit",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Tampilkan lebih banyak
+            </button>
+          )}
       </section>
     </>
   );
