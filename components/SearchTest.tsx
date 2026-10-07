@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
+import { AmLogo } from "@/components/AmLogo";
 
 const BG = "#0F0F10";
 const SURFACE = "#17171A";
@@ -25,6 +26,35 @@ type Detail = {
   result?: FindResult;
   message?: string;
 };
+
+function ScanLogo({ size = 24 }: { size?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0, color: ACCENT }}
+    >
+      <style>{`
+        @keyframes amfScan { 0%, 100% { top: 16%; } 50% { top: 82%; } }
+        .amf-scan-line { animation: amfScan 1.8s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .amf-scan-line { animation: none; top: 50%; opacity: 0.5; } }
+      `}</style>
+      <AmLogo size={size} />
+      <span
+        className="amf-scan-line"
+        style={{
+          position: "absolute",
+          left: "14%",
+          right: "14%",
+          top: "16%",
+          height: 1.5,
+          borderRadius: 1,
+          background: ACCENT,
+          opacity: 0.85,
+        }}
+      />
+    </span>
+  );
+}
 
 const ChevronLeft = () => (
   <svg
@@ -346,7 +376,11 @@ export default function SearchTest() {
             <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
           )}
           {current?.state === "running" && (
-            <div role="status" style={{ fontSize: 14, color: ACCENT, marginTop: 16 }}>
+            <div
+              role="status"
+              style={{ fontSize: 14, color: ACCENT, marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}
+            >
+              <ScanLogo size={24} />
               Mencari link preset...
             </div>
           )}
