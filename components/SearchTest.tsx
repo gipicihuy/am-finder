@@ -26,6 +26,22 @@ type Detail = {
   message?: string;
 };
 
+const ChevronLeft = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12.5 4.5 7 10l5.5 5.5" />
+  </svg>
+);
+
 const ChevronRight = () => (
   <svg
     width="20"
@@ -47,6 +63,7 @@ export default function SearchTest() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const [cands, setCands] = useState<Candidate[]>([]);
+  const [searchedQuery, setSearchedQuery] = useState("");
   const [openUrl, setOpenUrl] = useState("");
   const [details, setDetails] = useState<Record<string, Detail>>({});
   const searchRef = useRef<EventSource | null>(null);
@@ -96,6 +113,7 @@ export default function SearchTest() {
         return;
       }
       setCands(items);
+      setSearchedQuery(query);
       setDetails({});
     });
 
@@ -315,15 +333,20 @@ export default function SearchTest() {
 
       {openUrl && (
         <>
-          <button type="button" style={linkBtn} onClick={closeVideo}>
-            ← Back to videos
+          <button
+            type="button"
+            aria-label="Back to videos"
+            style={{ ...linkBtn, display: "flex", alignItems: "center", width: 44, padding: 0 }}
+            onClick={closeVideo}
+          >
+            <ChevronLeft />
           </button>
-          {candidate && (
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{candidate.handle || "TikTok video"}</div>
+          {candidate && searchedQuery && (
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
           )}
           {current?.state === "running" && (
             <div role="status" style={{ fontSize: 14, color: ACCENT, marginTop: 16 }}>
-              Checking this video…
+              Mencari link preset...
             </div>
           )}
           {current?.state === "error" && (
