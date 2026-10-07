@@ -77,6 +77,18 @@ export default function SearchTest() {
     };
   }, []);
 
+  // Backdrop loading: kunci scroll halaman selama overlay aktif,
+  // posisi scroll dipegang (overflow hidden gak ngubah posisi), lepas otomatis selesai.
+  useEffect(() => {
+    const running = openUrl !== "" && details[openUrl]?.state === "running";
+    if (!running) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [openUrl, details]);
+
   function search() {
     const query = q.trim();
     if (query.length < 3 || searching) return;
@@ -204,9 +216,9 @@ export default function SearchTest() {
     <div style={{ maxWidth: 520, margin: "0 auto", padding: "24px 16px 64px", color: FG }}>
       {!openUrl && (
         <>
-          <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>Find preset links</h1>
+          <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>Cari preset</h1>
           <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.5, margin: "0 0 22px" }}>
-            Search a keyword, then tap a video to check it for Alight Motion presets.
+            Ketik nama lagu atau kata kunci, lalu pilih video untuk mencari link presetnya.
           </p>
           <form
             onSubmit={(e) => {
@@ -217,7 +229,7 @@ export default function SearchTest() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="velocity edit preset"
+              placeholder="Cari nama lagu atau kata kunci..."
               aria-label="Search keyword"
               style={{
                 width: "100%",
@@ -347,7 +359,19 @@ export default function SearchTest() {
             <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
           )}
           {current?.state === "running" && (
-            <div role="status" style={{ marginTop: 16 }}>
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                background: "rgba(0, 0, 0, 0.72)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <BrandScan />
             </div>
           )}
