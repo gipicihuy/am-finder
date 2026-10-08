@@ -1484,6 +1484,9 @@ a:focus-visible {
 
 .mode-tab {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-height: 46px;
   padding: 0 2px;
   border: none;
@@ -1521,6 +1524,24 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .mode-tab,
   .mode-tab::after {
+    transition: none;
+  }
+}
+
+.mode-tab-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.mode-tab[aria-selected="true"] .mode-tab-icon {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-tab-icon {
     transition: none;
   }
 }

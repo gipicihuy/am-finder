@@ -31,6 +31,34 @@ const MODE_KEY = "amfinder:mode";
 
 type Mode = "url" | "search";
 
+function UrlIcon() {
+  return (
+    <svg className="mode-tab-icon" viewBox="0 0 48 48" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <g transform="scale(2)">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="#f2f2f3" strokeWidth="1.4" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#05FAA8" strokeWidth="1.4" />
+      </g>
+    </svg>
+  );
+}
+
+function SearchPresetIcon() {
+  return (
+    <svg className="mode-tab-icon" viewBox="0 0 48 48" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="20.5" cy="20.5" r="13.5" stroke="#f2f2f3" strokeWidth="2.8" />
+      <path d="M30.1 30.1 43 43" stroke="#f2f2f3" strokeWidth="3.4" />
+      <g transform="translate(20.5 20.5) scale(0.62) translate(-24 -24)">
+        <g transform="translate(24 24) scale(0.8) translate(-24 -25.7)" stroke="#05FAA8" strokeWidth="3.4">
+          <path d="M43.5,28.3294a19.5,19.5,0,0,0-39,0" />
+          <path d="M18.4694,32.593a6.9229,6.9229,0,0,0,9.79-9.7905" />
+          <path d="M23.25,39.1706a11.2273,11.2273,0,1,0,0-22.4545" />
+          <path d="M34.6024,38.2223a14.6374,14.6374,0,1,0-20.7-20.7" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 export function Finder() {
   const [value, setValue] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -212,6 +240,7 @@ export function Finder() {
           className="mode-tab"
           onClick={() => chooseMode("url")}
         >
+          <UrlIcon />
           URL Video
         </button>
         <button
@@ -223,6 +252,7 @@ export function Finder() {
           className="mode-tab"
           onClick={() => chooseMode("search")}
         >
+          <SearchPresetIcon />
           Cari Preset
         </button>
       </div>
