@@ -60,7 +60,16 @@ const ChevronRight = () => (
   </svg>
 );
 
-export default function SearchTest() {
+type SearchTestProps = {
+  /** Dipakai di dalam Home (tab Cari Preset): tanpa judul/padding sendiri. */
+  embedded?: boolean;
+  /** Dipanggil kalau user menempel link TikTok di kolom judul. */
+  onTikTokLink?: (url: string) => void;
+  /** Dipanggil saat halaman detail video dibuka/ditutup. */
+  onDetailChange?: (open: boolean) => void;
+};
+
+export default function SearchTest({ embedded = false, onTikTokLink, onDetailChange }: SearchTestProps = {}) {
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
@@ -90,6 +99,20 @@ export default function SearchTest() {
       document.body.style.overflow = previous;
     };
   }, [openUrl, details]);
+
+  useEffect(() => {
+    onDetailChange?.(openUrl !== "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openUrl]);
+
+  function changeQuery(value: string) {
+    if (embedded && /tiktok\.com/i.test(value)) {
+      onTikTokLink?.(value.trim());
+      setQ("");
+      return;
+    }
+    setQ(value);
+  }
 
   function search() {
     const query = q.trim();
@@ -216,13 +239,66 @@ export default function SearchTest() {
   const candidate = cands.find((c) => c.url === openUrl);
 
   return (
-    <div style={{ maxWidth: 520, margin: "0 auto", padding: "24px 16px 64px", color: FG }}>
+    <div
+      style={
+        embedded
+          ? { color: FG }
+          : { maxWidth: 520, margin: "0 auto", padding: "24px 16px 64px", color: FG }
+      }
+    >
       {!openUrl && (
         <>
+          {!embedded && (
+            <>
           <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>Cari preset</h1>
           <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.5, margin: "0 0 22px" }}>
             Ketik nama lagu atau kata kunci, lalu pilih video untuk mencari link presetnya.
           </p>
+            </>
+          )}
+          {embedded ? (
+          <div className="search-wrap">
+            <form
+              className="search-form"
+              role="search"
+              onSubmit={(e) => {
+                e.preventDefault();
+                search();
+              }}
+            >
+              <span className="search-field">
+                <span className="search-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3.6-3.6" />
+                  </svg>
+                </span>
+                <input
+                  className="search-input"
+                  type="text"
+                  inputMode="search"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Cari nama lagu atau kata kunci..."
+                  aria-label="Search keyword"
+                  value={q}
+                  onChange={(e) => changeQuery(e.target.value)}
+                />
+                {q ? (
+                  <button type="button" className="clear-btn" aria-label="Clear" onClick={() => setQ("")}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
+                    </svg>
+                  </button>
+                ) : null}
+              </span>
+              <button className="btn-primary" type="submit" disabled={searching}>
+                {searching ? ui.buttons.searching : ui.buttons.search}
+              </button>
+            </form>
+          </div>
+          ) : (
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -231,7 +307,7 @@ export default function SearchTest() {
           >
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => changeQuery(e.target.value)}
               placeholder="Cari nama lagu atau kata kunci..."
               aria-label="Search keyword"
               style={{
@@ -266,6 +342,7 @@ export default function SearchTest() {
               {searching ? "Searching…" : "Search"}
             </button>
           </form>
+          )}
           {error && (
             <div role="alert" style={{ color: DANGER, fontSize: 14, marginTop: 14 }}>
               {error}

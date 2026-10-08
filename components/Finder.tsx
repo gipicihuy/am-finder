@@ -6,6 +6,7 @@ import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
 import { FoundToast } from "@/components/FoundToast";
 import BrandScan from "./BrandScan";
+import SearchTest from "./SearchTest";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 
 type Phase = "idle" | "running" | "done" | "error";
@@ -26,6 +27,9 @@ async function readBattery(): Promise<Battery | null> {
 }
 
 const HISTORY_KEY = "amfinder:history";
+const MODE_KEY = "amfinder:mode";
+
+type Mode = "url" | "search";
 
 export function Finder() {
   const [value, setValue] = useState("");
@@ -33,6 +37,8 @@ export function Finder() {
   const [result, setResult] = useState<FindResult | null>(null);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<string[]>([]);
+  const [mode, setMode] = useState<Mode>("url");
+  const [searchDetailOpen, setSearchDetailOpen] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
@@ -147,6 +153,23 @@ export function Finder() {
     });
   }
 
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(MODE_KEY) === "search") setMode("search");
+    } catch {
+      // storage diblokir — tetap di mode default
+    }
+  }, []);
+
+  function chooseMode(next: Mode) {
+    setMode(next);
+    try {
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      // abaikan
+    }
+  }
+
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (phase === "running") return;
@@ -179,6 +202,55 @@ export function Finder() {
 
   return (
     <>
+      <div className="mode-tabs" role="tablist" aria-label="Mode pencarian">
+        <button
+          type="button"
+          role="tab"
+          id="tab-url"
+          aria-selected={mode === "url"}
+          aria-controls="panel-url"
+          className="mode-tab"
+          onClick={() => chooseMode("url")}
+        >
+          URL Video
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-search"
+          aria-selected={mode === "search"}
+          aria-controls="panel-search"
+          className="mode-tab"
+          onClick={() => chooseMode("search")}
+        >
+          Cari Preset
+        </button>
+      </div>
+
+      {mode === "url" ? (
+        <p className="page-sub" data-nosnippet>
+          Paste a TikTok video link. The description, account bio, bio link, comments and replies
+          are opened one by one, then scanned for Alight Motion preset links.
+        </p>
+      ) : !searchDetailOpen ? (
+        <p className="page-sub" data-nosnippet>
+          Cari pakai nama lagu atau kata kunci, lalu pilih video untuk mencari link preset di
+          deskripsi, bio, komentar, dan balasannya.
+        </p>
+      ) : null}
+
+      <div id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden={mode !== "search"}>
+        <SearchTest
+          embedded
+          onTikTokLink={(link) => {
+            setValue(link);
+            chooseMode("url");
+          }}
+          onDetailChange={setSearchDetailOpen}
+        />
+      </div>
+
+      <div id="panel-url" role="tabpanel" aria-labelledby="tab-url" hidden={mode !== "url"}>
       <div className="search-wrap">
         <form className="search-form" role="search" onSubmit={onSubmit}>
           <label className="sr-only" htmlFor="tt">
@@ -288,6 +360,7 @@ export function Finder() {
       {phase === "done" && result && (result.presetLinks?.length ?? 0) > 0 ? (
         <FoundToast count={result.presetLinks?.length ?? 0} />
       ) : null}
+      </div>
     </>
   );
 }
