@@ -29,6 +29,10 @@ async function readBattery(): Promise<Battery | null> {
 const HISTORY_KEY = "amfinder:history";
 const MODE_KEY = "amfinder:mode";
 
+// Label "NEW" di tab Cari Preset tampil sampai tanggal ini, lalu hilang sendiri.
+// Ubah tanggalnya kalau mau diperpanjang, atau hapus konstanta + badge-nya.
+const NEW_BADGE_UNTIL = new Date("2026-11-08T00:00:00+07:00").getTime();
+
 type Mode = "url" | "search";
 
 function UrlIcon() {
@@ -67,6 +71,7 @@ export function Finder() {
   const [history, setHistory] = useState<string[]>([]);
   const [mode, setMode] = useState<Mode>("url");
   const [searchDetailOpen, setSearchDetailOpen] = useState(false);
+  const [showNewBadge, setShowNewBadge] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
@@ -203,6 +208,11 @@ export function Finder() {
     return () => panel.removeEventListener("play", stop, true);
   }, [mode]);
 
+  // Dicek di client supaya tanggalnya nggak "membeku" di hasil build statis.
+  useEffect(() => {
+    setShowNewBadge(Date.now() < NEW_BADGE_UNTIL);
+  }, []);
+
   function chooseMode(next: Mode) {
     setMode(next);
     try {
@@ -268,6 +278,7 @@ export function Finder() {
         >
           <SearchPresetIcon />
           Cari Preset
+          {showNewBadge ? <span className="mode-tab-badge">NEW</span> : null}
         </button>
       </div>
 
