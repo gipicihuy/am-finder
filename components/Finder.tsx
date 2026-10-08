@@ -271,7 +271,7 @@ export function Finder() {
       ) : null}
 
       {phase === "running" ? (
-        <div className="run" aria-live="polite">
+        <div aria-live="polite" style={{ marginTop: 22 }}>
           <BrandScan />
         </div>
       ) : null}
