@@ -189,6 +189,20 @@ export function Finder() {
     }
   }, []);
 
+  // Panel yang tidak aktif cuma disembunyikan, jadi video di dalamnya harus
+  // dihentikan manual. Listener "play" (fase capture) juga menahan autoplay
+  // yang baru jalan saat hasil datang ketika panelnya sedang tersembunyi.
+  useEffect(() => {
+    const panel = document.getElementById(mode === "url" ? "panel-search" : "panel-url");
+    if (!panel) return;
+    const stop = (event: Event) => {
+      if (event.target instanceof HTMLVideoElement) event.target.pause();
+    };
+    panel.querySelectorAll("video").forEach((video) => video.pause());
+    panel.addEventListener("play", stop, true);
+    return () => panel.removeEventListener("play", stop, true);
+  }, [mode]);
+
   function chooseMode(next: Mode) {
     setMode(next);
     try {
