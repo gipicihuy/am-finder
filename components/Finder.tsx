@@ -229,8 +229,8 @@ export function Finder() {
 
       {mode === "url" ? (
         <p className="page-sub" data-nosnippet>
-          Paste a TikTok video link. The description, account bio, bio link, comments and replies
-          are opened one by one, then scanned for Alight Motion preset links.
+          Masukkan link video TikTok untuk mencari link preset di deskripsi, bio, komentar, dan
+          balasannya.
         </p>
       ) : !searchDetailOpen ? (
         <p className="page-sub" data-nosnippet>
