@@ -1473,3 +1473,54 @@ a:focus-visible {
     animation: none;
   }
 }
+
+/* mode tabs (Home: URL Video / Cari Preset) */
+.mode-tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--border);
+  margin: 0 0 14px;
+}
+
+.mode-tab {
+  position: relative;
+  min-height: 46px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.mode-tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.mode-tab[aria-selected="true"] {
+  color: var(--foreground);
+}
+
+.mode-tab[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-tab,
+  .mode-tab::after {
+    transition: none;
+  }
+}
