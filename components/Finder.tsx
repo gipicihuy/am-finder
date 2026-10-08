@@ -274,7 +274,6 @@ export function Finder() {
         <div className="run" aria-live="polite">
           <BrandScan />
         </div>
-        </div>
       ) : null}
 
       {phase === "error" ? (
