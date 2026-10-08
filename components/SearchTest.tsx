@@ -349,7 +349,13 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
             </div>
           )}
 
-          {cands.length > 0 && (
+          {embedded && searching && (
+            <div className="run" aria-live="polite">
+              <BrandScan title="Mencari video" />
+            </div>
+          )}
+
+          {cands.length > 0 && !(embedded && searching) && (
             <section aria-label="Search results" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
               <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>
                 {cands.length} video{cands.length > 1 ? "s" : ""}

@@ -30,7 +30,13 @@ const KEYFRAMES = `
 .bs-status{margin-top:8px;font-size:13px;color:#05FAA8;text-align:center}
 `;
 
-export default function BrandScan({ status }: { status?: string }) {
+export default function BrandScan({
+  status,
+  title = "Mencari link preset",
+}: {
+  status?: string;
+  title?: string;
+}) {
   return (
     <div className="bs-wrap" role="status">
       <style>{KEYFRAMES}</style>
@@ -78,7 +84,7 @@ export default function BrandScan({ status }: { status?: string }) {
           <span className="bs-scan" />
         </span>
         <span className="bs-title">
-          Mencari link preset
+          {title}
           <span className="bs-dots">
             <span>.</span>
             <span>.</span>
