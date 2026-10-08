@@ -65,17 +65,6 @@ export function Finder() {
     };
   }, []);
 
-  // Selama loading full-screen: kunci scroll, dilepas otomatis begitu
-  // pencarian selesai / komponen unmount.
-  useEffect(() => {
-    if (phase !== "running") return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [phase]);
-
   function remember(link: string) {
     const next = [link, ...history.filter((item) => item !== link)].slice(0, 6);
     setHistory(next);
@@ -282,33 +271,9 @@ export function Finder() {
       ) : null}
 
       {phase === "running" ? (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "#000000",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+        <div className="run" aria-live="polite">
           <BrandScan />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 18,
-              textAlign: "center",
-              fontSize: 11,
-              color: "#5C5C63",
-            }}
-          >
-            {ui.footer.copyright}
-          </div>
+        </div>
         </div>
       ) : null}
 
