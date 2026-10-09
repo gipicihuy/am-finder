@@ -247,7 +247,7 @@ export async function GET(request: Request) {
             setLog((line: string) => push("log", line));
             try {
               const res = await Promise.race([
-                searchTiktok(searchQuery, { limit: 20, timeout: 20_000, engine: "auto", refresh: false }),
+                searchTiktok(searchQuery, { limit: 30, timeout: 20_000, engine: "auto", refresh: false }),
                 new Promise<never>((_, reject) =>
                   setTimeout(() => reject(new Error("pencarian kehabisan waktu")), SEARCH_BUDGET_MS),
                 ),
@@ -264,10 +264,10 @@ export async function GET(request: Request) {
         }
         if (closed) return;
 
-        // mode=pick kirim lebih banyak kandidat (12) biar frontend bisa
-        // paginasi "Tampilkan lebih banyak" 3 per batch. Mode lain tetap `top`.
+        // mode=pick kirim lebih banyak kandidat (30, batas atas tikwm) biar frontend
+        // bisa paginasi "Tampilkan lebih banyak" per batch. Mode lain tetap `top`.
         const pickMode = params.get("mode") === "pick";
-        const items = (searchRes.items || []).slice(0, pickMode ? 12 : top);
+        const items = (searchRes.items || []).slice(0, pickMode ? 30 : top);
         push("candidates", {
           query,
           engine: searchRes.engine ?? "auto",
