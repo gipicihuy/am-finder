@@ -80,6 +80,45 @@ type SearchResult = {
   fromCache?: boolean;
 };
 
+function normalizeText(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Ranking relevansi: caption yang memuat frasa utuh judul yang diketik user
+// diunggulkan, lalu yang cocok per kata. Kandidat yang gak cocok sama sekali
+// tetap dikirim tapi nempel di belakang — biar hasil sesuai ekspektasi judul.
+function scoreCandidate(snippet: string | undefined, queryNorm: string): number {
+  const text = normalizeText(snippet ?? "");
+  if (!text || !queryNorm) return 0;
+  let score = 0;
+  if (text.includes(queryNorm)) score += 100;
+  const padded = ` ${text} `;
+  const tokens = queryNorm.split(" ").filter(t => t.length >= 2);
+  let hits = 0;
+  for (const token of tokens) {
+    if (padded.includes(` ${token}`)) hits += 1;
+  }
+  if (hits > 0) score += hits * 20;
+  if (tokens.length > 0 && hits === tokens.length) score += 40;
+  return score;
+}
+
+function rankCandidates(items: Candidate[], queryNorm: string): Candidate[] {
+  return items
+    .map((item, index) => ({ item, index, score: scoreCandidate(item.snippet, queryNorm) }))
+    .sort(
+      (a, b) =>
+        (b.score > 0 ? 1 : 0) - (a.score > 0 ? 1 : 0) ||
+        b.score - a.score ||
+        a.index - b.index,
+    )
+    .map((entry) => entry.item);
+};
+
 function runVideo(
   cand: Candidate,
   index: number,
@@ -266,8 +305,45 @@ export async function GET(request: Request) {
 
         // mode=pick kirim lebih banyak kandidat (30, batas atas tikwm) biar frontend
         // bisa paginasi "Tampilkan lebih banyak" per batch. Mode lain tetap `top`.
+        // Hasil di-ranking dulu sama judul/keyword user sebelum di-slice.
         const pickMode = params.get("mode") === "pick";
-        const items = (searchRes.items || []).slice(0, pickMode ? 30 : top);
+        const queryNorm = normalizeText(query);
+        let ranked = rankCandidates(searchRes.items || [], queryNorm);
+
+        // Fallback: kalau gak semua kata kunci user kejadian di hasil atas
+        // (prefix "preset am" bisa bikin engine nyimpang dari judul lagu),
+        // cari ulang tanpa prefix — pakai hasilnya kalo lebih cocok.
+        const bestScore = ranked.length > 0 ? scoreCandidate(ranked[0].snippet, queryNorm) : 0;
+        if (ranked.length > 0 && bestScore < 60) {
+          push("log", "hasil kurang cocok, cari ulang tanpa prefix...");
+          try {
+            const retry = await withSearchLock(async (): Promise<SearchResult> => {
+              setLog((line: string) => push("log", line));
+              try {
+                return (await searchTiktok(query, {
+                  limit: 30,
+                  timeout: 15_000,
+                  engine: "auto",
+                  refresh: false,
+                })) as SearchResult;
+              } finally {
+                setLog(() => {});
+              }
+            });
+            const retryRanked = rankCandidates(retry.items || [], queryNorm);
+            const retryScore =
+              retryRanked.length > 0 ? scoreCandidate(retryRanked[0].snippet, queryNorm) : 0;
+            if (retryScore > bestScore) {
+              searchRes = retry;
+              ranked = retryRanked;
+            }
+          } catch {
+            /* fallback gagal: tetap pakai hasil pertama */
+          }
+          if (closed) return;
+        }
+
+        const items = ranked.slice(0, pickMode ? 30 : top);
         push("candidates", {
           query,
           engine: searchRes.engine ?? "auto",
