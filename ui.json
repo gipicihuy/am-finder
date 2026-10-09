@@ -3,9 +3,9 @@
     "search": "Search",
     "searching": "Searching",
     "paste": "Paste link",
-    "copy": "Copy link",
-    "copied": "Copied",
-    "openPreset": "Open preset",
+    "copy": "Salin",
+    "copied": "Tersalin",
+    "openPreset": "Buka",
     "openFile": "Get file"
   },
   "states": {
