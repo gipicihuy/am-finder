@@ -59,6 +59,8 @@ const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "AM Preset Finder",
+  // Cadangan kalau Google nggak memilih nama utama.
+  alternateName: ["AM Finder"],
   url: `${siteUrl}/`,
   inLanguage: "en",
   creator: creatorJsonLd,
