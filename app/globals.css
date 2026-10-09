@@ -1560,3 +1560,17 @@ a:focus-visible {
   line-height: 1.3;
   pointer-events: none;
 }
+
+/* ikon di tombol preset (Buka / Salin / Get file) */
+.btn-open,
+.preset-actions .text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.btn-ico {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}

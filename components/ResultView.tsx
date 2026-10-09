@@ -87,6 +87,43 @@ function PresetThumb({ preset }: { preset: PresetLink }) {
   );
 }
 
+function OpenIcon() {
+  return (
+    <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M12 15V3" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
 function CopyButton({ url }: { url: string }) {
   const [done, setDone] = useState(false);
 
@@ -110,6 +147,7 @@ function CopyButton({ url }: { url: string }) {
 
   return (
     <button type="button" className={`text-btn${done ? " is-done" : ""}`} onClick={copy}>
+      {done ? <CheckIcon /> : <CopyIcon />}
       {done ? ui.buttons.copied : ui.buttons.copy}
     </button>
   );
@@ -412,6 +450,7 @@ export function ResultView({ result }: { result: FindResult }) {
                     <p className="preset-url">{preset.url}</p>
                     <div className="preset-actions">
                       <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
+                        {preset.type === "5mb" ? <OpenIcon /> : <DownloadIcon />}
                         {preset.type === "5mb" ? ui.buttons.openPreset : ui.buttons.openFile}
                       </a>
                       <CopyButton url={preset.url} />
