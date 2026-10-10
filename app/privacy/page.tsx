@@ -5,14 +5,34 @@ import { SectionOrnament } from "@/components/Ornament";
 export const metadata: Metadata = {
   title: "Kebijakan Privasi | AM Preset Finder",
   description:
-    "Kebijakan privasi AM Preset Finder: data apa yang diproses saat kamu memakai situs ini.",
+    "Kebijakan privasi AM Preset Finder: data yang diproses saat Anda menggunakan layanan ini.",
 };
+
+function ChevronLeftIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M12.5 4.5 7 10l5.5 5.5" />
+    </svg>
+  );
+}
 
 export default function PrivacyPage() {
   return (
     <article className="legal-page">
       <Link className="legal-back" href="/">
-        <span aria-hidden="true">←</span> Kembali
+        <ChevronLeftIcon />
+        Kembali ke Beranda
       </Link>
       <h1 className="page-title">
         <span className="section-ornament" aria-hidden="true">
@@ -23,52 +43,56 @@ export default function PrivacyPage() {
       <p className="legal-updated">Terakhir diperbarui: 10 Oktober 2026</p>
 
       <section className="legal-section">
-        <h2>Data yang diproses</h2>
+        <h2>Data yang Diproses</h2>
         <p>
-          Link video atau kata kunci yang kamu masukkan diproses server untuk
-          menghasilkan pencarian. Setiap request biasa juga otomatis membawa alamat IP
-          dan user agent perangkat, seperti layaknya situs web pada umumnya.
+          Saat Anda menggunakan layanan ini, tautan video atau kata kunci yang Anda
+          masukkan diproses oleh server untuk menghasilkan pencarian. Setiap
+          permintaan secara otomatis membawa alamat IP dan user agent perangkat,
+          sebagaimana berlaku pada situs web pada umumnya.
         </p>
         <p>
-          Tidak ada akun, tidak ada formulir pendaftaran, dan tidak ada cookie iklan.
-        </p>
-      </section>
-
-      <section className="legal-section">
-        <h2>Ingat link di browser</h2>
-        <p>
-          Kalau fitur ingat link aktif, link terakhir disimpan di browser kamu lewat
-          localStorage. Data itu tinggal di perangkatmu dan bisa dihapus kapan saja
-          lewat pengaturan browser.
+          Layanan ini tidak memiliki akun pengguna, tidak memiliki formulir
+          pendaftaran, dan tidak menggunakan cookie iklan.
         </p>
       </section>
 
       <section className="legal-section">
-        <h2>Layanan pihak ketiga</h2>
+        <h2>Penyimpanan Lokal</h2>
         <p>
-          Untuk mengambil hasil pencarian, server memanggil layanan pihak ketiga
-          termasuk TikTok. Situs ini tidak mengontrol bagaimana mereka memperlakukan
-          datamu, jadi kebijakan masing-masing pihak yang berlaku untuk bagian itu.
+          Apabila fitur ingat tautan diaktifkan, tautan terakhir disimpan di peramban
+          Anda melalui localStorage. Data tersebut berada di perangkat Anda dan dapat
+          dihapus sewaktu-waktu melalui pengaturan peramban.
         </p>
       </section>
 
       <section className="legal-section">
-        <h2>Penjualan data</h2>
-        <p>Data pencarianmu tidak dijual ke pihak mana pun.</p>
+        <h2>Layanan Pihak Ketiga</h2>
+        <p>
+          Untuk mengambil hasil pencarian, server memanggil layanan pihak ketiga,
+          termasuk TikTok. Kami tidak mengontrol cara pihak ketiga memperlakukan data
+          Anda, sehingga kebijakan masing-masing pihak yang berlaku untuk bagian
+          tersebut.
+        </p>
       </section>
 
       <section className="legal-section">
-        <h2>Perubahan kebijakan</h2>
+        <h2>Penjualan Data</h2>
+        <p>Data pencarian Anda tidak dijual kepada pihak mana pun.</p>
+      </section>
+
+      <section className="legal-section">
+        <h2>Perubahan Kebijakan</h2>
         <p>
-          Kebijakan ini bisa berubah sewaktu-waktu. Tanggal pembaruan selalu tertulis
-          di bagian atas halaman.
+          Kebijakan ini dapat diubah sewaktu-waktu. Tanggal pembaruan terakhir
+          ditampilkan di bagian atas halaman.
         </p>
       </section>
 
       <section className="legal-section">
         <h2>Kontak</h2>
         <p>
-          Ada pertanyaan soal privasi? DM TikTok{" "}
+          Pertanyaan mengenai kebijakan privasi ini dapat disampaikan melalui pesan
+          langsung di TikTok{" "}
           <a href="https://www.tiktok.com/@givydev" target="_blank" rel="noopener noreferrer">
             @givydev
           </a>
