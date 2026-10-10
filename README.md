@@ -102,7 +102,7 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
         "title": "Support",
         "items": [
           { "label": "Sociabuzz", "href": "https://sociabuzz.com/givyo/tribe" },
-          { "label": "Saluran", "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r" }
+          { "label": "Saluran WhatsApp", "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r" }
         ]
       },
       {
