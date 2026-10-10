@@ -1630,21 +1630,15 @@ a:focus-visible {
   line-height: 1.8;
 }
 
-/* nama domain sebagai chip aksen, tautan ke beranda */
+/* nama domain berwarna aksen, tautan ke beranda */
 .legal-site {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
   text-decoration: none;
-  transition: background 120ms ease;
 }
 
 .legal-section a.legal-site:hover {
-  background: rgba(5, 250, 168, 0.22);
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .legal-section p {
