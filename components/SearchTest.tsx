@@ -6,6 +6,7 @@ import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { ui } from "@/lib/ui";
+import { HowSteps } from "@/components/HowSteps";
 
 const BG = "#0F0F10";
 const SURFACE = "#17171A";
@@ -348,6 +349,10 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
             <div role="alert" style={{ color: DANGER, fontSize: 14, marginTop: 14 }}>
               {error}
             </div>
+          )}
+
+          {embedded && !searching && !error && !searchedQuery && cands.length === 0 && (
+            <HowSteps title={ui.states.howTitle} steps={ui.states.searchHowSteps} />
           )}
 
           {embedded && searching && (
