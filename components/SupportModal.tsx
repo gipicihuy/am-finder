@@ -22,8 +22,13 @@ export function SupportModal() {
   const openedOnce = useRef(false);
 
   useEffect(() => {
+    // Layout tidak di-remount saat pindah halaman, jadi ref ini hidup selama
+    // satu page load. Muat ulang (refresh) baru mereset dan memunculkan modal lagi.
     if (SILENT_PATHS.has(pathname)) {
       setOpen(false);
+      // Mendarat langsung di /terms atau /privacy dihitung sebagai "sudah dilihat",
+      // supaya kembali ke beranda tidak memunculkan modal.
+      openedOnce.current = true;
       return;
     }
     if (!openedOnce.current) {
