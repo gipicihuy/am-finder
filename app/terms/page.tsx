@@ -43,18 +43,21 @@ export default function TermsPage() {
       <p className="legal-updated">Terakhir diperbarui: 10 Oktober 2026</p>
 
       <section className="legal-section">
-        <h2>Tentang Layanan</h2>
-        <p>
-          AM Preset Finder (amfinder.web.id) adalah layanan pencarian gratis yang
-          membantu Anda menemukan tautan preset Alight Motion yang dibagikan kreator
-          melalui video TikTok. Tersedia dua metode pencarian: menempelkan tautan video
-          dan mencari dengan kata kunci. Layanan ini tidak memerlukan pendaftaran akun
-          dan tidak dipungut biaya.
+        <h2>1. Tentang Layanan</h2>
+        <p className="legal-intro">
+          AM Preset Finder di{" "}
+          <Link className="legal-site" href="/">
+            amfinder.web.id
+          </Link>{" "}
+          adalah layanan pencarian gratis yang membantu Anda menemukan tautan preset
+          Alight Motion yang dibagikan kreator melalui video TikTok. Tersedia dua
+          metode pencarian: menempelkan tautan video dan mencari dengan kata kunci.
+          Layanan ini tidak memerlukan pendaftaran akun dan tidak dipungut biaya.
         </p>
       </section>
 
       <section className="legal-section">
-        <h2>Penggunaan Hasil Pencarian</h2>
+        <h2>2. Penggunaan Hasil Pencarian</h2>
         <p>
           Seluruh tautan preset pada hasil pencarian berasal dari kreator yang
           mengunggahnya. Anda dipersilakan menggunakan tautan tersebut untuk keperluan
@@ -63,7 +66,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal-section">
-        <h2>Batas Tanggung Jawab</h2>
+        <h2>3. Batas Tanggung Jawab</h2>
         <ul>
           <li>
             Hasil pencarian diambil dari data publik di TikTok. Apabila kreator
@@ -84,7 +87,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal-section">
-        <h2>Larangan</h2>
+        <h2>4. Larangan</h2>
         <p>
           Anda dilarang menggunakan layanan ini untuk spam, serangan terhadap server,
           atau pelanggaran hak pihak lain maupun ketentuan TikTok dan Alight Motion.
@@ -93,7 +96,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal-section">
-        <h2>Perubahan Ketentuan</h2>
+        <h2>5. Perubahan Ketentuan</h2>
         <p>
           Ketentuan ini dapat diubah sewaktu-waktu tanpa pemberitahuan sebelumnya.
           Tanggal pembaruan terakhir ditampilkan di bagian atas halaman.
@@ -101,7 +104,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal-section">
-        <h2>Kontak</h2>
+        <h2>6. Kontak</h2>
         <p>
           Pertanyaan mengenai ketentuan ini dapat disampaikan melalui pesan langsung di
           TikTok{" "}
