@@ -1,5 +1,6 @@
 "use client";
 
+import { isTikTokLink } from "@/lib/tiktok-link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
@@ -118,7 +119,7 @@ export function Finder() {
     const target = link.trim();
     if (!target) return;
 
-    const looksLikeTikTok = /tiktok\.com/i.test(target) || /^\d{15,}$/.test(target);
+    const looksLikeTikTok = isTikTokLink(target);
     if (!looksLikeTikTok) {
       sourceRef.current?.close();
       finishedRef.current = true;
