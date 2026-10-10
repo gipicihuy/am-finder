@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const SUPPORT_URL = "https://sociabuzz.com/givyo/tribe";
+const SILENT_PATHS = new Set(["/terms", "/privacy"]);
 
 /**
  * Modal dukungan. Muncul sekali setiap page load (state di memori saja, tanpa
  * localStorage/cookie), jadi kunjungan/reload berikutnya tampil lagi.
  * Tidak dirender di server, hanya setelah hydrate, supaya tidak masuk HTML awal.
+ * Halaman /terms dan /privacy tidak pernah menampilkan modal ini.
  */
 export function SupportModal() {
   const [open, setOpen] = useState(false);
@@ -15,9 +18,19 @@ export function SupportModal() {
   const primaryRef = useRef<HTMLAnchorElement>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
 
+  const pathname = usePathname();
+  const openedOnce = useRef(false);
+
   useEffect(() => {
-    setOpen(true);
-  }, []);
+    if (SILENT_PATHS.has(pathname)) {
+      setOpen(false);
+      return;
+    }
+    if (!openedOnce.current) {
+      openedOnce.current = true;
+      setOpen(true);
+    }
+  }, [pathname]);
 
   const close = useCallback(() => setOpen(false), []);
 

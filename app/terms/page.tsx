@@ -5,14 +5,34 @@ import { SectionOrnament } from "@/components/Ornament";
 export const metadata: Metadata = {
   title: "Ketentuan Layanan | AM Preset Finder",
   description:
-    "Ketentuan penggunaan AM Preset Finder, alat pencari link preset Alight Motion dari TikTok.",
+    "Ketentuan layanan AM Preset Finder, layanan pencari tautan preset Alight Motion dari TikTok.",
 };
+
+function ChevronLeftIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M12.5 4.5 7 10l5.5 5.5" />
+    </svg>
+  );
+}
 
 export default function TermsPage() {
   return (
     <article className="legal-page">
       <Link className="legal-back" href="/">
-        <span aria-hidden="true">←</span> Kembali
+        <ChevronLeftIcon />
+        Kembali ke Beranda
       </Link>
       <h1 className="page-title">
         <span className="section-ornament" aria-hidden="true">
@@ -23,38 +43,42 @@ export default function TermsPage() {
       <p className="legal-updated">Terakhir diperbarui: 10 Oktober 2026</p>
 
       <section className="legal-section">
-        <h2>Tentang layanan</h2>
+        <h2>Tentang Layanan</h2>
         <p>
-          AM Preset Finder (amfinder.web.id) adalah alat gratis untuk mencari link
-          preset Alight Motion yang dibagikan kreator di video TikTok. Ada dua cara:
-          tempel link video, atau cari lewat kata kunci. Tanpa akun dan tanpa biaya.
+          AM Preset Finder (amfinder.web.id) adalah layanan pencarian gratis yang
+          membantu Anda menemukan tautan preset Alight Motion yang dibagikan kreator
+          melalui video TikTok. Tersedia dua metode pencarian: menempelkan tautan video
+          dan mencari dengan kata kunci. Layanan ini tidak memerlukan pendaftaran akun
+          dan tidak dipungut biaya.
         </p>
       </section>
 
       <section className="legal-section">
-        <h2>Pemakaian hasil pencarian</h2>
+        <h2>Penggunaan Hasil Pencarian</h2>
         <p>
-          Link preset di hasil pencarian berasal dari kreator yang mengunggahnya.
-          Pakai untuk editanmu sendiri dan tetap kredit kreatornya. Kami tidak punya
-          hubungan resmi dengan kreator maupun pemilik preset.
+          Seluruh tautan preset pada hasil pencarian berasal dari kreator yang
+          mengunggahnya. Anda dipersilakan menggunakan tautan tersebut untuk keperluan
+          penyuntingan pribadi dan wajib mencantumkan kredit kepada kreator pemiliknya.
         </p>
       </section>
 
       <section className="legal-section">
-        <h2>Batas tanggung jawab</h2>
+        <h2>Batas Tanggung Jawab</h2>
         <ul>
           <li>
-            Hasil dicari dari data publik di TikTok. Kalau kreator menghapus video
-            atau komentarnya, link ikut hilang dan hasil bisa tidak ditemukan.
+            Hasil pencarian diambil dari data publik di TikTok. Apabila kreator
+            menghapus video atau komentar aslinya, tautan terkait ikut tidak berlaku
+            dan tidak lagi dapat ditemukan.
           </li>
           <li>
-            Situs ini tidak menyimpan file preset. Link mengarah ke layanan pihak
-            ketiga seperti TikTok, Alight Motion, dan host file yang di luar kendali
-            kami.
+            Layanan ini tidak menyimpan berkas preset. Setiap tautan mengarah ke
+            layanan pihak ketiga, termasuk TikTok, Alight Motion, dan penyedia hosting
+            berkas, yang berada di luar kendali kami.
           </li>
           <li>
-            Situs ini tidak berafiliasi dengan TikTok maupun Alight Motion (Alight
-            Creative Inc). Nama dan merek dagang milik pemiliknya masing-masing.
+            Layanan ini tidak berafiliasi dengan TikTok maupun Alight Motion (Alight
+            Creative Inc). Seluruh nama dan merek dagang merupakan milik pemiliknya
+            masing-masing.
           </li>
         </ul>
       </section>
@@ -62,24 +86,25 @@ export default function TermsPage() {
       <section className="legal-section">
         <h2>Larangan</h2>
         <p>
-          Jangan pakai layanan ini buat spam, menyerang server, atau melanggar hak
-          pihak lain maupun ketentuan TikTok dan Alight Motion. Kami bisa memblokir
-          aksi yang merugikan pengguna lain.
+          Anda dilarang menggunakan layanan ini untuk spam, serangan terhadap server,
+          atau pelanggaran hak pihak lain maupun ketentuan TikTok dan Alight Motion.
+          Kami berhak membatasi akses bagi pihak yang merugikan pengguna lain.
         </p>
       </section>
 
       <section className="legal-section">
-        <h2>Perubahan ketentuan</h2>
+        <h2>Perubahan Ketentuan</h2>
         <p>
-          Ketentuan ini bisa berubah sewaktu-waktu. Tanggal pembaruan selalu tertulis
-          di bagian atas halaman.
+          Ketentuan ini dapat diubah sewaktu-waktu tanpa pemberitahuan sebelumnya.
+          Tanggal pembaruan terakhir ditampilkan di bagian atas halaman.
         </p>
       </section>
 
       <section className="legal-section">
         <h2>Kontak</h2>
         <p>
-          Ada pertanyaan soal ketentuan ini? DM TikTok{" "}
+          Pertanyaan mengenai ketentuan ini dapat disampaikan melalui pesan langsung di
+          TikTok{" "}
           <a href="https://www.tiktok.com/@givydev" target="_blank" rel="noopener noreferrer">
             @givydev
           </a>
