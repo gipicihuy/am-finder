@@ -28,6 +28,7 @@ type UiTexts = {
     shareTelegram: string;
     howTitle: string;
     howSteps: string[];
+    searchHowSteps: string[];
   };
   header: {
     brand: string;

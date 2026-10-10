@@ -6,6 +6,7 @@ import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
 import { FoundToast } from "@/components/FoundToast";
+import { HowSteps } from "@/components/HowSteps";
 import BrandScan from "./BrandScan";
 import SearchTest from "./SearchTest";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
@@ -383,19 +384,7 @@ export function Finder() {
       </div>
 
       {phase === "idle" ? (
-        <section className="how" data-nosnippet>
-          <h2 className="how-title">{ui.states.howTitle}</h2>
-          <ol className="how-list">
-            {ui.states.howSteps.map((step, index) => (
-              <li key={step}>
-                <span className="how-num" aria-hidden="true">
-                  {index + 1}
-                </span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <HowSteps title={ui.states.howTitle} steps={ui.states.howSteps} />
       ) : null}
 
       {phase === "running" ? (

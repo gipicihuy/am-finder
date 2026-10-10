@@ -23,6 +23,12 @@
       "AM Preset Finder scans the video, bio and comments",
       "Preset links are extracted automatically",
       "Copy the preset you need"
+    ],
+    "searchHowSteps": [
+      "Type a song name or keyword",
+      "Pick a video from the results",
+      "AM Preset Finder scans the video, bio and comments",
+      "Copy the preset you need"
     ]
   },
   "header": {
