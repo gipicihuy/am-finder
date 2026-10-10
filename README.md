@@ -106,8 +106,11 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
         ]
       },
       {
-        "title": "About",
-        "items": [{ "label": "Free to use" }, { "label": "No sign-up" }]
+        "title": "Legal",
+        "items": [
+          { "label": "Terms of Service", "href": "/terms" },
+          { "label": "Privacy Policy", "href": "/privacy" }
+        ]
       }
     ],
     "copyright": "© 2026 Givy. All rights reserved.",

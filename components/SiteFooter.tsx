@@ -52,8 +52,8 @@ export function SiteFooter() {
                       className="footer-link"
                       href={item.href}
                       onClick={(event) => followAnchor(event, item.href!)}
-                      target={item.href.startsWith("#") ? undefined : "_blank"}
-                      rel={item.href.startsWith("#") ? undefined : "noopener noreferrer"}
+                      target={/^https?:/.test(item.href) ? "_blank" : undefined}
+                      rel={/^https?:/.test(item.href) ? "noopener noreferrer" : undefined}
                     >
                       {item.label}
                     </a>

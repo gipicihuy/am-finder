@@ -48,13 +48,15 @@
         ]
       },
       {
-        "title": "About",
+        "title": "Legal",
         "items": [
           {
-            "label": "Free to use"
+            "label": "Terms of Service",
+            "href": "/terms"
           },
           {
-            "label": "No sign-up"
+            "label": "Privacy Policy",
+            "href": "/privacy"
           }
         ]
       }
