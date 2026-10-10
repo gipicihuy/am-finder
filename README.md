@@ -99,10 +99,10 @@ Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json
     "note": "Paste a TikTok link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
     "columns": [
       {
-        "title": "Explore",
+        "title": "Support",
         "items": [
-          { "label": "Search box", "href": "#tt" },
-          { "label": "Back to top", "href": "#top" }
+          { "label": "Sociabuzz", "href": "https://sociabuzz.com/givyo/tribe" },
+          { "label": "Saluran", "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r" }
         ]
       },
       {
