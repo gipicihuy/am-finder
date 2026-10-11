@@ -49,7 +49,7 @@ function encode(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-export async function GET(request: Request) {
+async function handle(request: Request): Promise<Response> {
   const params = new URL(request.url).searchParams;
   const target = normalizeTarget(params.get("url"));
   if (!target) {
@@ -111,13 +111,14 @@ export async function GET(request: Request) {
         finish();
       }, TIMEOUT_MS);
 
-      findPreset(target, {
+      Promise.resolve()
+        .then(() => findPreset(target, {
         all: true,
         onLog: (line: string) => {
           const text = line.replace(/^\[[\d.]+s\]\s*/, "").trim();
           if (text) push("log", text);
         },
-      })
+      }))
         .then((result: unknown) => {
           if (!result || typeof result !== "object") {
             push("error", { message: "keluaran scraper tidak terbaca" });
@@ -147,4 +148,18 @@ export async function GET(request: Request) {
       "X-Accel-Buffering": "no",
     },
   });
+}
+
+// Tangkap semua exception supaya yang tampil pesan aslinya, bukan halaman Cloudflare 1101.
+// (Sementara untuk diagnosis; stack dipotong pendek.)
+export async function GET(request: Request): Promise<Response> {
+  try {
+    return await handle(request);
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    return Response.json(
+      { ok: false, error: err.message, stack: (err.stack || "").split("\n").slice(0, 8) },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }
