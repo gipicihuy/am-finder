@@ -15,3 +15,8 @@ android/local.properties
 dist/
 *.jks
 *.keystore
+
+# cloudflare
+.open-next
+.wrangler
+.dev.vars

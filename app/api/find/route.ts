@@ -1,6 +1,5 @@
-import { spawn } from "node:child_process";
-import path from "node:path";
 import { normalizeBattery, sendLog } from "../../../lib/track";
+import { findPreset } from "../../../lib/amfinder.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,10 +73,7 @@ export async function GET(request: Request) {
     );
   }
 
-  let child: ReturnType<typeof spawn> | null = null;
   let closed = false;
-  let stdout = "";
-  let stderrBuffer = "";
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const releaseOnce = () => {
@@ -108,80 +104,39 @@ export async function GET(request: Request) {
         }
       };
 
-      const proc = spawn(process.execPath, [path.join(process.cwd(), "lib", "amfinder.js"), target, "--raw", "--all"], {
-        cwd: process.cwd(),
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      child = proc;
-
+      // Scraper jalan di proses yang sama (tanpa spawn). Batas waktu menutup stream;
+      // kalau klien putus, hasilnya dibuang.
       timer = setTimeout(() => {
-        try {
-          proc.kill("SIGKILL");
-        } catch {
-          /* proses sudah mati */
-        }
+        push("error", { message: "pencarian kehabisan waktu" });
+        finish();
       }, TIMEOUT_MS);
 
-      proc.stdout?.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString();
-      });
-
-      proc.stderr?.on("data", (chunk: Buffer) => {
-        stderrBuffer += chunk.toString();
-        let index = stderrBuffer.indexOf("\n");
-        while (index >= 0) {
-          const line = stderrBuffer.slice(0, index);
-          stderrBuffer = stderrBuffer.slice(index + 1);
+      findPreset(target, {
+        all: true,
+        onLog: (line: string) => {
           const text = line.replace(/^\[[\d.]+s\]\s*/, "").trim();
           if (text) push("log", text);
-          index = stderrBuffer.indexOf("\n");
-        }
-      });
-
-      proc.on("error", (error) => {
-        push("error", { message: error.message });
-        finish();
-      });
-
-      proc.on("close", (code) => {
-        if (closed) return;
-        let parsed: { ok?: boolean; error?: string } | null = null;
-        try {
-          parsed = JSON.parse(stdout);
-        } catch {
-          parsed = null;
-        }
-        if (code !== 0) {
-          push("error", { message: parsed?.error || `scraper berhenti dengan kode ${code}` });
-          finish();
-          return;
-        }
-        if (!parsed || typeof parsed !== "object") {
-          push("error", { message: "keluaran scraper tidak terbaca" });
-          finish();
-          return;
-        }
-        push("result", parsed);
-        finish();
-      });
+        },
+      })
+        .then((result: unknown) => {
+          if (!result || typeof result !== "object") {
+            push("error", { message: "keluaran scraper tidak terbaca" });
+          } else {
+            push("result", result);
+          }
+        })
+        .catch((error: unknown) => {
+          push("error", { message: error instanceof Error ? error.message : String(error) });
+        })
+        .finally(finish);
     },
     cancel() {
       releaseOnce();
-      try {
-        child?.kill("SIGKILL");
-      } catch {
-        /* proses sudah mati */
-      }
     },
   });
 
   request.signal.addEventListener("abort", () => {
     releaseOnce();
-    try {
-      child?.kill("SIGKILL");
-    } catch {
-      /* proses sudah mati */
-    }
   });
 
   return new Response(stream, {

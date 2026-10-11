@@ -1,6 +1,5 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import path from "node:path";
 import { searchTiktok, setLog } from "../../../lib/ttsearch";
+import { findPreset } from "../../../lib/amfinder.js";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 
 export const runtime = "nodejs";
@@ -119,89 +118,52 @@ function rankCandidates(items: Candidate[], queryNorm: string): Candidate[] {
     .map((entry) => entry.item);
 };
 
-function runVideo(
+async function runVideo(
   cand: Candidate,
   index: number,
   push: Push,
-  children: Set<ChildProcess>,
 ): Promise<Record<string, unknown>> {
-  return new Promise((resolve) => {
-    const meta = {
-      index,
-      url: cand.url,
-      handle: cand.handle ?? "",
-      kind: cand.kind ?? "video",
-      snippet: cand.snippet ?? "",
-      thumb: cand.thumb ?? "",
+  const meta = {
+    index,
+    url: cand.url,
+    handle: cand.handle ?? "",
+    kind: cand.kind ?? "video",
+    snippet: cand.snippet ?? "",
+    thumb: cand.thumb ?? "",
+  };
+  push("log", `[video ${index + 1}] ${cand.url}`);
+  push("videoStart", meta);
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    // Scraper jalan di proses yang sama (tanpa spawn), dengan batas waktu per video.
+    const r = (await Promise.race([
+      findPreset(cand.url, {
+        all: true,
+        onLog: (line: string) => {
+          const text = line.replace(/^\[[\d.]+s\]\s*/, "").trim();
+          if (text) push("log", `[video ${index + 1}] ${text}`);
+        },
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("pengecekan video kehabisan waktu")), CHILD_TIMEOUT_MS);
+      }),
+    ])) as Record<string, unknown>;
+    return {
+      ...meta,
+      found: !!r.found,
+      context: r.context ?? null,
+      presetLinks: Array.isArray(r.presetLinks) ? r.presetLinks : [],
+      message: r.message ?? null,
+      checked: r.checked ?? null,
+      shareLinks: r.shareLinks ?? null,
     };
-    push("log", `[video ${index + 1}] ${cand.url}`);
-    push("videoStart", meta);
-
-    const child = spawn(
-      process.execPath,
-      [path.join(process.cwd(), "lib", "amfinder.js"), cand.url, "--raw", "--all"],
-      { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] },
-    );
-    children.add(child);
-
-    let stdout = "";
-    let stderrBuffer = "";
-    const done = (row: Record<string, unknown>) => {
-      children.delete(child);
-      resolve(row);
-    };
-    const timer = setTimeout(() => {
-      try {
-        child.kill("SIGKILL");
-      } catch {
-        /* proses sudah mati */
-      }
-    }, CHILD_TIMEOUT_MS);
-
-    child.stdout?.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr?.on("data", (chunk: Buffer) => {
-      stderrBuffer += chunk.toString();
-      let index2 = stderrBuffer.indexOf("\n");
-      while (index2 >= 0) {
-        const line = stderrBuffer.slice(0, index2);
-        stderrBuffer = stderrBuffer.slice(index2 + 1);
-        const text = line.replace(/^\[[\d.]+s\]\s*/, "").trim();
-        if (text) push("log", `[video ${index + 1}] ${text}`);
-        index2 = stderrBuffer.indexOf("\n");
-      }
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      done({ ...meta, found: false, error: error.message });
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      const jsonStart = stdout.indexOf("{");
-      if (code !== 0 || jsonStart < 0) {
-        const tail = stderrBuffer.trim().split("\n").pop();
-        done({ ...meta, found: false, error: (tail || `scraper berhenti dengan kode ${code}`).slice(0, 200) });
-        return;
-      }
-      try {
-        const r = JSON.parse(stdout.slice(jsonStart)) as Record<string, unknown>;
-        done({
-          ...meta,
-          found: !!r.found,
-          context: r.context ?? null,
-          presetLinks: Array.isArray(r.presetLinks) ? r.presetLinks : [],
-          message: r.message ?? null,
-          checked: r.checked ?? null,
-          shareLinks: r.shareLinks ?? null,
-        });
-      } catch {
-        done({ ...meta, found: false, error: "JSON pipeline tidak valid" });
-      }
-    });
-  });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ...meta, found: false, error: message.slice(0, 200) };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export async function GET(request: Request) {
@@ -233,25 +195,13 @@ export async function GET(request: Request) {
     );
   }
 
-  const children = new Set<ChildProcess>();
   let closed = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
-
-  const killChildren = () => {
-    for (const child of children) {
-      try {
-        child.kill("SIGKILL");
-      } catch {
-        /* proses sudah mati */
-      }
-    }
-  };
 
   const releaseOnce = () => {
     if (closed) return false;
     closed = true;
     if (timer) clearTimeout(timer);
-    killChildren();
     release();
     return true;
   };
@@ -276,7 +226,10 @@ export async function GET(request: Request) {
         }
       };
 
-      timer = setTimeout(killChildren, TOTAL_TIMEOUT_MS);
+      timer = setTimeout(() => {
+        push("error", { message: "pencarian kehabisan waktu" });
+        finish();
+      }, TOTAL_TIMEOUT_MS);
       const t0 = Date.now();
 
       void (async () => {
@@ -390,7 +343,7 @@ export async function GET(request: Request) {
             const i = next++;
             if (i >= items.length) return;
             if (closed) return;
-            videos[i] = await runVideo(items[i], i, push, children);
+            videos[i] = await runVideo(items[i], i, push);
             if (!closed) push("videoResult", videos[i]);
           }
         };
