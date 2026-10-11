@@ -29,7 +29,8 @@ type RawItem = {
   stats?: { playCount?: number; likeCount?: number };
 };
 
-type SeedResult = RekomenSource & { items: RawItem[] };
+// error cuma dipakai buat log server, bukan buat klien.
+type SeedResult = RekomenSource & { items: RawItem[]; error?: string };
 
 let feed: RekomenFeed | null = null;
 let feedAt = 0;
@@ -42,10 +43,10 @@ async function runSeed(query: string, refresh: boolean): Promise<SeedResult> {
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("seed kehabisan waktu")), SEED_BUDGET_MS),
       ),
-    ])) as { items?: RawItem[]; engine?: string };
+    ])) as { items?: RawItem[] };
 
     const items = Array.isArray(res.items) ? res.items : [];
-    return { query, ok: true, count: items.length, engine: res.engine, items };
+    return { query, ok: true, count: items.length, items };
   } catch (e) {
     return {
       query,
@@ -92,12 +93,11 @@ async function build(refresh: boolean): Promise<RekomenFeed> {
     return 0;
   });
 
-  const sources: RekomenSource[] = results.map(({ query, ok, count, engine, error }) => ({
+  // Nama engine sengaja gak dikirim ke klien — cukup di log server.
+  const sources: RekomenSource[] = results.map(({ query, ok, count }) => ({
     query,
     ok,
     count,
-    engine,
-    error,
   }));
 
   return {

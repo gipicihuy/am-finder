@@ -1,11 +1,15 @@
 node_modules/
 .next/
+.next.prev/
 out/
 .env*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
 lib/amfinder.cache.json
+
+# Bukan bagian project (artefak unduhan)
+*.deb
 
 # Build APK & kunci signing - jangan pernah masuk repo
 android/.gradle/

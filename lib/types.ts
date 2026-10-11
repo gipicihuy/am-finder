@@ -67,7 +67,7 @@ export type FindResult = {
   error?: string;
 };
 
-// Feed "Rekomendasi Preset" (halaman test /rekomen-preset).
+// Feed "Rekomendasi Preset" (API /api/rekomen-preset).
 export type RekomenItem = {
   url: string;
   handle?: string;
@@ -83,8 +83,6 @@ export type RekomenSource = {
   query: string;
   ok: boolean;
   count: number;
-  engine?: string;
-  error?: string;
 };
 
 export type RekomenFeed = {

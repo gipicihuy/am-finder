@@ -102,9 +102,6 @@ export default function RekomendasiPreset() {
   const items = feed?.items ?? [];
   const okSources = feed?.sources.filter((s) => s.ok).length ?? 0;
   const totalSources = feed?.sources.length ?? 0;
-  const engineNames = Array.from(
-    new Set((feed?.sources ?? []).map((s) => s.engine).filter((name): name is string => !!name)),
-  );
 
   if (selected) {
     return (
@@ -295,8 +292,8 @@ export default function RekomendasiPreset() {
             }}
           >
             <span>
-              {items.length} video · {okSources}/{totalSources} seed berhasil
-              {engineNames.length ? ` · ${engineNames.join(", ")}` : ""} · {timeLabel(feed!.generatedAt)}
+              {items.length} video · {okSources}/{totalSources} seed berhasil ·{" "}
+              {timeLabel(feed!.generatedAt)}
             </span>
             <button type="button" className="text-btn" onClick={() => load(true)}>
               Muat ulang
