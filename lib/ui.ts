@@ -33,6 +33,7 @@ type UiTexts = {
   header: {
     brand: string;
     tagline: string;
+    byline: string;
   };
   footer: {
     brand: string;

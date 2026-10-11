@@ -87,15 +87,16 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
         />
         <header className="site-header" id="top">
+          <span className="hud-corner hud-tl" aria-hidden="true" />
+          <span className="hud-corner hud-br" aria-hidden="true" />
           <div className="brand-row">
             <span className="brand-mark">
               <AmLogo size={34} />
             </span>
-            <div className="brand-text">
-              <span className="brand-name">{ui.header.brand}</span>
-              <p className="brand-tagline">{ui.header.tagline}</p>
-            </div>
+            <span className="brand-name">{ui.header.brand}</span>
           </div>
+          <p className="brand-tagline">{ui.header.tagline}</p>
+          <p className="brand-byline">{ui.header.byline}</p>
         </header>
         <main className="shell main">{children}</main>
         <SiteFooter />
