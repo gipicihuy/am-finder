@@ -170,7 +170,6 @@ function VideoPreview({
   const videoRef = useRef<HTMLVideoElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -198,13 +197,6 @@ function VideoPreview({
     if (!video) return;
     if (video.paused) video.play().catch(() => undefined);
     else video.pause();
-  }
-
-  function toggleMute() {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setMuted(video.muted);
   }
 
   if (!src && !poster) return null;
@@ -237,10 +229,14 @@ function VideoPreview({
           playsInline
           disableRemotePlayback
           preload="metadata"
-          aria-label="Video preview"
-          title="Open preview"
-          onClick={() => {
-            if (!expanded) setExpanded(true);
+          aria-label={playing ? "Pause video" : "Play video"}
+          tabIndex={0}
+          onClick={togglePlay}
+          onKeyDown={(event) => {
+            if (event.key === " " || event.key === "Enter") {
+              event.preventDefault();
+              togglePlay();
+            }
           }}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
@@ -259,32 +255,23 @@ function VideoPreview({
           <div className="video-progress" aria-hidden="true">
             <span ref={fillRef} />
           </div>
-          <div className="video-tools">
-            <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
-              {playing ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M7 4.5h3.4v15H7zM13.6 4.5H17v15h-3.4z" />
-                </svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M7.5 4.5 18 12 7.5 19.5z" />
-                </svg>
-              )}
-            </button>
-            <button type="button" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4 9.5v5h3.2L11 18V6L7.2 9.5H4z" fill="currentColor" stroke="none" />
-                {muted ? (
-                  <path d="M15 9.5l5 5M20 9.5l-5 5" />
-                ) : (
-                  <>
-                    <path d="M14.5 9.5a3.4 3.4 0 0 1 0 5" />
-                    <path d="M17 7.5a6.6 6.6 0 0 1 0 9" />
-                  </>
-                )}
+          {!playing ? (
+            <div className="video-center-play" aria-hidden="true">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 4.8 19 12 8 19.2z" />
+              </svg>
+            </div>
+          ) : null}
+          {!expanded ? (
+            <button type="button" className="video-expand" onClick={() => setExpanded(true)} aria-label="Expand">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M9 21H3v-6" />
+                <path d="M21 3l-7 7" />
+                <path d="M3 21l7-7" />
               </svg>
             </button>
-          </div>
+          ) : null}
         </>
       ) : null}
       </div>
