@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
 import { searchTiktok, setLog } from "../../../lib/ttsearch";
 import { normalizeBattery, sendLog } from "../../../lib/track";
+import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -210,6 +211,10 @@ export async function GET(request: Request) {
   if (!query) {
     return Response.json({ ok: false, error: "query minimal 3 karakter" }, { status: 400 });
   }
+
+  const limit = limitByIp(request, "search");
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
+
   const topRaw = Number(params.get("top"));
   const top = Number.isFinite(topRaw) && topRaw >= 1
     ? Math.min(Math.floor(topRaw), TOP_MAX)

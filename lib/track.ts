@@ -1,3 +1,5 @@
+import { clientIp, isPrivateIp } from "./ip";
+
 export type Battery = { level?: number; charging?: boolean };
 
 type Geo = { city: string; region: string; country: string; isp: string };
@@ -5,26 +7,6 @@ type Geo = { city: string; region: string; country: string; isp: string };
 const GEO_MISS: Geo = { city: "-", region: "-", country: "-", isp: "-" };
 const geoCache = new Map<string, Geo>();
 const TIMEZONE = "Asia/Jakarta";
-
-function clientIp(headers: Headers): string {
-  const fwd = headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return (
-    headers.get("x-real-ip") ||
-    headers.get("cf-connecting-ip") ||
-    headers.get("true-client-ip") ||
-    "-"
-  );
-}
-
-function isPrivateIp(ip: string): boolean {
-  return (
-    ip === "::1" ||
-    ip === "-" ||
-    ip === "unknown" ||
-    /^(::ffff:)?(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip)
-  );
-}
 
 async function geo(ip: string): Promise<Geo> {
   if (isPrivateIp(ip)) return GEO_MISS;

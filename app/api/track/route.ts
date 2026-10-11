@@ -1,9 +1,13 @@
 import { normalizeBattery, sendLog } from "../../../lib/track";
+import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const limit = limitByIp(request, "track");
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
+
   let body: unknown = null;
   try {
     body = await request.json();
