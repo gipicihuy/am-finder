@@ -9,6 +9,11 @@ import "./globals.css";
 // Domain utama. amfinder.cc.cd dan www.amfinder.web.id juga mengarah ke situs ini.
 const siteUrl = "https://amfinder.web.id";
 
+// Cache-bust icon: Chrome sempat menyimpan hasil favicon negatif waktu situs pernah 404,
+// jadi URL baru memaksa dia fetch ulang.
+const iconVer = "?v=2";
+const icon = (path: string) => `${path}${iconVer}`;
+
 const siteTitle = "AM Preset Finder";
 const siteDescription =
   "Paste a TikTok video link and get the Alight Motion preset links from its description, bio, comments and link in bio.";
@@ -20,15 +25,17 @@ export const metadata: Metadata = {
   authors: [{ name: "Givy", url: "https://www.tiktok.com/@givydev" }],
   creator: "Givy",
   // Favicon eksplisit untuk Google: harus kelipatan 48px (48x48 dan 192x192), bukan 16x16.
+  // ?v= dipakai buat cache-bust: Chrome nyimpan hasil favicon negatif waktu situs pernah 404,
+  // jadi URL baru bikin dia fetch ulang.
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/favicon-48x48.png", type: "image/png", sizes: "48x48" },
-      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
-      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+      { url: icon("/favicon.ico"), sizes: "48x48" },
+      { url: icon("/favicon-48x48.png"), type: "image/png", sizes: "48x48" },
+      { url: icon("/icon-192.png"), type: "image/png", sizes: "192x192" },
+      { url: icon("/icon.svg"), type: "image/svg+xml", sizes: "any" },
     ],
-    shortcut: "/favicon.ico",
-    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+    shortcut: icon("/favicon.ico"),
+    apple: [{ url: icon("/apple-icon.png"), type: "image/png", sizes: "180x180" }],
   },
   openGraph: {
     type: "website",
