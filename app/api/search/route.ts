@@ -351,7 +351,6 @@ export async function GET(request: Request) {
         const items = ranked.slice(0, pickMode ? 30 : top);
         push("candidates", {
           query,
-          engine: searchRes.engine ?? "auto",
           fromCache: !!searchRes.fromCache,
           items,
         });
@@ -362,7 +361,6 @@ export async function GET(request: Request) {
           push("result", {
             ok: true,
             query,
-            engine: searchRes.engine ?? "auto",
             fromCache: !!searchRes.fromCache,
             candidates: items.length,
             videos: [],
@@ -377,7 +375,6 @@ export async function GET(request: Request) {
           push("result", {
             ok: true,
             query,
-            engine: searchRes.engine ?? "auto",
             fromCache: !!searchRes.fromCache,
             candidates: 0,
             videos: [],
@@ -406,7 +403,6 @@ export async function GET(request: Request) {
         push("result", {
           ok: true,
           query,
-          engine: searchRes.engine ?? "auto",
           fromCache: !!searchRes.fromCache,
           candidates: items.length,
           videos,
