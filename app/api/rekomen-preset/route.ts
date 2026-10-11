@@ -32,7 +32,6 @@ type SeedResult = RekomenSource & { items: RawItem[] };
 
 let feed: RekomenFeed | null = null;
 let feedAt = 0;
-let building: Promise<RekomenFeed> | null = null;
 
 async function runSeed(query: string, refresh: boolean): Promise<SeedResult> {
   try {
@@ -106,23 +105,14 @@ async function build(refresh: boolean): Promise<RekomenFeed> {
   };
 }
 
-// Single-flight: request yang datang berbarengan berbagi satu proses build.
+// Cache di memori isolate. Tanpa single-flight: berbagi promise antar-request bisa
+// menggantung di Workers kalau request yang membangunnya dihentikan.
 async function getFeed(refresh: boolean): Promise<RekomenFeed> {
   if (!refresh && feed && Date.now() - feedAt < FEED_TTL_MS) return feed;
-  if (building) return building;
-
-  building = (async () => {
-    try {
-      const next = await build(refresh);
-      feed = next;
-      feedAt = Date.now();
-      return next;
-    } finally {
-      building = null;
-    }
-  })();
-
-  return building;
+  const next = await build(refresh);
+  feed = next;
+  feedAt = Date.now();
+  return next;
 }
 
 export async function GET(request: Request) {

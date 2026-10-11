@@ -1,4 +1,4 @@
-import { searchTiktok, setLog } from "../../../lib/ttsearch";
+import { searchTiktok } from "../../../lib/ttsearch";
 import { findPreset } from "../../../lib/amfinder.js";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 
@@ -8,44 +8,8 @@ export const dynamic = "force-dynamic";
 const SEARCH_BUDGET_MS = 40_000;
 const TOTAL_TIMEOUT_MS = 150_000;
 const CHILD_TIMEOUT_MS = 120_000;
-const MAX_ACTIVE = 3;
-const MAX_QUEUE = 8;
 const TOP_DEFAULT = 3;
 const TOP_MAX = 5;
-
-// Gate lokal sendiri (terpisah dari /api/find) biar halaman test
-// gak menyentuh route lama sama sekali.
-let active = 0;
-const waiting: Array<() => void> = [];
-
-function acquire(): Promise<void> {
-  if (active < MAX_ACTIVE) {
-    active += 1;
-    return Promise.resolve();
-  }
-  if (waiting.length >= MAX_QUEUE) {
-    return Promise.reject(new Error("server lagi penuh, coba lagi beberapa saat lagi"));
-  }
-  return new Promise((resolve) => waiting.push(resolve));
-}
-
-function release() {
-  const next = waiting.shift();
-  if (next) next();
-  else active -= 1;
-}
-
-// logSink di ttsearch.js global — fase pencarian dijalankan antri biar
-// log SSE dari dua request gak saling nyampur.
-let searchChain: Promise<unknown> = Promise.resolve();
-function withSearchLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = searchChain.then(fn, fn);
-  searchChain = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  return run;
-}
 
 function encode(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -186,15 +150,6 @@ async function handle(request: Request): Promise<Response> {
   const searchQuery = `${QUERY_PREFIX} ${query}`;
   void sendLog("search", request.headers, { link: `query: ${searchQuery}`, battery }).catch(() => {});
 
-  try {
-    await acquire();
-  } catch (error) {
-    return Response.json(
-      { ok: false, error: (error as Error).message },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
   let closed = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -202,7 +157,6 @@ async function handle(request: Request): Promise<Response> {
     if (closed) return false;
     closed = true;
     if (timer) clearTimeout(timer);
-    release();
     return true;
   };
 
@@ -235,20 +189,19 @@ async function handle(request: Request): Promise<Response> {
       void (async () => {
         let searchRes: SearchResult;
         try {
-          searchRes = await withSearchLock(async (): Promise<SearchResult> => {
-            setLog((line: string) => push("log", line));
-            try {
-              const res = await Promise.race([
-                searchTiktok(searchQuery, { limit: 30, timeout: 20_000, engine: "auto", refresh: false }),
-                new Promise<never>((_, reject) =>
-                  setTimeout(() => reject(new Error("pencarian kehabisan waktu")), SEARCH_BUDGET_MS),
-                ),
-              ]);
-              return res as SearchResult;
-            } finally {
-              setLog(() => {});
-            }
-          });
+          const res = await Promise.race([
+            searchTiktok(searchQuery, {
+              limit: 30,
+              timeout: 20_000,
+              engine: "auto",
+              refresh: false,
+              onLog: (line: string) => push("log", line),
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("pencarian kehabisan waktu")), SEARCH_BUDGET_MS),
+            ),
+          ]);
+          searchRes = res as SearchResult;
         } catch (error) {
           push("error", { message: (error as Error).message });
           finish();
@@ -270,19 +223,13 @@ async function handle(request: Request): Promise<Response> {
         if (ranked.length > 0 && bestScore < 60) {
           push("log", "hasil kurang cocok, cari ulang tanpa prefix...");
           try {
-            const retry = await withSearchLock(async (): Promise<SearchResult> => {
-              setLog((line: string) => push("log", line));
-              try {
-                return (await searchTiktok(query, {
-                  limit: 30,
-                  timeout: 15_000,
-                  engine: "auto",
-                  refresh: false,
-                })) as SearchResult;
-              } finally {
-                setLog(() => {});
-              }
-            });
+            const retry = (await searchTiktok(query, {
+              limit: 30,
+              timeout: 15_000,
+              engine: "auto",
+              refresh: false,
+              onLog: (line: string) => push("log", line),
+            })) as SearchResult;
             const retryRanked = rankCandidates(retry.items || [], queryNorm);
             const retryScore =
               retryRanked.length > 0 ? scoreCandidate(retryRanked[0].snippet, queryNorm) : 0;
