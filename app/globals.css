@@ -263,13 +263,29 @@ a:focus-visible {
   display: flex;
   gap: 10px;
   align-items: stretch;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .search-field {
   position: relative;
-  flex: 1 1 260px;
+  flex: 1 1 0;
   min-width: 0;
+}
+
+.search-form .btn-primary {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .search-form {
+    gap: 8px;
+  }
+
+  .search-form .btn-primary {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 .search-icon {
