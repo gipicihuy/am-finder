@@ -57,6 +57,21 @@ npm run build      # build produksi
 npm start          # jalankan build produksi
 ```
 
+## Deploy otomatis (GitHub ↔ VPS)
+
+Repo ini dua arah sinkron dengan VPS yang menjalankan website:
+
+- **GitHub → VPS**: systemd timer `amfinder-deploy` (tiap 1 menit) mengambil commit baru, membangunnya di worktree terpisah `/root/amfinder-build`, lalu menukar `.next` dan menjalankan `pm2 reload amfinder`. Kalau build gagal, `.next` yang lama tidak disentuh dan website tetap berjalan.
+- **VPS → GitHub**: `amfinder-sync push` (dijalankan setelah satu rangkaian perubahan selesai). Timer cadangan `amfinder-push-idle` (tiap 10 menit) mendorong perubahan yang sudah diam ≥ 15 menit.
+
+Aturan keamanan: tidak pernah force push, tidak pernah menghapus perubahan lokal, menolak push yang berisi rahasia, dan melewati deploy kalau working tree sedang berubah.
+
+```bash
+amfinder-sync push   # dorong perubahan lokal sekarang
+amfinder-sync deploy # tarik + build + reload sekarang
+tail -f /var/log/amfinder-sync.log
+```
+
 ## Ubah teks tombol, header, dan footer
 
 Semua label tombol, tulisan status, nama merek, dan isi footer ada di **`ui.json`** di root proyek:
