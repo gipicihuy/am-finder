@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { normalizeBattery, sendLog } from "../../../lib/track";
+import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,9 @@ export async function GET(request: Request) {
   if (!target) {
     return Response.json({ ok: false, error: "link TikTok tidak valid" }, { status: 400 });
   }
+
+  const limit = limitByIp(request, "find");
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
 
   const battery = params.has("bat")
     ? normalizeBattery({

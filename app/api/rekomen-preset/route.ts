@@ -1,4 +1,5 @@
 import { searchTiktok } from "../../../lib/ttsearch";
+import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import type { RekomenFeed, RekomenItem, RekomenSource } from "../../../lib/types";
 
 export const runtime = "nodejs";
@@ -127,6 +128,9 @@ async function getFeed(refresh: boolean): Promise<RekomenFeed> {
 
 export async function GET(request: Request) {
   const refresh = new URL(request.url).searchParams.get("refresh") === "1";
+
+  const limit = limitByIp(request, "rekomen");
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
 
   try {
     const result = await getFeed(refresh);
