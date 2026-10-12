@@ -19,6 +19,9 @@ const TOP_MAX = 5;
 // Dibatesin 30 karena tiap +30 kandidat = +1 request ke tikwm, kuotanya
 // cuma 10.000 request/hari.
 const CANDIDATE_LIMIT = 30;
+// Pesan yang dilihat user kalau semua engine gagal. Detail teknisnya tetap
+// dikirim lewat event "log" biar gampang didebug, tapi jangan nyasar ke user.
+const SEARCH_ERROR_MESSAGE = "Terjadi kesalahan saat mencari. Silakan Coba lagi nanti.";
 
 // Gate lokal sendiri (terpisah dari /api/find) biar halaman test
 // gak menyentuh route lama sama sekali.
@@ -307,7 +310,8 @@ export async function GET(request: Request) {
             }
           });
         } catch (error) {
-          push("error", { message: (error as Error).message });
+          push("log", `[gagal] ${(error as Error).message}`);
+          push("error", { message: SEARCH_ERROR_MESSAGE });
           finish();
           return;
         }
