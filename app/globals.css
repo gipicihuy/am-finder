@@ -1043,14 +1043,17 @@ body::before {
   padding: 0;
   border: none;
   background: none;
-  color: var(--foreground);
+  color: var(--muted);
   cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .view-toggle:hover {
-  opacity: 1;
+  color: var(--foreground);
+}
+
+.view-toggle[aria-pressed="true"] {
+  color: var(--accent);
 }
 
 .result-count-ornament {

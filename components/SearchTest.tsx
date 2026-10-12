@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
-import { ArrowRuleOrnament, ViewIcon } from "@/components/Ornament";
+import { ArrowRuleOrnament, GridIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
 import { ui } from "@/lib/ui";
@@ -122,6 +122,8 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   function toggleView() {
     const next = view === "grid" ? "list" : "grid";
     setView(next);
+    // grid tampil per 4 kartu: bulatkan jumlah yang sedang tampil ke atas
+    if (next === "grid") setCandLimit((limit) => Math.ceil(limit / 4) * 4);
     try {
       localStorage.setItem(VIEW_KEY, next);
     } catch {
@@ -175,7 +177,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
         return;
       }
       setCands(items);
-      setCandLimit(3);
+      setCandLimit(view === "grid" ? 4 : 3);
       setSearchedQuery(query);
       setDetails({});
     });
@@ -395,10 +397,11 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
                 <button
                   type="button"
                   className="view-toggle"
-                  aria-label={view === "grid" ? "Ganti ke tampilan daftar" : "Ganti ke tampilan grid"}
+                  aria-label="Tampilan grid"
+                  aria-pressed={view === "grid"}
                   onClick={toggleView}
                 >
-                  <ViewIcon mode={view === "grid" ? "list" : "grid"} />
+                  <GridIcon />
                 </button>
               </div>
               <div style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 } : undefined}>
@@ -530,7 +533,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
               {cands.length > candLimit && (
                 <button
                   type="button"
-                  onClick={() => setCandLimit((limit) => limit + (limit < 30 ? 3 : 6))}
+                  onClick={() => setCandLimit((limit) => limit + (view === "grid" ? 4 : limit < 30 ? 3 : 6))}
                   style={{
                     width: "100%",
                     height: 48,

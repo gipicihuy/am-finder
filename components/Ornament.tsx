@@ -37,33 +37,24 @@ export function ArrowRuleOrnament() {
   );
 }
 
-/**
- * Ikon pengganti tampilan hasil. Bingkai sudut ala viewfinder logo AM,
- * isinya (kotak / garis) berwarna aksen. `mode` = tampilan tujuan.
- */
-export function ViewIcon({ mode }: { mode: "grid" | "list" }) {
+/** Ikon grid polos (2x2 kotak) untuk tombol tampilan grid. */
+export function GridIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <g stroke="currentColor" strokeWidth="1.8">
-        <path d="M2 6V4a2 2 0 0 1 2-2h3" />
-        <path d="M17 2h3a2 2 0 0 1 2 2v2" />
-        <path d="M22 17v3a2 2 0 0 1-2 2h-3" />
-        <path d="M7 22H4a2 2 0 0 1-2-2v-3" />
-      </g>
-      {mode === "grid" ? (
-        <g fill="var(--accent)">
-          <rect x="7" y="7" width="4" height="4" rx="1" />
-          <rect x="13" y="7" width="4" height="4" rx="1" />
-          <rect x="7" y="13" width="4" height="4" rx="1" />
-          <rect x="13" y="13" width="4" height="4" rx="1" />
-        </g>
-      ) : (
-        <g stroke="var(--accent)" strokeWidth="1.8">
-          <path d="M7 8h10" />
-          <path d="M7 12h10" />
-          <path d="M7 16h10" />
-        </g>
-      )}
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
     </svg>
   );
 }
