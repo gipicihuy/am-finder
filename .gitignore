@@ -11,6 +11,12 @@ lib/amfinder.cache.json
 # Bukan bagian project (artefak unduhan)
 *.deb
 
+# Scraper mandiri di root — bukan bagian app, cuma buat diunduh
+/amfinder.js
+/amfinder-url.js
+/amfinder.cache.json
+/amfinder.search.cache.json
+
 # Build APK & kunci signing - jangan pernah masuk repo
 android/.gradle/
 android/build/
