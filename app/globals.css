@@ -221,12 +221,12 @@ body::before {
   left: 0;
   right: 0;
   z-index: -1;
-  height: 360px;
-  background-image: radial-gradient(circle at 1px 1px, rgba(5, 250, 168, 0.16) 1px, transparent 1.4px);
-  background-size: 22px 22px;
+  height: 400px;
+  background-image: radial-gradient(circle at 1px 1px, rgba(5, 250, 168, 0.42) 1.1px, transparent 1.5px);
+  background-size: 20px 20px;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
-  mask-image: linear-gradient(to bottom, #000, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
 }
 
 /* page head */
