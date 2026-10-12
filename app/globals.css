@@ -873,6 +873,54 @@ body::before {
   background: var(--surface-3);
 }
 
+.video-preview-ghost {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.preview-backdrop {
+  animation: preview-fade 240ms ease-out both;
+}
+
+.preview-backdrop.is-closing {
+  animation: preview-fade-out 220ms ease-in both;
+}
+
+.video-close {
+  animation: preview-fade 200ms ease-out 140ms backwards;
+}
+
+.preview-backdrop.is-closing ~ .video-preview .video-close {
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+@keyframes preview-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes preview-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-backdrop,
+  .preview-backdrop.is-closing,
+  .video-close {
+    animation: none;
+  }
+}
+
 .meta-desc {
   margin: 0;
   font-size: 13.5px;

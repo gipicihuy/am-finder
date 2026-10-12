@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
@@ -153,6 +153,20 @@ function CopyButton({ url }: { url: string }) {
   );
 }
 
+const EASE_OPEN = "cubic-bezier(0.22, 1, 0.36, 1)";
+const EASE_CLOSE = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function flipTransform(from: DOMRect, to: DOMRect) {
+  const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+  const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+  const scale = from.width / to.width;
+  return `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${scale})`;
+}
+
 function VideoPreview({
   src,
   poster,
@@ -169,13 +183,65 @@ function VideoPreview({
   const boxRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const firstRectRef = useRef<DOMRect | null>(null);
+  const closingRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    const box = boxRef.current;
+    const ghost = ghostRef.current;
+    if (!box || !ghost || typeof box.animate !== "function" || prefersReducedMotion()) {
+      setExpanded(false);
+      return;
+    }
+    closingRef.current = true;
+    setClosing(true);
+    const current = box.getBoundingClientRect();
+    const slot = ghost.getBoundingClientRect();
+    const animation = box.animate(
+      [{ transform: "translate(-50%, -50%) scale(1)" }, { transform: flipTransform(slot, current) }],
+      { duration: 220, easing: EASE_CLOSE, fill: "forwards" },
+    );
+    const finish = () => {
+      closingRef.current = false;
+      setClosing(false);
+      setExpanded(false);
+    };
+    animation.finished.then(finish, finish);
+  }, []);
+
+  function openPreview() {
+    const box = boxRef.current;
+    if (box) firstRectRef.current = box.getBoundingClientRect();
+    setExpanded(true);
+  }
+
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    if (!expanded) {
+      if (typeof box.getAnimations === "function") box.getAnimations().forEach((animation) => animation.cancel());
+      return;
+    }
+    const first = firstRectRef.current;
+    firstRectRef.current = null;
+    if (!first || typeof box.animate !== "function" || prefersReducedMotion()) return;
+    const last = box.getBoundingClientRect();
+    if (!last.width) return;
+    box.animate(
+      [{ transform: flipTransform(first, last) }, { transform: "translate(-50%, -50%) scale(1)" }],
+      { duration: 280, easing: EASE_OPEN },
+    );
+  }, [expanded]);
 
   useEffect(() => {
     if (!expanded) return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExpanded(false);
+      if (event.key === "Escape") requestClose();
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -183,7 +249,7 @@ function VideoPreview({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [expanded]);
+  }, [expanded, requestClose]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -200,8 +266,9 @@ function VideoPreview({
   }
 
   function handleVideoClick() {
+    if (closingRef.current) return;
     if (!expanded) {
-      setExpanded(true);
+      openPreview();
       const video = videoRef.current;
       if (video && video.paused) video.play().catch(() => undefined);
       return;
@@ -215,14 +282,19 @@ function VideoPreview({
 
   return (
     <>
-      {expanded ? <div className="preview-backdrop" onClick={() => setExpanded(false)} /> : null}
+      {expanded ? (
+        <div className={`preview-backdrop${closing ? " is-closing" : ""}`} onClick={requestClose} />
+      ) : null}
+      {expanded ? (
+        <div className="video-preview video-preview-ghost" ref={ghostRef} style={{ aspectRatio: ratio }} aria-hidden="true" />
+      ) : null}
       <div
         className={`video-preview${expanded ? " is-open" : ""}`}
         ref={boxRef}
         style={{ aspectRatio: ratio }}
       >
       {expanded ? (
-        <button type="button" className="video-close" onClick={() => setExpanded(false)} aria-label="Close">
+        <button type="button" className="video-close" onClick={requestClose} aria-label="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
@@ -258,7 +330,7 @@ function VideoPreview({
           }}
         />
       ) : (
-        <img src={poster} alt="" loading="lazy" title="Open preview" onClick={() => setExpanded(true)} />
+        <img src={poster} alt="" loading="lazy" title="Open preview" onClick={openPreview} />
       )}
       {src ? (
         <>
@@ -273,7 +345,7 @@ function VideoPreview({
             </div>
           ) : null}
           {!expanded ? (
-            <button type="button" className="video-expand" onClick={() => setExpanded(true)} aria-label="Expand">
+            <button type="button" className="video-expand" onClick={openPreview} aria-label="Expand">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 3h6v6" />
                 <path d="M9 21H3v-6" />
