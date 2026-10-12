@@ -199,6 +199,16 @@ function VideoPreview({
     else video.pause();
   }
 
+  function handleVideoClick() {
+    if (!expanded) {
+      setExpanded(true);
+      const video = videoRef.current;
+      if (video && video.paused) video.play().catch(() => undefined);
+      return;
+    }
+    togglePlay();
+  }
+
   if (!src && !poster) return null;
 
   const ratio = width && height ? `${width} / ${height}` : "9 / 16";
@@ -229,13 +239,13 @@ function VideoPreview({
           playsInline
           disableRemotePlayback
           preload="metadata"
-          aria-label={playing ? "Pause video" : "Play video"}
+          aria-label={expanded ? (playing ? "Pause video" : "Play video") : "Open preview"}
           tabIndex={0}
-          onClick={togglePlay}
+          onClick={handleVideoClick}
           onKeyDown={(event) => {
             if (event.key === " " || event.key === "Enter") {
               event.preventDefault();
-              togglePlay();
+              handleVideoClick();
             }
           }}
           onPlay={() => setPlaying(true)}
