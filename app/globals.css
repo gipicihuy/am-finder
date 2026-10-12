@@ -205,12 +205,12 @@ a:focus-visible {
 }
 
 .main {
-  padding-block: 44px 6px;
+  padding-block: 44px 32px;
 }
 
 @media (min-width: 768px) {
   .main {
-    padding-block: 60px 6px;
+    padding-block: 60px 40px;
   }
 }
 
@@ -221,12 +221,12 @@ body::before {
   left: 0;
   right: 0;
   z-index: -1;
-  height: 400px;
-  background-image: radial-gradient(circle at 1px 1px, rgba(5, 250, 168, 0.42) 1.1px, transparent 1.5px);
+  height: 320px;
+  background-image: radial-gradient(circle at 1px 1px, rgba(5, 250, 168, 0.24) 1px, transparent 1.4px);
   background-size: 20px 20px;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 15%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 15%, transparent 100%);
 }
 
 /* page head */
@@ -239,7 +239,7 @@ body::before {
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.1;
-  margin: 0 0 8px;
+  margin: 0 0 16px;
 }
 
 .section-ornament {
@@ -250,7 +250,7 @@ body::before {
 }
 
 .page-sub {
-  margin: 0 0 22px;
+  margin: 0 0 20px;
   max-width: 62ch;
   font-size: 14.5px;
   line-height: 1.6;
@@ -531,7 +531,7 @@ body::before {
 }
 
 .state-miss {
-  margin-top: 24px;
+  margin-top: 20px;
   border: 1px solid rgba(255, 95, 109, 0.45);
   border-style: solid;
   background: rgba(255, 95, 109, 0.07);
@@ -1561,7 +1561,7 @@ body::before {
   display: flex;
   gap: 28px;
   border-bottom: 1px solid var(--border);
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
 
 .mode-tab {
