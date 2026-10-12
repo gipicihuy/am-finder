@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
-import { AmLogo } from "@/components/AmLogo";
+import { SiteHeader } from "@/components/SiteHeader";
 import { SupportModal } from "@/components/SupportModal";
 import { WaChannelToast } from "@/components/WaChannelToast";
-import { ui } from "@/lib/ui";
 import "./globals.css";
 
 // Domain utama. amfinder.cc.cd dan www.amfinder.web.id juga mengarah ke situs ini.
@@ -86,18 +85,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
         />
-        <header className="site-header" id="top">
-          <span className="hud-corner hud-tl" aria-hidden="true" />
-          <span className="hud-corner hud-br" aria-hidden="true" />
-          <div className="brand-row">
-            <span className="brand-mark">
-              <AmLogo size={34} />
-            </span>
-            <span className="brand-name">{ui.header.brand}</span>
-          </div>
-          <p className="brand-tagline">{ui.header.tagline}</p>
-          <p className="brand-byline">{ui.header.byline}</p>
-        </header>
+        <SiteHeader />
         <main className="shell main">{children}</main>
         <SiteFooter />
         <SupportModal />
