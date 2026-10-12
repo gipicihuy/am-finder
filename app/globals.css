@@ -127,7 +127,6 @@ img {
 .site-header {
   position: relative;
   z-index: 40;
-  margin-bottom: 16px;
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
@@ -206,7 +205,28 @@ a:focus-visible {
 }
 
 .main {
-  padding-block: 14px 6px;
+  padding-block: 44px 6px;
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding-block: 60px 6px;
+  }
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  height: 360px;
+  background-image: radial-gradient(circle at 1px 1px, rgba(5, 250, 168, 0.16) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
 }
 
 /* page head */
