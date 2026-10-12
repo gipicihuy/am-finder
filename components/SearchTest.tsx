@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
-import { ArrowRuleOrnament } from "@/components/Ornament";
+import { ArrowRuleOrnament, ViewIcon } from "@/components/Ornament";
+
+const VIEW_KEY = "amfinder:view";
 import { ui } from "@/lib/ui";
 import { HowSteps } from "@/components/HowSteps";
 
@@ -78,6 +80,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   const [error, setError] = useState("");
   const [cands, setCands] = useState<Candidate[]>([]);
   const [candLimit, setCandLimit] = useState(3);
+  const [view, setView] = useState<"list" | "grid">("list");
   const [searchedQuery, setSearchedQuery] = useState("");
   const [openUrl, setOpenUrl] = useState("");
   const [details, setDetails] = useState<Record<string, Detail>>({});
@@ -107,6 +110,24 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     onDetailChange?.(openUrl !== "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openUrl]);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(VIEW_KEY) === "grid") setView("grid");
+    } catch {
+      // storage diblokir — tetap tampilan daftar
+    }
+  }, []);
+
+  function toggleView() {
+    const next = view === "grid" ? "list" : "grid";
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // abaikan
+    }
+  }
 
   function changeQuery(value: string) {
     if (embedded && isTikTokLink(value)) {
@@ -364,13 +385,83 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
 
           {cands.length > 0 && !(embedded && searching) && (
             <section aria-label="Search results" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
-              <h2 className="result-count">
-                <span className="result-count-ornament" aria-hidden="true">
-                  <ArrowRuleOrnament />
-                </span>
-                {cands.length} video
-              </h2>
-              {cands.slice(0, candLimit).map((c) => (
+              <div className="result-head">
+                <h2 className="result-count">
+                  <span className="result-count-ornament" aria-hidden="true">
+                    <ArrowRuleOrnament />
+                  </span>
+                  {cands.length} video
+                </h2>
+                <button
+                  type="button"
+                  className="view-toggle"
+                  aria-label={view === "grid" ? "Ganti ke tampilan daftar" : "Ganti ke tampilan grid"}
+                  onClick={toggleView}
+                >
+                  <ViewIcon mode={view === "grid" ? "list" : "grid"} />
+                </button>
+              </div>
+              <div style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 } : undefined}>
+              {cands.slice(0, candLimit).map((c) => view === "grid" ? (
+                <button
+                  key={c.url}
+                  type="button"
+                  aria-label={`Check presets from ${c.handle || "this video"}`}
+                  onClick={() => openVideo(c.url)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    minWidth: 0,
+                    textAlign: "left",
+                    padding: 8,
+                    background: SURFACE,
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 14,
+                    color: "inherit",
+                    font: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      aspectRatio: "9 / 16",
+                      borderRadius: 10,
+                      background: BG,
+                      border: `1px solid ${BORDER}`,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {c.thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={c.thumb}
+                        alt=""
+                        loading="lazy"
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : null}
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.handle || "TikTok video"}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: MUTED,
+                      lineHeight: 1.4,
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                  >
+                    {c.snippet || "No caption"}
+                  </span>
+                </button>
+              ) : (
                 <button
                   key={c.url}
                   type="button"
@@ -435,6 +526,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
                   <ChevronRight />
                 </button>
               ))}
+              </div>
               {cands.length > candLimit && (
                 <button
                   type="button"

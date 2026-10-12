@@ -1022,9 +1022,35 @@ body::before {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 18px;
   line-height: 1.2;
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 12px;
+}
+
+.view-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -10px -10px auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--foreground);
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.view-toggle:hover {
+  opacity: 1;
 }
 
 .result-count-ornament {
