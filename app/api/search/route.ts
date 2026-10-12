@@ -14,6 +14,10 @@ const MAX_ACTIVE = 3;
 const MAX_QUEUE = 8;
 const TOP_DEFAULT = 3;
 const TOP_MAX = 5;
+// Jumlah kandidat di mode=pick. Aman buat dikecilin/dibesarkan: di mode ini
+// backend cuma nyari daftar, scraping baru jalan saat user pilih satu video.
+// 100 = 4-5 halaman tikwm, ~5-6 detik.
+const CANDIDATE_LIMIT = 100;
 
 // Gate lokal sendiri (terpisah dari /api/find) biar halaman test
 // gak menyentuh route lama sama sekali.
@@ -291,7 +295,7 @@ export async function GET(request: Request) {
             setLog((line: string) => push("log", line));
             try {
               const res = await Promise.race([
-                searchTiktok(searchQuery, { limit: 30, timeout: 20_000, engine: "auto", refresh: false }),
+                searchTiktok(searchQuery, { limit: CANDIDATE_LIMIT, timeout: 20_000, engine: "auto", refresh: false }),
                 new Promise<never>((_, reject) =>
                   setTimeout(() => reject(new Error("pencarian kehabisan waktu")), SEARCH_BUDGET_MS),
                 ),
@@ -308,9 +312,9 @@ export async function GET(request: Request) {
         }
         if (closed) return;
 
-        // mode=pick kirim lebih banyak kandidat (30, batas atas tikwm) biar frontend
-        // bisa paginasi "Tampilkan lebih banyak" per batch. Mode lain tetap `top`.
-        // Hasil di-ranking dulu sama judul/keyword user sebelum di-slice.
+        // mode=pick kirim lebih banyak kandidat (CANDIDATE_LIMIT, batas atas tikwm)
+        // biar frontend bisa paginasi "Tampilkan lebih banyak" per batch. Mode lain
+        // tetap `top`. Hasil di-ranking dulu sama judul/keyword user sebelum di-slice.
         const pickMode = params.get("mode") === "pick";
         const queryNorm = normalizeText(query);
         let ranked = rankCandidates(searchRes.items || [], queryNorm);
@@ -326,7 +330,7 @@ export async function GET(request: Request) {
               setLog((line: string) => push("log", line));
               try {
                 return (await searchTiktok(query, {
-                  limit: 30,
+                  limit: CANDIDATE_LIMIT,
                   timeout: 15_000,
                   engine: "auto",
                   refresh: false,
@@ -348,7 +352,7 @@ export async function GET(request: Request) {
           if (closed) return;
         }
 
-        const items = ranked.slice(0, pickMode ? 30 : top);
+        const items = ranked.slice(0, pickMode ? CANDIDATE_LIMIT : top);
         push("candidates", {
           query,
           fromCache: !!searchRes.fromCache,

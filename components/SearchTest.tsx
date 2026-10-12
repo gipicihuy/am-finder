@@ -435,7 +435,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
               {cands.length > candLimit && (
                 <button
                   type="button"
-                  onClick={() => setCandLimit((limit) => limit + 3)}
+                  onClick={() => setCandLimit((limit) => limit + (limit < 30 ? 3 : 6))}
                   style={{
                     width: "100%",
                     height: 48,
