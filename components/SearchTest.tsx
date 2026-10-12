@@ -364,14 +364,8 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
           {cands.length > 0 && !(embedded && searching) && (
             <section aria-label="Search results" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
               <h2 className="result-count">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" aria-hidden="true" focusable="false">
-                  <path d="M3 8V3h5" />
-                  <path d="M16 3h5v5" />
-                  <path d="M21 16v5h-5" />
-                  <path d="M8 21H3v-5" />
-                  <path d="M10 8.6 15.4 12 10 15.4z" fill="currentColor" stroke="none" />
-                </svg>
-                <span>{cands.length} video</span>
+                <span aria-hidden="true">»</span>
+                {cands.length} video
               </h2>
               {cands.slice(0, candLimit).map((c) => (
                 <button
