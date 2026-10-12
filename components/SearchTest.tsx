@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
+import { ArrowRuleOrnament } from "@/components/Ornament";
 import { ui } from "@/lib/ui";
 import { HowSteps } from "@/components/HowSteps";
 
@@ -364,7 +365,9 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
           {cands.length > 0 && !(embedded && searching) && (
             <section aria-label="Search results" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
               <h2 className="result-count">
-                <span aria-hidden="true">»</span>
+                <span className="result-count-ornament" aria-hidden="true">
+                  <ArrowRuleOrnament />
+                </span>
                 {cands.length} video
               </h2>
               {cands.slice(0, candLimit).map((c) => (

@@ -15,3 +15,24 @@ export function SectionOrnament() {
     </svg>
   );
 }
+
+/** Garis tipis berujung panah » (dipakai di judul hitungan video). */
+export function ArrowRuleOrnament() {
+  return (
+    <svg
+      width="56"
+      height="12"
+      viewBox="0 0 56 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M0 6H46" />
+      <path d="M44 2l5 4-5 4" />
+      <path d="M49.5 2l5 4-5 4" />
+    </svg>
+  );
+}
