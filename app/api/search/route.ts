@@ -16,8 +16,9 @@ const TOP_DEFAULT = 3;
 const TOP_MAX = 5;
 // Jumlah kandidat di mode=pick. Aman buat dikecilin/dibesarkan: di mode ini
 // backend cuma nyari daftar, scraping baru jalan saat user pilih satu video.
-// 100 = 4-5 halaman tikwm, ~5-6 detik.
-const CANDIDATE_LIMIT = 100;
+// Dibatesin 30 karena tiap +30 kandidat = +1 request ke tikwm, kuotanya
+// cuma 10.000 request/hari.
+const CANDIDATE_LIMIT = 30;
 
 // Gate lokal sendiri (terpisah dari /api/find) biar halaman test
 // gak menyentuh route lama sama sekali.
