@@ -116,6 +116,46 @@ function scoreCandidate(snippet: string | undefined, queryNorm: string): number 
   return score;
 }
 
+// Kata kunci penanda video preset. Sengaja disamakan sama CONTEXT_CORE /
+// CONTEXT_SUPPORT di lib/amfinder.js — kalau salah satu diubah, ubah dua-duanya.
+const PRESET_CONTEXT_CORE = [
+  "presetalightmotion",
+  "alightmotionpreset",
+  "presetdibawah5mb",
+  "presetxml",
+  "preset5mb",
+  "alightmotion",
+  "ampreset",
+  "amedit",
+  "alightmotiontutorial",
+  "alightmotionedits",
+  "alightmotionpro",
+];
+const PRESET_CONTEXT_SUPPORT = ["preset", "5mb", "velocity", "jedagjedug", "jedugalighmotion", "amprem"];
+
+// Cari preset itu nyari video yang membagikan preset, bukan sekadar video yang
+// menyebut judul lagu yang diketik user. Tanpa saringan ini, search "kaulah
+// kamuku" nyampur cover lagu dan lirik video bareng video preset.
+// Sama persis cara kerja videoContext() di lib/amfinder.js.
+function presetContextLevel(snippet?: string, handle?: string): "core" | "support" | "none" {
+  const raw = `${snippet ?? ""}\n${(handle ?? "").replace(/^@/, "")}`
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, " ");
+  const hay = raw.replace(/[#@]/g, " ").replace(/[\s_-]+/g, "");
+  if (!hay) return "none";
+  if (PRESET_CONTEXT_CORE.some((k) => hay.includes(k))) return "core";
+  if (PRESET_CONTEXT_SUPPORT.some((k) => hay.includes(k))) return "support";
+  return "none";
+}
+
+// Saring kandidat yang jelas bukan video preset. Kalau saringannya bikin
+// hasil tinggal sedikit banget (query niche), kembalikan daftar asli —
+// lebih baik kurang tepat daripada kosong sama sekali.
+function filterPresetCandidates(items: Candidate[]): Candidate[] {
+  const kept = items.filter((it) => presetContextLevel(it.snippet, it.handle) !== "none");
+  return kept.length >= 3 ? kept : items;
+}
+
 function rankCandidates(items: Candidate[], queryNorm: string): Candidate[] {
   return items
     .map((item, index) => ({ item, index, score: scoreCandidate(item.snippet, queryNorm) }))
@@ -357,7 +397,7 @@ export async function GET(request: Request) {
           if (closed) return;
         }
 
-        const items = ranked.slice(0, pickMode ? CANDIDATE_LIMIT : top);
+        const items = filterPresetCandidates(ranked).slice(0, pickMode ? CANDIDATE_LIMIT : top);
         push("candidates", {
           query,
           fromCache: !!searchRes.fromCache,
