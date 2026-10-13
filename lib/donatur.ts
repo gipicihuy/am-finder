@@ -13,6 +13,8 @@ export type Donatur = {
 export type DonaturSummary = {
   donators: Donatur[];
   top: Donatur[];
+  monthly: Donatur[];
+  monthLabel: string;
   totalAmount: number;
   totalPeople: number;
 };
@@ -150,13 +152,31 @@ export function loadDonatur(): Donatur[] {
 }
 
 export function summarizeDonatur(donators: Donatur[]): DonaturSummary {
+  const now = new Date();
+  const byDateDesc = (a: Donatur, b: Donatur) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
   const withAmount = donators.filter((item) => item.amount > 0);
+
   return {
-    donators: donators.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
+    donators: donators.slice().sort(byDateDesc),
     top: withAmount.slice(0, 8),
+    monthly: donators
+      .filter((item) => isSameMonth(item.date, now))
+      .sort((a, b) => b.amount - a.amount || byDateDesc(a, b)),
+    monthLabel: monthLabel(now),
     totalAmount: withAmount.reduce((sum, item) => sum + item.amount, 0),
     totalPeople: donators.length,
   };
+}
+
+/** Nama bulan dalam Bahasa Indonesia, mis. "Oktober". */
+export function monthLabel(date: Date): string {
+  return new Intl.DateTimeFormat("id-ID", { month: "long" }).format(date);
+}
+
+function isSameMonth(iso: string, ref: Date): boolean {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.getFullYear() === ref.getFullYear() && date.getMonth() === ref.getMonth();
 }
 
 /**

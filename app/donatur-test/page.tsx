@@ -48,7 +48,7 @@ export default function DonaturTestPage() {
       </p>
 
       <DonaturHeading />
-      <DonaturBoard summary={summary} />
+      <DonaturBoard summary={summary} listHref="/donatur-test" />
     </article>
   );
 }

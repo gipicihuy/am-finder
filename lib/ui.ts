@@ -45,12 +45,23 @@ type UiTexts = {
   donatur: {
     title: string;
     intro: string;
+    monthlyTitle: string;
     topTitle: string;
     listTitle: string;
+    seeAll: string;
+    topDonation: string;
+    colName: string;
+    colAmount: string;
+    colDate: string;
+    counterBefore: string;
+    counterMiddle: string;
+    counterAfter: string;
     totalLabel: string;
     peopleLabel: string;
     empty: string;
     emptyTop: string;
+    emptyMonthly: string;
+    emptyMonthlyCta: string;
     donate: string;
     donateHref: string;
   };

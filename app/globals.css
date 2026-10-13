@@ -1864,14 +1864,21 @@ body::before {
 }
 
 
+
 /* ---------- Daftar donatur ----------
-   Tata letak top donor mengikuti pola sankanime.web.id: kartu vertikal
-   rata tengah, avatar bulat di atas, mahkota melayang untuk peringkat 1,
-   hover yang mengangkat kartu. Warna disesuaikan palet AM Finder. */
+   Struktur dan ukuran mengikuti tampilan donor sankanime.web.id secara
+   langsung (kartu vertikal 140px rata tengah, mahkota melayang, tabel bulanan
+   sticky, garis pemisah peringkat 1-3 dengan 4-8). Warna disesuaikan dengan
+   palet AM Finder. */
 
 @keyframes dt-crown-bounce {
-  0%, 100% { transform: rotate(15deg) translateY(0); }
-  50% { transform: rotate(15deg) translateY(-5px); }
+  0%, 100% { transform: translateY(0) rotate(15deg); }
+  50% { transform: translateY(-6px) rotate(15deg); }
+}
+
+@keyframes dt-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 .dt-preview-note {
@@ -1893,7 +1900,7 @@ body::before {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin: 0 0 28px;
+  margin: 0 0 26px;
 }
 
 .dt-stat {
@@ -1925,47 +1932,162 @@ body::before {
 }
 
 .dt-section + .dt-section {
-  margin-top: 30px;
+  margin-top: 34px;
+}
+
+.dt-section-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-bottom: 4px;
 }
 
 .dt-section-title {
   margin: 0 0 16px;
   font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--foreground);
+  transition: color 200ms ease;
+}
+
+.dt-section-head .dt-section-title {
+  margin-bottom: 0;
+}
+
+.dt-see-all {
+  align-self: flex-end;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--accent);
 }
 
-/* Kartu top donor — vertikal, lebar tetap, rata tengah */
-.dt-cards {
+.dt-see-all:hover {
+  text-decoration: underline;
+}
+
+/* ---- Tabel "Donatur Bulan Ini" ---- */
+
+.dt-table {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.dt-table-head,
+.dt-table-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0 16px;
+  padding: 4px 8px;
+  align-items: baseline;
+}
+
+.dt-table-head {
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  position: sticky;
+  top: 0;
+  background: var(--background);
+  z-index: 1;
+}
+
+.dt-table-row {
+  font-size: 13px;
+  border-radius: 6px;
+  transition: background-color 120ms ease;
+}
+
+.dt-table-row:hover {
+  background: var(--surface-3);
+}
+
+.dt-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dt-table-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
+.dt-table-amount {
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.dt-table-date {
+  color: var(--muted);
+}
+
+.dt-table-empty {
+  margin-top: 14px;
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-soft);
+  background: rgba(33, 33, 38, 0.4);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+
+.dt-table-empty strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ---- Kartu top donor ---- */
+
+.dt-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.dt-top-group {
   list-style: none;
   margin: 0;
-  padding: 26px 0 0;
+  padding: 0;
+  width: 100%;
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
+}
+
+.dt-top-group--rest {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
 }
 
 .dt-card {
   position: relative;
-  width: 150px;
-  padding: 18px 14px 16px;
+  width: 140px;
+  margin-top: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   background: var(--surface-2);
-  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 200ms ease-in-out, border-color 120ms ease;
+  transition: transform 200ms ease-in-out;
 }
 
 .dt-card:hover {
   transform: translateY(-5px);
-  border-color: var(--border-strong);
 }
 
 .dt-card.is-winner {
@@ -1973,14 +2095,13 @@ body::before {
   background: linear-gradient(135deg, var(--surface-2), #2b2a3a);
 }
 
-/* Mahkota peringkat 1: melayang di pojok kanan atas, miring, berpendar */
 .dt-crown {
   position: absolute;
-  top: -22px;
-  right: -10px;
+  top: -25px;
+  right: -12px;
   font-size: 28px;
   line-height: 1;
-  z-index: 2;
+  z-index: 20;
   transform: rotate(15deg);
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.7));
   animation: dt-crown-bounce 2.5s ease-in-out infinite;
@@ -1999,30 +2120,29 @@ body::before {
   z-index: -1;
 }
 
-.dt-rank {
+.dt-card-rank {
   position: absolute;
   top: 8px;
   left: 8px;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--surface-3);
   border: 1px solid var(--border-strong);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   line-height: 1;
 }
 
-.dt-card.is-winner .dt-rank {
+.dt-card.is-winner .dt-card-rank {
   background: #ffd700;
   border-color: #ffd700;
   color: #241f00;
 }
 
-/* Avatar inisial — bulat, warna turunan dari nama */
 .dt-avatar {
   display: grid;
   place-items: center;
@@ -2030,7 +2150,6 @@ body::before {
   flex: 0 0 auto;
   font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
   font-weight: 800;
-  letter-spacing: 0.02em;
   color: #0f0f10;
   background: var(--dt-avatar-bg, var(--accent));
   user-select: none;
@@ -2041,7 +2160,7 @@ body::before {
   height: 72px;
   font-size: 24px;
   margin-bottom: 12px;
-  border: 2px solid var(--border-strong);
+  border: 2px solid var(--accent);
 }
 
 .dt-card.is-winner .dt-avatar--lg {
@@ -2055,11 +2174,12 @@ body::before {
   border: 1px solid var(--border-strong);
 }
 
-.dt-text {
+.dt-card-text {
+  text-align: center;
   width: 100%;
 }
 
-.dt-name {
+.dt-card-name {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
@@ -2068,28 +2188,43 @@ body::before {
   overflow-wrap: anywhere;
 }
 
-.dt-amount {
-  margin: 4px 0 0;
-  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--accent);
-  overflow-wrap: anywhere;
-}
-
-.dt-date {
+.dt-card-date {
   display: block;
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
 }
 
-/* Daftar lengkap — baris lebar supaya pesan muat */
+.dt-card-amount {
+  margin: 0;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.dt-card-star {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd166;
+  animation: dt-pulse 2s ease-in-out infinite;
+}
+
+.dt-counter {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- Daftar lengkap (memuat pesan donatur) ---- */
+
 .dt-list {
   list-style: none;
-  margin: 0;
+  margin: 16px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -2122,6 +2257,22 @@ body::before {
   gap: 12px;
 }
 
+.dt-row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.dt-row-amount {
+  flex: 0 0 auto;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
 .dt-message {
   margin: 7px 0 0;
   font-size: 13px;
@@ -2135,6 +2286,11 @@ body::before {
   align-items: center;
   gap: 8px;
   margin-top: 8px;
+}
+
+.dt-row-date {
+  font-size: 11.5px;
+  color: var(--muted);
 }
 
 .dt-source {
@@ -2160,13 +2316,12 @@ body::before {
 }
 
 .dt-cta {
-  margin-top: 28px;
+  margin-top: 30px;
 }
 
-@media (max-width: 768px) {
-  .dt-card {
-    width: calc(33.333% - 8px);
-    padding: 14px 10px;
+@media (max-width: 520px) {
+  .dt-stats {
+    grid-template-columns: 1fr;
   }
 
   .dt-avatar--lg {
@@ -2175,21 +2330,10 @@ body::before {
     font-size: 20px;
     margin-bottom: 8px;
   }
-}
-
-@media (max-width: 520px) {
-  .dt-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .dt-card {
-    width: calc(50% - 6px);
-    padding: 14px 10px;
-  }
 
   .dt-crown {
-    top: -18px;
-    right: -6px;
+    top: -20px;
+    right: -8px;
     font-size: 24px;
   }
 
@@ -2198,9 +2342,8 @@ body::before {
     height: 34px;
   }
 
-  .dt-row-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
+  .dt-table-head,
+  .dt-table-row {
+    gap: 0 10px;
   }
 }
