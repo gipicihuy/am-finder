@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
+import { FoundToast } from "@/components/FoundToast";
 import { ArrowRuleOrnament, GridIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
@@ -606,6 +607,9 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
             </div>
           )}
           {current?.state === "done" && current.result && <ResultView result={current.result} />}
+          {current?.state === "done" && (current.result?.presetLinks?.length ?? 0) > 0 ? (
+            <FoundToast count={current.result?.presetLinks?.length ?? 0} />
+          ) : null}
         </>
       )}
     </div>
