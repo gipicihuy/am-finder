@@ -82,6 +82,9 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   const [cands, setCands] = useState<Candidate[]>([]);
   const [candLimit, setCandLimit] = useState(3);
   const [view, setView] = useState<"list" | "grid">("list");
+  const [lastUrl, setLastUrl] = useState("");
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const prevOpen = useRef("");
   const [searchedQuery, setSearchedQuery] = useState("");
   const [openUrl, setOpenUrl] = useState("");
   const [details, setDetails] = useState<Record<string, Detail>>({});
@@ -178,6 +181,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
         return;
       }
       setCands(items);
+      setLastUrl("");
       setCandLimit(view === "grid" ? 4 : 3);
       setSearchedQuery(query);
       setDetails({});
@@ -198,7 +202,21 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     });
   }
 
+  // Balik dari detail: gulir ke kartu video yang terakhir dibuka (bukan ke atas).
+  useEffect(() => {
+    if (prevOpen.current !== "" && openUrl === "" && lastUrl) {
+      const target = cardRefs.current[lastUrl];
+      // tunggu layout settle (paragraf di atas muncul lagi) sebelum menggulir
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => target?.scrollIntoView({ block: "center" })),
+      );
+    }
+    prevOpen.current = openUrl;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openUrl]);
+
   function openVideo(url: string) {
+    setLastUrl(url);
     setOpenUrl(url);
     window.scrollTo({ top: 0 });
     if (details[url]?.state === "done") return;
@@ -409,6 +427,9 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
               {cands.slice(0, candLimit).map((c) => view === "grid" ? (
                 <button
                   key={c.url}
+                  ref={(el) => {
+                    cardRefs.current[c.url] = el;
+                  }}
                   type="button"
                   aria-label={`Check presets from ${c.handle || "this video"}`}
                   onClick={() => openVideo(c.url)}
@@ -420,7 +441,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
                     textAlign: "left",
                     padding: 8,
                     background: SURFACE,
-                    border: `1px solid ${BORDER}`,
+                    border: `1px solid ${c.url === lastUrl ? ACCENT : BORDER}`,
                     borderRadius: 14,
                     color: "inherit",
                     font: "inherit",
@@ -468,6 +489,9 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
               ) : (
                 <button
                   key={c.url}
+                  ref={(el) => {
+                    cardRefs.current[c.url] = el;
+                  }}
                   type="button"
                   aria-label={`Check presets from ${c.handle || "this video"}`}
                   onClick={() => openVideo(c.url)}
@@ -480,7 +504,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
                     padding: 12,
                     marginBottom: 10,
                     background: SURFACE,
-                    border: `1px solid ${BORDER}`,
+                    border: `1px solid ${c.url === lastUrl ? ACCENT : BORDER}`,
                     borderRadius: 16,
                     color: "inherit",
                     font: "inherit",
