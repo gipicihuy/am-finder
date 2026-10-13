@@ -1862,3 +1862,218 @@ body::before {
   font-size: 14px;
   color: var(--muted);
 }
+
+/* ---------- Daftar donatur ---------- */
+
+.donatur-preview-note {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #f5e6a8;
+  background: rgba(245, 214, 100, 0.08);
+  border: 1px solid rgba(245, 214, 100, 0.28);
+  border-radius: var(--radius-sm);
+}
+
+.donatur-board {
+  margin-top: 6px;
+}
+
+.donatur-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 26px;
+}
+
+.donatur-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.donatur-stat-value {
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: clamp(20px, 4.4vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.donatur-stat-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.donatur-section + .donatur-section {
+  margin-top: 28px;
+}
+
+.donatur-section-title {
+  margin: 0 0 14px;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.donatur-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 10px;
+}
+
+.donatur-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.donatur-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 120ms ease;
+}
+
+.donatur-card:hover {
+  border-color: var(--border-strong);
+}
+
+.donatur-card.is-podium {
+  background: linear-gradient(180deg, var(--accent-soft), var(--surface) 62%);
+  border-color: var(--accent);
+}
+
+.donatur-card--row {
+  padding: 13px 16px;
+}
+
+.donatur-rank {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.donatur-card.is-podium .donatur-rank {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.donatur-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.donatur-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.donatur-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.donatur-amount {
+  flex: 0 0 auto;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.donatur-message {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.donatur-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.donatur-date {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.donatur-source {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.donatur-empty {
+  margin: 0;
+  padding: 16px 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.donatur-cta {
+  margin-top: 26px;
+}
+
+@media (max-width: 520px) {
+  .donatur-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .donatur-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+}

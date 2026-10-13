@@ -8,6 +8,9 @@ out/
 next-env.d.ts
 lib/amfinder.cache.json
 
+# Data donatur & log payload webhook Sociabuzz — cuma ada di VPS, jangan masuk repo
+data/
+
 # Bukan bagian project (artefak unduhan)
 *.deb
 

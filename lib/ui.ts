@@ -42,6 +42,18 @@ type UiTexts = {
     copyright: string;
     disclaimer: string;
   };
+  donatur: {
+    title: string;
+    intro: string;
+    topTitle: string;
+    listTitle: string;
+    totalLabel: string;
+    peopleLabel: string;
+    empty: string;
+    emptyTop: string;
+    donate: string;
+    donateHref: string;
+  };
 };
 
 export const ui: UiTexts = raw;

@@ -69,5 +69,17 @@
     ],
     "copyright": "© 2026 Givy. All rights reserved.",
     "disclaimer": "Not affiliated with TikTok or Alight Motion."
+  },
+  "donatur": {
+    "title": "Top Donatur",
+    "intro": "Terima kasih kepada yang sudah mendukung AM Preset Finder lewat Sociabuzz.",
+    "topTitle": "Donatur Teratas",
+    "listTitle": "Daftar Lengkap",
+    "totalLabel": "Total donasi",
+    "peopleLabel": "donatur",
+    "empty": "Belum ada donatur.",
+    "emptyTop": "Belum ada donatur teratas.",
+    "donate": "Donasi lewat Sociabuzz",
+    "donateHref": "https://sociabuzz.com/givyo/tribe"
   }
 }
