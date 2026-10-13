@@ -13,10 +13,10 @@ import {
 const text = ui.donatur;
 const TOP_VISIBLE = 8;
 
-function Avatar({ name, size }: { name: string; size: "lg" | "sm" }) {
+function Avatar({ name }: { name: string }) {
   return (
     <span
-      className={`dt-avatar dt-avatar--${size}`}
+      className="dt-avatar"
       style={{ ["--dt-avatar-bg" as string]: donorColor(name) }}
       aria-hidden="true"
     >
@@ -35,9 +35,9 @@ function StatCard({ value, label }: { value: string; label: string }) {
 }
 
 /**
- * Kartu top donor — mengikuti struktur .top-donation-card di sankanime.web.id:
+ * Kartu top donor — struktur .top-donation-card di sankanime.web.id:
  * vertikal rata tengah, avatar bulat di atas, lalu nama, tanggal, nominal.
- * Peringkat pertama diberi mahkota melayang, border emas, dan baris "⭐ Donasi Teratas".
+ * Peringkat pertama mendapat mahkota melayang, border emas, dan baris "⭐ Donasi Teratas".
  */
 function TopCard({ donator, rank, showCrown }: { donator: Donatur; rank: number; showCrown: boolean }) {
   return (
@@ -47,7 +47,7 @@ function TopCard({ donator, rank, showCrown }: { donator: Donatur; rank: number;
           👑
         </span>
       ) : null}
-      <Avatar name={donator.name} size="lg" />
+      <Avatar name={donator.name} />
       <div className="dt-card-text">
         <p className="dt-card-name">{donator.name}</p>
         {donator.date ? <time className="dt-card-date">{formatDate(donator.date)}</time> : null}
@@ -62,55 +62,39 @@ function TopCard({ donator, rank, showCrown }: { donator: Donatur; rank: number;
 }
 
 /**
- * Tabel "Donatur Bulan Ini" — tiga kolom Nama | Jumlah | Tanggal dengan
- * header sticky, sama seperti tampilan bulanan di sankanime.web.id.
+ * Tabel donatur — tata letak grid [1fr auto auto] dengan header sticky,
+ * identik dengan tabel bulanan di sankanime.web.id. Pesan donatur diletakkan
+ * sebagai baris kecil di bawah nama supaya kolomnya tetap tiga.
  */
-function MonthlyTable({ items }: { items: Donatur[] }) {
+function DonaturTable({
+  items,
+  emptyText,
+}: {
+  items: Donatur[];
+  emptyText?: React.ReactNode;
+}) {
   if (!items.length) {
-    return (
-      <div className="dt-table-empty">
-        <p>
-          {text.emptyMonthly} <strong>{text.emptyMonthlyCta}</strong>
-        </p>
-      </div>
-    );
+    return <div className="dt-table-empty">{emptyText}</div>;
   }
 
   return (
     <div className="dt-table">
-      <div className="dt-table-head" role="row">
+      <div className="dt-table-head">
         <span>{text.colName}</span>
         <span className="dt-num">{text.colAmount}</span>
         <span className="dt-num">{text.colDate}</span>
       </div>
       {items.map((donator) => (
         <div className="dt-table-row" key={donator.id}>
-          <span className="dt-table-name">{donator.name}</span>
+          <div className="dt-table-name-cell">
+            <span className="dt-table-name">{donator.name}</span>
+            {donator.message ? <p className="dt-table-message">{donator.message}</p> : null}
+          </div>
           <span className="dt-num dt-table-amount">{formatRupiah(donator.amount)}</span>
           <span className="dt-num dt-table-date">{formatDate(donator.date)}</span>
         </div>
       ))}
     </div>
-  );
-}
-
-/** Daftar lengkap: baris lebar supaya pesan donatur tetap terbaca. */
-function FullRow({ donator }: { donator: Donatur }) {
-  return (
-    <li className="dt-row">
-      <Avatar name={donator.name} size="sm" />
-      <div className="dt-row-body">
-        <div className="dt-row-head">
-          <span className="dt-row-name">{donator.name}</span>
-          <span className="dt-row-amount">{formatRupiah(donator.amount)}</span>
-        </div>
-        {donator.message ? <p className="dt-message">{donator.message}</p> : null}
-        <div className="dt-row-meta">
-          {donator.date ? <time className="dt-row-date">{formatDate(donator.date)}</time> : null}
-          {donator.source === "sociabuzz" ? <span className="dt-source">Sociabuzz</span> : null}
-        </div>
-      </div>
-    </li>
   );
 }
 
@@ -140,7 +124,14 @@ export function DonaturBoard({
             {text.seeAll} ›
           </Link>
         </div>
-        <MonthlyTable items={monthly} />
+        <DonaturTable
+          items={monthly}
+          emptyText={
+            <p>
+              {text.emptyMonthly} <strong>{text.emptyMonthlyCta}</strong>
+            </p>
+          }
+        />
       </section>
 
       <section className="dt-section" aria-labelledby="dt-top-title">
@@ -189,15 +180,7 @@ export function DonaturBoard({
         <h2 className="dt-section-title" id="dt-list-title">
           {text.listTitle}
         </h2>
-        {donators.length ? (
-          <ul className="dt-list">
-            {donators.map((donator) => (
-              <FullRow key={donator.id} donator={donator} />
-            ))}
-          </ul>
-        ) : (
-          <p className="dt-empty">{text.empty}</p>
-        )}
+        <DonaturTable items={donators} emptyText={text.empty} />
       </section>
 
       <div className="dt-cta">

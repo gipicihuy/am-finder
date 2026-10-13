@@ -1982,7 +1982,7 @@ body::before {
 .dt-table-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 0 16px;
+  gap: 8px 16px;
   padding: 4px 8px;
   align-items: baseline;
 }
@@ -2014,11 +2014,23 @@ body::before {
   white-space: nowrap;
 }
 
+.dt-table-name-cell {
+  min-width: 0;
+}
+
 .dt-table-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--foreground);
+}
+
+.dt-table-message {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .dt-table-amount {
@@ -2220,91 +2232,6 @@ body::before {
   color: var(--muted);
 }
 
-/* ---- Daftar lengkap (memuat pesan donatur) ---- */
-
-.dt-list {
-  list-style: none;
-  margin: 16px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.dt-row {
-  display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  transition: border-color 120ms ease;
-}
-
-.dt-row:hover {
-  border-color: var(--border-strong);
-}
-
-.dt-row-body {
-  min-width: 0;
-  flex: 1;
-}
-
-.dt-row-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.dt-row-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground);
-  overflow-wrap: anywhere;
-}
-
-.dt-row-amount {
-  flex: 0 0 auto;
-  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.dt-message {
-  margin: 7px 0 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-soft);
-  overflow-wrap: anywhere;
-}
-
-.dt-row-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.dt-row-date {
-  font-size: 11.5px;
-  color: var(--muted);
-}
-
-.dt-source {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-
 .dt-empty {
   margin: 0;
   padding: 16px 18px;
@@ -2344,6 +2271,6 @@ body::before {
 
   .dt-table-head,
   .dt-table-row {
-    gap: 0 10px;
+    gap: 8px 10px;
   }
 }
