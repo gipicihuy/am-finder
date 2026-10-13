@@ -421,8 +421,7 @@ export function ResultView({ result }: { result: FindResult }) {
     const shares = result.shareLinks ?? [];
     return (
       <div className="state state-miss" role="status">
-        <strong>❌ {commentsDisabled ? ui.states.commentsDisabledTitle : missText}</strong>
-        {commentsDisabled ? <p className="miss-note">{ui.states.commentsDisabled}</p> : null}
+        <strong>❌ {commentsDisabled ? ui.states.commentsDisabled : missText}</strong>
         {shares.length ? (
           <div className="miss-sources">
             <p className="miss-sources-title">{ui.states.shareSources}</p>

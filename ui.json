@@ -11,8 +11,7 @@
   "states": {
     "loading": "Searching",
     "notFound": "Video ini tidak mengandung preset!",
-    "commentsDisabled": "Komentar video ini dimatikan pembuatnya, jadi link preset yang biasanya dibagikan di kolom komentar tidak bisa dicek. Deskripsi, bio, dan link-in-bio tetap sudah diperiksa.",
-    "commentsDisabledTitle": "Komentar video ini dimatikan",
+    "commentsDisabled": "Komentar video dinonaktifkan oleh kreator. Link preset tidak dapat diperiksa.",
     "noLink": "Link preset tidak ditemukan!",
     "shareSources": "Sumber lain",
     "shareChat": "Chat WA",
