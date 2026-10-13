@@ -411,6 +411,7 @@ export function ResultView({ result }: { result: FindResult }) {
   const comments = formatCount(stats?.comments);
   const description = result.video?.description?.trim();
 
+  const commentsDisabled = result.checked?.commentsDisabled === true;
   const missText =
     result.shareLinks?.length || result.checked?.context !== "none"
       ? ui.states.noLink
@@ -420,7 +421,8 @@ export function ResultView({ result }: { result: FindResult }) {
     const shares = result.shareLinks ?? [];
     return (
       <div className="state state-miss" role="status">
-        <strong>❌ {missText}</strong>
+        <strong>❌ {commentsDisabled ? ui.states.commentsDisabledTitle : missText}</strong>
+        {commentsDisabled ? <p className="miss-note">{ui.states.commentsDisabled}</p> : null}
         {shares.length ? (
           <div className="miss-sources">
             <p className="miss-sources-title">{ui.states.shareSources}</p>

@@ -542,6 +542,14 @@ body::before {
   color: #ffd7da;
 }
 
+.miss-note {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 500;
+  color: rgba(255, 179, 185, 0.78);
+}
+
 .miss-sources {
   margin-top: 10px;
   display: flex;

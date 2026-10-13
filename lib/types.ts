@@ -35,6 +35,7 @@ export type FindResult = {
     bioLinkPage?: boolean;
     linkInBio?: number;
     comments?: number;
+    commentsDisabled?: boolean;
     replies?: number;
     context?: "core" | "support" | "none";
     invalidLinks?: number;

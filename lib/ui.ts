@@ -20,6 +20,8 @@ type UiTexts = {
   states: {
     loading: string;
     notFound: string;
+    commentsDisabled: string;
+    commentsDisabledTitle: string;
     noLink: string;
     shareSources: string;
     shareChat: string;
