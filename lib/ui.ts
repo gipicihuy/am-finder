@@ -50,6 +50,11 @@ type UiTexts = {
     listTitle: string;
     seeAll: string;
     topDonation: string;
+    collectedLabel: string;
+    targetLabel: string;
+    reachedLabel: string;
+    targetExceeded: string;
+    monthlyTarget: number;
     colName: string;
     colAmount: string;
     colDate: string;

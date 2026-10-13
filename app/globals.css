@@ -1865,11 +1865,12 @@ body::before {
 
 
 
+
 /* ---------- Daftar donatur ----------
-   Struktur dan ukuran mengikuti tampilan donor sankanime.web.id secara
-   langsung (kartu vertikal 140px rata tengah, mahkota melayang, tabel bulanan
-   sticky, garis pemisah peringkat 1-3 dengan 4-8). Warna disesuaikan dengan
-   palet AM Finder. */
+   Struktur mengikuti tampilan donor sankanime.web.id: seksi bulanan dibatasi
+   max-w-2xl (672px) dengan kartu progress, seksi top donor lebar penuh dengan
+   kartu 140px rata tengah, mahkota melayang, dan garis pemisah peringkat.
+   Warna disesuaikan dengan palet AM Finder. */
 
 @keyframes dt-crown-bounce {
   0%, 100% { transform: translateY(0) rotate(15deg); }
@@ -1878,7 +1879,7 @@ body::before {
 
 @keyframes dt-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+  50% { opacity: 0.5; }
 }
 
 .dt-preview-note {
@@ -1900,7 +1901,7 @@ body::before {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin: 0 0 26px;
+  margin: 0 0 30px;
 }
 
 .dt-stat {
@@ -1935,12 +1936,21 @@ body::before {
   margin-top: 34px;
 }
 
-.dt-section-head {
+/* ---- Seksi donatur bulan ini (dibatasi lebar, seperti max-w-2xl) ---- */
+
+.dt-monthly {
+  max-width: 672px;
+  margin: 0 auto 40px;
+}
+
+.dt-monthly-head {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
-  margin-bottom: 4px;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 16px;
 }
 
 .dt-section-title {
@@ -1953,29 +1963,115 @@ body::before {
   transition: color 200ms ease;
 }
 
-.dt-section-head .dt-section-title {
+.dt-monthly-head .dt-section-title {
   margin-bottom: 0;
 }
 
 .dt-see-all {
   align-self: flex-end;
-  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--accent);
+  margin-top: 4px;
 }
 
 .dt-see-all:hover {
   text-decoration: underline;
 }
 
-/* ---- Tabel "Donatur Bulan Ini" ---- */
+@media (min-width: 769px) {
+  .dt-see-all {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-top: 0;
+    font-size: 14px;
+  }
+}
+
+/* ---- Kartu progress bulanan ---- */
+
+.dt-progress {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.dt-progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.dt-progress-label {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+.dt-progress-value {
+  margin: 0;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.dt-progress-target {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.dt-progress-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(70, 70, 79, 0.5);
+  overflow: hidden;
+}
+
+.dt-progress-fill {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 500ms ease;
+}
+
+.dt-progress-fill.is-done {
+  background: #ffd166;
+}
+
+.dt-progress-pct {
+  margin: 4px 0 0;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.dt-progress-pct.is-done {
+  color: #ffd166;
+}
+
+/* ---- Tabel donatur (grid [1fr auto auto], header sticky, bisa scroll) ---- */
+
+.dt-table-scroll {
+  background: var(--background);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+}
 
 .dt-table {
-  background: var(--surface-2);
-  border-radius: 12px;
-  padding: 16px;
-  margin-top: 14px;
+  font-size: 12px;
 }
 
 .dt-table-head,
@@ -1988,7 +2084,7 @@ body::before {
 }
 
 .dt-table-head {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
@@ -2000,13 +2096,12 @@ body::before {
 }
 
 .dt-table-row {
-  font-size: 13px;
   border-radius: 6px;
   transition: background-color 120ms ease;
 }
 
 .dt-table-row:hover {
-  background: var(--surface-3);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dt-num {
@@ -2043,14 +2138,18 @@ body::before {
 }
 
 .dt-table-empty {
-  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 24px 16px;
   text-align: center;
   font-size: 14px;
   color: var(--text-soft);
   background: rgba(33, 33, 38, 0.4);
   border: 1px dashed var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .dt-table-empty strong {
@@ -2058,7 +2157,12 @@ body::before {
   font-weight: 700;
 }
 
-/* ---- Kartu top donor ---- */
+.dt-heart {
+  color: #f87171;
+  animation: dt-pulse 2s ease-in-out infinite;
+}
+
+/* ---- Kartu top donor (lebar penuh) ---- */
 
 .dt-top {
   display: flex;
@@ -2167,7 +2271,7 @@ body::before {
   user-select: none;
 }
 
-.dt-avatar--lg {
+.dt-avatar {
   width: 72px;
   height: 72px;
   font-size: 24px;
@@ -2175,15 +2279,8 @@ body::before {
   border: 2px solid var(--accent);
 }
 
-.dt-card.is-winner .dt-avatar--lg {
+.dt-card.is-winner .dt-avatar {
   border: 3px solid #ffd700;
-}
-
-.dt-avatar--sm {
-  width: 38px;
-  height: 38px;
-  font-size: 14px;
-  border: 1px solid var(--border-strong);
 }
 
 .dt-card-text {
@@ -2251,7 +2348,7 @@ body::before {
     grid-template-columns: 1fr;
   }
 
-  .dt-avatar--lg {
+  .dt-avatar {
     width: 60px;
     height: 60px;
     font-size: 20px;
@@ -2272,5 +2369,15 @@ body::before {
   .dt-table-head,
   .dt-table-row {
     gap: 8px 10px;
+  }
+
+  .dt-progress-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .dt-progress-target {
+    text-align: left;
   }
 }

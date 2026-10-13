@@ -34,10 +34,45 @@ function StatCard({ value, label }: { value: string; label: string }) {
   );
 }
 
+function ChevronRight() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M7.5 4.5 13 10l-5.5 5.5" />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+      className="dt-heart"
+    >
+      <path d="M12 21s-7.5-4.7-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.3-9.6 9-9.6 9z" />
+    </svg>
+  );
+}
+
 /**
  * Kartu top donor — struktur .top-donation-card di sankanime.web.id:
  * vertikal rata tengah, avatar bulat di atas, lalu nama, tanggal, nominal.
- * Peringkat pertama mendapat mahkota melayang, border emas, dan baris "⭐ Donasi Teratas".
+ * Peringkat pertama mendapat mahkota melayang, border emas, dan "⭐ Donasi Teratas".
  */
 function TopCard({ donator, rank, showCrown }: { donator: Donatur; rank: number; showCrown: boolean }) {
   return (
@@ -61,39 +96,72 @@ function TopCard({ donator, rank, showCrown }: { donator: Donatur; rank: number;
   );
 }
 
-/**
- * Tabel donatur — tata letak grid [1fr auto auto] dengan header sticky,
- * identik dengan tabel bulanan di sankanime.web.id. Pesan donatur diletakkan
- * sebagai baris kecil di bawah nama supaya kolomnya tetap tiga.
- */
-function DonaturTable({
-  items,
-  emptyText,
-}: {
-  items: Donatur[];
-  emptyText?: React.ReactNode;
-}) {
+/** Tabel donatur: grid [1fr auto auto] dengan header sticky, sama seperti sankanime. */
+function DonaturTable({ items, empty }: { items: Donatur[]; empty: React.ReactNode }) {
   if (!items.length) {
-    return <div className="dt-table-empty">{emptyText}</div>;
+    return (
+      <div className="dt-table-empty">
+        <HeartIcon />
+        <span>
+          {text.emptyMonthly} <strong>{text.emptyMonthlyCta}</strong>
+        </span>
+      </div>
+    );
   }
 
   return (
-    <div className="dt-table">
-      <div className="dt-table-head">
-        <span>{text.colName}</span>
-        <span className="dt-num">{text.colAmount}</span>
-        <span className="dt-num">{text.colDate}</span>
-      </div>
-      {items.map((donator) => (
-        <div className="dt-table-row" key={donator.id}>
-          <div className="dt-table-name-cell">
-            <span className="dt-table-name">{donator.name}</span>
-            {donator.message ? <p className="dt-table-message">{donator.message}</p> : null}
-          </div>
-          <span className="dt-num dt-table-amount">{formatRupiah(donator.amount)}</span>
-          <span className="dt-num dt-table-date">{formatDate(donator.date)}</span>
+    <div className="dt-table-scroll">
+      <div className="dt-table">
+        <div className="dt-table-head">
+          <span>{text.colName}</span>
+          <span className="dt-num">{text.colAmount}</span>
+          <span className="dt-num">{text.colDate}</span>
         </div>
-      ))}
+        {items.map((donator) => (
+          <div className="dt-table-row" key={donator.id}>
+            <div className="dt-table-name-cell">
+              <span className="dt-table-name">{donator.name}</span>
+              {donator.message ? <p className="dt-table-message">{donator.message}</p> : null}
+            </div>
+            <span className="dt-num dt-table-amount">{formatRupiah(donator.amount)}</span>
+            <span className="dt-num dt-table-date">{formatDate(donator.date)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Kartu progress bulanan: terkumpul, target, bar, dan persentase tercapai. */
+function MonthlyProgress({ total, target }: { total: number; target: number }) {
+  const pct = target > 0 ? Math.min(100, (total / target) * 100) : 0;
+  const done = pct >= 100;
+
+  return (
+    <div className="dt-progress">
+      <div className="dt-progress-top">
+        <div>
+          <p className="dt-progress-label">{text.collectedLabel}</p>
+          <p className="dt-progress-value">{formatRupiah(total)}</p>
+        </div>
+        <div className="dt-progress-target">
+          <p className="dt-progress-label">
+            {text.targetLabel} {formatRupiah(target)}
+          </p>
+        </div>
+      </div>
+
+      <div className="dt-progress-track">
+        <div
+          className={`dt-progress-fill${done ? " is-done" : ""}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <p className={`dt-progress-pct${done ? " is-done" : ""}`}>
+        {pct.toFixed(1)}% {text.reachedLabel}
+        {done ? ` ${text.targetExceeded}` : ""}
+      </p>
     </div>
   );
 }
@@ -105,7 +173,7 @@ export function DonaturBoard({
   summary: DonaturSummary;
   listHref?: string;
 }) {
-  const { donators, top, monthly, monthLabel, totalAmount, totalPeople } = summary;
+  const { donators, top, monthly, monthlyTotal, monthLabel, totalAmount, totalPeople } = summary;
   const shown = Math.min(TOP_VISIBLE, top.length);
 
   return (
@@ -115,25 +183,23 @@ export function DonaturBoard({
         <StatCard value={String(totalPeople)} label={text.peopleLabel} />
       </div>
 
-      <section className="dt-section" aria-labelledby="dt-monthly-title">
-        <div className="dt-section-head">
+      {/* Donatur bulan ini — dibatasi lebar seperti max-w-2xl di sankanime */}
+      <section className="dt-monthly" aria-labelledby="dt-monthly-title">
+        <div className="dt-monthly-head">
           <h2 className="dt-section-title" id="dt-monthly-title">
             {text.monthlyTitle}
           </h2>
           <Link className="dt-see-all" href={listHref}>
-            {text.seeAll} ›
+            {text.seeAll} <ChevronRight />
           </Link>
         </div>
-        <DonaturTable
-          items={monthly}
-          emptyText={
-            <p>
-              {text.emptyMonthly} <strong>{text.emptyMonthlyCta}</strong>
-            </p>
-          }
-        />
+
+        <MonthlyProgress total={monthlyTotal} target={text.monthlyTarget} />
+
+        <DonaturTable items={monthly} empty={null} />
       </section>
 
+      {/* Top donatur — lebar penuh */}
       <section className="dt-section" aria-labelledby="dt-top-title">
         <h2 className="dt-section-title" id="dt-top-title">
           {text.topTitle} {monthLabel}
@@ -180,7 +246,7 @@ export function DonaturBoard({
         <h2 className="dt-section-title" id="dt-list-title">
           {text.listTitle}
         </h2>
-        <DonaturTable items={donators} emptyText={text.empty} />
+        <DonaturTable items={donators} empty={text.empty} />
       </section>
 
       <div className="dt-cta">

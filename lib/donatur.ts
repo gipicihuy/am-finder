@@ -14,6 +14,7 @@ export type DonaturSummary = {
   donators: Donatur[];
   top: Donatur[];
   monthly: Donatur[];
+  monthlyTotal: number;
   monthLabel: string;
   totalAmount: number;
   totalPeople: number;
@@ -155,13 +156,15 @@ export function summarizeDonatur(donators: Donatur[]): DonaturSummary {
   const now = new Date();
   const byDateDesc = (a: Donatur, b: Donatur) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
   const withAmount = donators.filter((item) => item.amount > 0);
+  const monthlyList = donators
+    .filter((item) => isSameMonth(item.date, now))
+    .sort((a, b) => b.amount - a.amount || byDateDesc(a, b));
 
   return {
     donators: donators.slice().sort(byDateDesc),
     top: withAmount.slice(0, 8),
-    monthly: donators
-      .filter((item) => isSameMonth(item.date, now))
-      .sort((a, b) => b.amount - a.amount || byDateDesc(a, b)),
+    monthly: monthlyList,
+    monthlyTotal: monthlyList.reduce((sum, item) => sum + item.amount, 0),
     monthLabel: monthLabel(now),
     totalAmount: withAmount.reduce((sum, item) => sum + item.amount, 0),
     totalPeople: donators.length,
