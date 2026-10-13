@@ -88,6 +88,38 @@ export function formatDate(iso: string): string {
   }).format(date);
 }
 
+const AVATAR_COLORS = [
+  "#05FAA8",
+  "#5AC8FA",
+  "#FFBADE",
+  "#FFD166",
+  "#A78BFA",
+  "#FF8A65",
+  "#4ADE80",
+  "#F472B6",
+];
+
+/** Inisial dari nama depan + huruf awal nama belakang. */
+export function donorInitials(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
+  return (first + last).toUpperCase();
+}
+
+/**
+ * Warna avatar diturunkan dari nama supaya nama yang sama selalu dapat warna
+ * yang sama, tanpa perlu menyimpan field avatar terpisah.
+ */
+export function donorColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 }

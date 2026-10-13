@@ -1863,9 +1863,18 @@ body::before {
   color: var(--muted);
 }
 
-/* ---------- Daftar donatur ---------- */
 
-.donatur-preview-note {
+/* ---------- Daftar donatur ----------
+   Tata letak top donor mengikuti pola sankanime.web.id: kartu vertikal
+   rata tengah, avatar bulat di atas, mahkota melayang untuk peringkat 1,
+   hover yang mengangkat kartu. Warna disesuaikan palet AM Finder. */
+
+@keyframes dt-crown-bounce {
+  0%, 100% { transform: rotate(15deg) translateY(0); }
+  50% { transform: rotate(15deg) translateY(-5px); }
+}
+
+.dt-preview-note {
   margin: 0 0 18px;
   padding: 10px 14px;
   font-size: 12.5px;
@@ -1876,18 +1885,18 @@ body::before {
   border-radius: var(--radius-sm);
 }
 
-.donatur-board {
+.dt-board {
   margin-top: 6px;
 }
 
-.donatur-stats {
+.dt-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin: 0 0 26px;
+  margin: 0 0 28px;
 }
 
-.donatur-stat {
+.dt-stat {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1897,7 +1906,7 @@ body::before {
   border-radius: var(--radius);
 }
 
-.donatur-stat-value {
+.dt-stat-value {
   font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
   font-size: clamp(20px, 4.4vw, 26px);
   font-weight: 700;
@@ -1907,7 +1916,7 @@ body::before {
   overflow-wrap: anywhere;
 }
 
-.donatur-stat-label {
+.dt-stat-label {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1915,12 +1924,12 @@ body::before {
   color: var(--muted);
 }
 
-.donatur-section + .donatur-section {
-  margin-top: 28px;
+.dt-section + .dt-section {
+  margin-top: 30px;
 }
 
-.donatur-section-title {
-  margin: 0 0 14px;
+.dt-section-title {
+  margin: 0 0 16px;
   font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
   font-size: 11.5px;
   font-weight: 800;
@@ -1929,16 +1938,156 @@ body::before {
   color: var(--accent);
 }
 
-.donatur-grid {
+/* Kartu top donor — vertikal, lebar tetap, rata tengah */
+.dt-cards {
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
-  gap: 10px;
+  padding: 26px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.donatur-list {
+.dt-card {
+  position: relative;
+  width: 150px;
+  padding: 18px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 200ms ease-in-out, border-color 120ms ease;
+}
+
+.dt-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--border-strong);
+}
+
+.dt-card.is-winner {
+  border: 2px solid #ffd700;
+  background: linear-gradient(135deg, var(--surface-2), #2b2a3a);
+}
+
+/* Mahkota peringkat 1: melayang di pojok kanan atas, miring, berpendar */
+.dt-crown {
+  position: absolute;
+  top: -22px;
+  right: -10px;
+  font-size: 28px;
+  line-height: 1;
+  z-index: 2;
+  transform: rotate(15deg);
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.7));
+  animation: dt-crown-bounce 2.5s ease-in-out infinite;
+}
+
+.dt-crown::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.1) 40%, transparent 70%);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+
+.dt-rank {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dt-card.is-winner .dt-rank {
+  background: #ffd700;
+  border-color: #ffd700;
+  color: #241f00;
+}
+
+/* Avatar inisial — bulat, warna turunan dari nama */
+.dt-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #0f0f10;
+  background: var(--dt-avatar-bg, var(--accent));
+  user-select: none;
+}
+
+.dt-avatar--lg {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+  margin-bottom: 12px;
+  border: 2px solid var(--border-strong);
+}
+
+.dt-card.is-winner .dt-avatar--lg {
+  border: 3px solid #ffd700;
+}
+
+.dt-avatar--sm {
+  width: 38px;
+  height: 38px;
+  font-size: 14px;
+  border: 1px solid var(--border-strong);
+}
+
+.dt-text {
+  width: 100%;
+}
+
+.dt-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.dt-amount {
+  margin: 4px 0 0;
+  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.dt-date {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Daftar lengkap — baris lebar supaya pesan muat */
+.dt-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1947,7 +2096,7 @@ body::before {
   gap: 8px;
 }
 
-.donatur-card {
+.dt-row {
   display: flex;
   gap: 12px;
   padding: 14px 16px;
@@ -1957,70 +2106,23 @@ body::before {
   transition: border-color 120ms ease;
 }
 
-.donatur-card:hover {
+.dt-row:hover {
   border-color: var(--border-strong);
 }
 
-.donatur-card.is-podium {
-  background: linear-gradient(180deg, var(--accent-soft), var(--surface) 62%);
-  border-color: var(--accent);
-}
-
-.donatur-card--row {
-  padding: 13px 16px;
-}
-
-.donatur-rank {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--surface-3);
-  border: 1px solid var(--border-strong);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.donatur-card.is-podium .donatur-rank {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.donatur-body {
+.dt-row-body {
   min-width: 0;
   flex: 1;
 }
 
-.donatur-head {
+.dt-row-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.donatur-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground);
-  overflow-wrap: anywhere;
-}
-
-.donatur-amount {
-  flex: 0 0 auto;
-  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.donatur-message {
+.dt-message {
   margin: 7px 0 0;
   font-size: 13px;
   line-height: 1.55;
@@ -2028,19 +2130,14 @@ body::before {
   overflow-wrap: anywhere;
 }
 
-.donatur-meta {
+.dt-row-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
 }
 
-.donatur-date {
-  font-size: 11.5px;
-  color: var(--muted);
-}
-
-.donatur-source {
+.dt-source {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -2052,7 +2149,7 @@ body::before {
   padding: 2px 8px;
 }
 
-.donatur-empty {
+.dt-empty {
   margin: 0;
   padding: 16px 18px;
   font-size: 13.5px;
@@ -2062,16 +2159,46 @@ body::before {
   border-radius: var(--radius);
 }
 
-.donatur-cta {
-  margin-top: 26px;
+.dt-cta {
+  margin-top: 28px;
+}
+
+@media (max-width: 768px) {
+  .dt-card {
+    width: calc(33.333% - 8px);
+    padding: 14px 10px;
+  }
+
+  .dt-avatar--lg {
+    width: 60px;
+    height: 60px;
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
 }
 
 @media (max-width: 520px) {
-  .donatur-stats {
+  .dt-stats {
     grid-template-columns: 1fr;
   }
 
-  .donatur-head {
+  .dt-card {
+    width: calc(50% - 6px);
+    padding: 14px 10px;
+  }
+
+  .dt-crown {
+    top: -18px;
+    right: -6px;
+    font-size: 24px;
+  }
+
+  .dt-crown::before {
+    width: 34px;
+    height: 34px;
+  }
+
+  .dt-row-head {
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;

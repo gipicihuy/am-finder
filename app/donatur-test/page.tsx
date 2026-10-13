@@ -42,7 +42,7 @@ export default function DonaturTestPage() {
         Kembali ke Beranda
       </Link>
 
-      <p className="donatur-preview-note">
+      <p className="dt-preview-note">
         Halaman percobaan — tidak ditautkan dari mana pun dan tidak diindeks mesin
         pencari.
       </p>
