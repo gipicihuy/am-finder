@@ -172,6 +172,12 @@ function normalizeQuery(raw: string): string {
     .toLowerCase();
 }
 
+// Kadang user nempel link di kolom judul. Tetap dihitung sebagai pencarian,
+// tapi jangan masuk daftar "paling sering dicari" — isinya harus kata kunci.
+function looksLikeUrl(q: string): boolean {
+  return /^(https?:\/\/|www\.|[a-z0-9.-]+\.[a-z]{2,}[/?#])/i.test(q);
+}
+
 function pushRecent(s: Store, e: RecentEvent): void {
   s.state.recent.unshift(e);
   if (s.state.recent.length > RECENT_MAX) s.state.recent.length = RECENT_MAX;
@@ -195,17 +201,20 @@ export function recordCari(
     const q = normalizeQuery(info.query);
     if (!q) return;
     s.state.days[dayKey()].searches += 1;
-    s.state.keywords[q] = (s.state.keywords[q] || 0) + 1;
-    pushRecent(s, {
-      t: Date.now(),
-      kind: "cari",
-      query: q,
-      found: info.foundCount > 0,
-      presets: info.foundCount,
-      ms: info.ms,
-      device,
-      app,
-    });
+    const noise = looksLikeUrl(q);
+    if (!noise) {
+      s.state.keywords[q] = (s.state.keywords[q] || 0) + 1;
+      pushRecent(s, {
+        t: Date.now(),
+        kind: "cari",
+        query: q,
+        found: info.foundCount > 0,
+        presets: info.foundCount,
+        ms: info.ms,
+        device,
+        app,
+      });
+    }
     prune(s);
     markDirty(s);
   } catch {
@@ -244,7 +253,20 @@ export function recordUrl(
 // Ringkasannya buat halaman monitor
 // ---------------------------------------------------------------------------
 
-const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+// Nama hari dari tanggal versi zona waktu situs (Jakarta), bukan zona server.
+const DAY_BY_EN: Record<string, string> = {
+  Sun: "Min",
+  Mon: "Sen",
+  Tue: "Sel",
+  Wed: "Rab",
+  Thu: "Kam",
+  Fri: "Jum",
+  Sat: "Sab",
+};
+const WEEKDAY_FMT = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  timeZone: TIMEZONE,
+});
 
 function shortUrl(raw: string): string {
   try {
@@ -310,7 +332,7 @@ export function snapshot(): MonitorSnapshot {
     const b = s.state.days[dayKey(d)];
     const isToday = i === 0;
     week.push({
-      label: isToday ? "Hari ini" : DAY_NAMES[d.getDay()],
+      label: isToday ? "Hari ini" : DAY_BY_EN[WEEKDAY_FMT.format(d)] || "",
       count: b?.visitors?.length || 0,
       isToday,
     });
