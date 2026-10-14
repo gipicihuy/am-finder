@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AmLogo } from "@/components/AmLogo";
 import { MonitorPanel } from "@/components/MonitorPanel";
 import { SectionOrnament } from "@/components/Ornament";
 
@@ -16,23 +15,18 @@ export const metadata: Metadata = {
 export default function MonitorGivyPage() {
   return (
     <article className="mon-page">
-      <header className="mon-top">
-        <span className="mon-brand">
-          <AmLogo size={28} />
-          <span className="mon-brand-name">AM Preset Finder</span>
-        </span>
+      <div className="mon-title-row">
+        <h1 className="page-title mon-title">
+          <span className="section-ornament" aria-hidden="true">
+            <SectionOrnament />
+          </span>
+          Monitor
+        </h1>
         <span className="mon-live">
           <span className="mon-live-dot" aria-hidden="true" />
           Live
         </span>
-      </header>
-
-      <h1 className="page-title mon-title">
-        <span className="section-ornament" aria-hidden="true">
-          <SectionOrnament />
-        </span>
-        Monitor
-      </h1>
+      </div>
 
       <MonitorPanel />
     </article>

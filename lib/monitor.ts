@@ -102,10 +102,12 @@ function sid(headers: Headers): string {
     .slice(0, 16);
 }
 
-// Penanda Android WebView. App Android di repo ini bungkus WebView polos tanpa
-// User-Agent khusus, jadi "; wv)" adalah satu-satunya pembeda yang tersedia.
+// App Android di repo ini bungkus WebView. APK lama nggak nulis penanda apa pun,
+// jadi "; wv)" (tanda khas Android WebView) masih dipakai sebagai cadangan —
+// tapi itu melebar: browser in-app di aplikasi lain juga kena. APK baru nambahin
+// "AMFinderApp/x" di User-Agent supaya hitungannya persis.
 function isApp(ua: string): boolean {
-  return /;\s*wv\)/i.test(ua);
+  return /AMFinderApp\//i.test(ua) || /;\s*wv\)/i.test(ua);
 }
 
 function deviceLabel(ua: string): string {

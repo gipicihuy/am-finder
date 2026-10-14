@@ -125,7 +125,7 @@ export function MonitorPanel() {
           <div className="mon-table">
             <div className="mon-row is-head">
               <span>Kata kunci</span>
-              <span>Berapa kali</span>
+              <span>Jumlah</span>
             </div>
             {data?.keywords.map(k => (
               <div className="mon-row" key={k.word}>

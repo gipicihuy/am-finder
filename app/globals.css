@@ -2387,41 +2387,17 @@ body::before {
    yang gampang, tanpa istilah teknis.
    ------------------------------------------------------------------ */
 
-/* SiteHeader udah nampilin logo + nama; halaman monitor punya header
-   sendiri dengan badge LIVE, jadi chrome global disembunyikan di rute ini. */
-body:has(.mon-page) .site-header {
-  display: none;
-}
-
 .mon-page {
   max-width: 860px;
   margin: 0 auto;
   padding: 28px 0 56px;
 }
 
-.mon-top {
+.mon-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 22px;
-}
-
-.mon-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--accent);
-}
-
-.mon-brand-name {
-  font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--foreground);
 }
 
 .mon-live {
@@ -2465,7 +2441,7 @@ body:has(.mon-page) .site-header {
   }
 }
 
-.mon-title {
+.mon-title-row .mon-title {
   margin-bottom: 22px;
 }
 

@@ -82,6 +82,11 @@ public class MainActivity extends Activity {
         splashStart = SystemClock.uptimeMillis();
 
         web = new WebView(this);
+        // Penanda biar halaman monitor bisa membedakan "lewat aplikasi" dengan
+        // akurat. Tanpa ini, deteksi nebak dari "; wv)" yang juga dipakai
+        // browser in-app milik aplikasi lain.
+        web.getSettings().setUserAgentString(
+                web.getSettings().getUserAgentString() + " AMFinderApp/1.0");
         splash = buildSplash();
         offlinePanel = buildOfflinePanel();
         progressTrack = buildProgress();
