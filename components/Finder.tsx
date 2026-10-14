@@ -75,6 +75,18 @@ export function Finder() {
   const batteryRef = useRef<Battery | null>(null);
 
   useEffect(() => {
+    // App Android nyuntik objek `AndroidClipboard` ke halaman (buat tombol paste).
+    // Deteksi itu jalan di SEMUA versi APK yang sudah beredar, jadi monitor bisa
+    // membedakan "lewat aplikasi" tanpa perlu rilis aplikasi baru. Tandanya disimpan
+    // di cookie, otomatis ikut di tiap permintaan berikutnya.
+    try {
+      if (typeof window !== "undefined" && "AndroidClipboard" in window) {
+        document.cookie = "am_app=1; path=/; max-age=31536000; samesite=lax";
+      }
+    } catch {
+      /* cookie bukan kebutuhan utama */
+    }
+
     try {
       const raw = localStorage.getItem(HISTORY_KEY);
       if (raw) setHistory(JSON.parse(raw));

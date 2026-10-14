@@ -102,12 +102,25 @@ function sid(headers: Headers): string {
     .slice(0, 16);
 }
 
-// App Android di repo ini bungkus WebView. APK lama nggak nulis penanda apa pun,
-// jadi "; wv)" (tanda khas Android WebView) masih dipakai sebagai cadangan —
-// tapi itu melebar: browser in-app di aplikasi lain juga kena. APK baru nambahin
-// "AMFinderApp/x" di User-Agent supaya hitungannya persis.
-function isApp(ua: string): boolean {
-  return /AMFinderApp\//i.test(ua) || /;\s*wv\)/i.test(ua);
+// Browser in-app milik aplikasi lain juga pakai "; wv)", jadi harus dibuang
+// dulu supaya nggak nyasar ke kotak "lewat aplikasi".
+const IN_APP_BROWSER =
+  /FBAN\/|FBAV\/|FBDV\/|Instagram|WhatsApp|TwitterAndroid|Twitter for|TelegramAndroid|BytedanceWebview|musical_ly|TikTok|LinkedInApp|Pinterest|Snapchat|Discord|Reddit|Line\/|MicroMessenger|Electron|HeyTapBrowser|MiuiBrowser|HuaweiBrowser|OPBrowser|VivoBrowser/i;
+
+// Deteksi aplikasi, dari yang paling bisa dipercaya ke yang paling melebar:
+//   1. cookie `am_app` — dipasang halaman kalau dia jalan di dalam app Android.
+//      App-nya nyuntik objek `AndroidClipboard` ke halaman, dan itu kebaca dari
+//      JavaScript. Cara ini berlaku buat SEMUA APK yang sudah beredar, jadi nggak
+//      perlu rilis aplikasi baru.
+//   2. penanda User-Agent `AMFinderApp/x` — buat APK yang dibangun ulang nanti.
+//   3. `; wv)` tanpa penanda app lain — cadangan buat WebView lama.
+function isApp(headers: Headers): boolean {
+  const cookie = headers.get("cookie") || "";
+  if (/(?:^|;\s*)am_app=1(?:;|$)/.test(cookie)) return true;
+  const ua = (headers.get("user-agent") || "").slice(0, 300);
+  if (/AMFinderApp\//i.test(ua)) return true;
+  if (!/;\s*wv\)/i.test(ua)) return false;
+  return !IN_APP_BROWSER.test(ua);
 }
 
 function deviceLabel(ua: string): string {
@@ -150,7 +163,7 @@ function touch(headers: Headers): { id: string; app: boolean; device: string } {
   const s = store();
   const id = sid(headers);
   const ua = (headers.get("user-agent") || "").slice(0, 300);
-  const app = isApp(ua);
+  const app = isApp(headers);
   const now = Date.now();
 
   s.state.live[id] = { last: now, app };
