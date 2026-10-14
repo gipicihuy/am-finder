@@ -412,10 +412,14 @@ export function ResultView({ result }: { result: FindResult }) {
   const description = result.video?.description?.trim();
 
   const commentsDisabled = result.checked?.commentsDisabled === true;
+  // Kalau tidak ada link preset: kalau video terdeteksi terkait preset atau punya
+  // sumber lain, pesannya "link tidak ditemukan". Kalau konteks tak terdeteksi,
+  // pakai pesan detail dari scraper (apa saja yang sudah dicek) — jangan mengklaim
+  // video tidak mengandung preset padahal kita cuma tidak menemukan linknya.
   const missText =
     result.shareLinks?.length || result.checked?.context !== "none"
       ? ui.states.noLink
-      : ui.states.notFound;
+      : (result.message ?? ui.states.notFound);
 
   if (presets.length === 0) {
     const shares = result.shareLinks ?? [];
