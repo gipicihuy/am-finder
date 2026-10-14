@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Snapshot = {
   active: { total: number; browser: number; app: number };
@@ -29,26 +29,16 @@ function Stat({ value, label }: { value: number; label: string }) {
   );
 }
 
-export function MonitorPanel({ loginPw }: { loginPw?: string }) {
+export function MonitorPanel() {
   const [data, setData] = useState<Snapshot | null>(null);
   const [failed, setFailed] = useState(false);
-  const started = useRef(false);
 
   useEffect(() => {
     let alive = true;
 
-    // Sekali aja: tukar password di URL jadi cookie, biar polling berikutnya
-    // nggak bawa password.
-    if (loginPw && !started.current) {
-      started.current = true;
-      void fetch(`/api/monitor/login?pw=${encodeURIComponent(loginPw)}`, {
-        credentials: "same-origin",
-      }).catch(() => {});
-    }
-
     const load = async () => {
       try {
-        const res = await fetch("/api/monitor/stats", {
+        const res = await fetch("/api/givy-live", {
           credentials: "same-origin",
           cache: "no-store",
         });
@@ -69,7 +59,7 @@ export function MonitorPanel({ loginPw }: { loginPw?: string }) {
       alive = false;
       clearInterval(timer);
     };
-  }, [loginPw]);
+  }, []);
 
   const max = Math.max(1, ...(data?.week.map(d => d.count) || [1]));
 

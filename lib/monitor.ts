@@ -4,9 +4,10 @@
 //
 // PRIVASI: alamat IP TIDAK PERNAH disimpan maupun dikirim ke UI. Yang disimpan
 // cuma sid (hash SHA-256 dari IP + salt), dipakai buat ngenalin "orang yang sama"
-// biar bisa ngitung pengunjung unik. Salt diturunkan dari password monitor.
+// biar bisa ngitung pengunjung unik. Salt cuma konstanta internal — sid
+// tidak pernah dikirim keluar dari server.
 
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { clientIp } from "./ip";
@@ -18,7 +19,6 @@ const KEYWORD_MAX = 200;
 const DAY_KEEP = 14;
 const ACTIVE_MS = 5 * 60_000;
 const FLUSH_MS = 5_000;
-const AUTH_TTL_MS = 30 * 24 * 60 * 60_000;
 
 type DayBucket = {
   visitors: string[];
@@ -91,12 +91,8 @@ function markDirty(s: Store): void {
   }, FLUSH_MS);
 }
 
-function password(): string {
-  return process.env.MONITOR_PASSWORD || "";
-}
-
 function salt(): string {
-  return createHash("sha256").update(`amfinder-monitor:${password()}`).digest("hex");
+  return createHash("sha256").update("amfinder-monitor-salt-v1").digest("hex");
 }
 
 function sid(headers: Headers): string {
@@ -371,44 +367,4 @@ export function snapshot(): MonitorSnapshot {
     keywords,
     recent,
   };
-}
-
-// ---------------------------------------------------------------------------
-// Autentikasi: cookie isinya tanda tangan HMAC, bukan password mentah
-// ---------------------------------------------------------------------------
-
-export const AUTH_COOKIE = "monitor_auth";
-
-function authSecret(): string {
-  return createHash("sha256").update(`amfinder-monitor-auth:${password()}`).digest("hex");
-}
-
-export function hasPassword(): boolean {
-  return password().length > 0;
-}
-
-export function checkPassword(candidate: string | null | undefined): boolean {
-  const real = password();
-  if (!real || typeof candidate !== "string" || !candidate) return false;
-  const a = Buffer.from(candidate);
-  const b = Buffer.from(real);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
-export function issueAuth(): string {
-  const exp = Date.now() + AUTH_TTL_MS;
-  const sig = createHmac("sha256", authSecret()).update(String(exp)).digest("base64url");
-  return `${exp}.${sig}`;
-}
-
-export function verifyAuth(value: string | null | undefined): boolean {
-  if (!value || typeof value !== "string") return false;
-  const dot = value.indexOf(".");
-  if (dot <= 0) return false;
-  const exp = Number(value.slice(0, dot));
-  if (!Number.isFinite(exp) || Date.now() > exp) return false;
-  const want = createHmac("sha256", authSecret()).update(String(exp)).digest("base64url");
-  const got = Buffer.from(value.slice(dot + 1));
-  const ref = Buffer.from(want);
-  return got.length === ref.length && timingSafeEqual(got, ref);
 }
