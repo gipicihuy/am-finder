@@ -1,4 +1,5 @@
 import { normalizeBattery, sendLog } from "../../../lib/track";
+import { recordVisit } from "../../../lib/monitor";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -19,6 +20,8 @@ export async function POST(request: Request) {
   const battery = normalizeBattery(data.battery);
 
   void sendLog("visit", request.headers, { path, battery }).catch(() => {});
+
+  recordVisit(request.headers);
 
   return Response.json(
     { ok: true },

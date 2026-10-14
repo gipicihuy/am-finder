@@ -3,6 +3,7 @@ import path from "node:path";
 import { searchTiktok, setLog } from "../../../lib/ttsearch";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
+import { recordCari, recordVisit } from "../../../lib/monitor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -263,6 +264,8 @@ export async function GET(request: Request) {
   const limit = limitByIp(request, "search");
   if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
 
+  recordVisit(request.headers);
+
   const topRaw = Number(params.get("top"));
   const top = Number.isFinite(topRaw) && topRaw >= 1
     ? Math.min(Math.floor(topRaw), TOP_MAX)
@@ -398,6 +401,7 @@ export async function GET(request: Request) {
         }
 
         const items = filterPresetCandidates(ranked).slice(0, pickMode ? CANDIDATE_LIMIT : top);
+        recordCari(request.headers, { query, foundCount: items.length, ms: Date.now() - t0 });
         push("candidates", {
           query,
           fromCache: !!searchRes.fromCache,

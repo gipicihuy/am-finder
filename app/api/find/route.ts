@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
+import { recordUrl, recordVisit } from "../../../lib/monitor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,6 +61,9 @@ export async function GET(request: Request) {
 
   const limit = limitByIp(request, "find");
   if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
+
+  const t0 = Date.now();
+  recordVisit(request.headers);
 
   const battery = params.has("bat")
     ? normalizeBattery({
@@ -149,7 +153,12 @@ export async function GET(request: Request) {
 
       proc.on("close", (code) => {
         if (closed) return;
-        let parsed: { ok?: boolean; error?: string } | null = null;
+        let parsed: {
+          ok?: boolean;
+          error?: string;
+          found?: boolean;
+          presetLinks?: unknown[];
+        } | null = null;
         try {
           parsed = JSON.parse(stdout);
         } catch {
@@ -165,6 +174,12 @@ export async function GET(request: Request) {
           finish();
           return;
         }
+        recordUrl(request.headers, {
+          url: target,
+          found: !!parsed.found,
+          presets: Array.isArray(parsed.presetLinks) ? parsed.presetLinks.length : 0,
+          ms: Date.now() - t0,
+        });
         push("result", parsed);
         finish();
       });
