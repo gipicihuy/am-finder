@@ -1,6 +1,6 @@
 "use client";
 
-import { isTikTokLink } from "@/lib/tiktok-link";
+import { isVideoLink } from "@/lib/tiktok-link";
 import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
@@ -136,7 +136,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   }
 
   function changeQuery(value: string) {
-    if (embedded && isTikTokLink(value)) {
+    if (embedded && isVideoLink(value)) {
       onTikTokLink?.(value.trim());
       setQ("");
       return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { isTikTokLink } from "@/lib/tiktok-link";
+import { isVideoLink } from "@/lib/tiktok-link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
@@ -115,12 +115,12 @@ export function Finder() {
     const target = link.trim();
     if (!target) return;
 
-    const looksLikeTikTok = isTikTokLink(target);
-    if (!looksLikeTikTok) {
+    const looksLikeVideo = isVideoLink(target);
+    if (!looksLikeVideo) {
       sourceRef.current?.close();
       finishedRef.current = true;
       setPhase("error");
-      setError("That link is not from TikTok. Paste a TikTok video link first.");
+      setError("That link is not from TikTok or YouTube. Paste a video link first.");
       return;
     }
 
@@ -275,8 +275,8 @@ export function Finder() {
 
       {mode === "url" ? (
         <p className="page-sub" data-nosnippet>
-          Masukkan link video TikTok untuk mencari link preset di deskripsi, bio, komentar, dan
-          balasannya.
+          Masukkan link video TikTok atau YouTube untuk mencari link preset di deskripsi, bio,
+          komentar, dan balasannya.
         </p>
       ) : !searchDetailOpen ? (
         <p className="page-sub" data-nosnippet>
@@ -300,7 +300,7 @@ export function Finder() {
       <div className="search-wrap">
         <form className="search-form" role="search" onSubmit={onSubmit}>
           <label className="sr-only" htmlFor="tt">
-            TikTok video link
+            TikTok or YouTube video link
           </label>
           <span className="search-field">
             <span className="search-icon" aria-hidden="true">
@@ -318,7 +318,7 @@ export function Finder() {
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              placeholder="https://vt.tiktok.com/xxx"
+              placeholder="https://vt.tiktok.com/xxx atau youtu.be/xxx"
               value={value}
               onChange={(event) => setValue(event.target.value)}
             />

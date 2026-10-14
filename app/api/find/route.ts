@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const target = normalizeTarget(params.get("url"));
   if (!target) {
-    return Response.json({ ok: false, error: "link TikTok tidak valid" }, { status: 400 });
+    return Response.json({ ok: false, error: "link video tidak valid" }, { status: 400 });
   }
 
   const limit = limitByIp(request, "find");

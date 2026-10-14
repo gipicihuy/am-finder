@@ -20,7 +20,7 @@
     "shareTelegram": "Telegram",
     "howTitle": "Step by step",
     "howSteps": [
-      "Paste a TikTok video link",
+      "Paste a TikTok or YouTube link",
       "AM Preset Finder scans the video, bio and comments",
       "Preset links are extracted automatically",
       "Copy the preset you need"
@@ -34,11 +34,11 @@
   },
   "header": {
     "brand": "AM Preset Finder",
-    "tagline": "Find Alight Motion presets from any TikTok link"
+    "tagline": "Find Alight Motion presets from any TikTok or YouTube link"
   },
   "footer": {
     "brand": "AM Preset Finder",
-    "note": "Paste a TikTok link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
+    "note": "Paste a TikTok or YouTube link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
     "columns": [
       {
         "title": "Support",
@@ -68,7 +68,7 @@
       }
     ],
     "copyright": "© 2026 Givy. All rights reserved.",
-    "disclaimer": "Not affiliated with TikTok or Alight Motion."
+    "disclaimer": "Not affiliated with TikTok, YouTube or Alight Motion."
   },
   "donatur": {
     "title": "Hall of Fame Donatur",

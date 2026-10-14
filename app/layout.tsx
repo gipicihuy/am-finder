@@ -15,7 +15,7 @@ const icon = (path: string) => `${path}${iconVer}`;
 
 const siteTitle = "AM Preset Finder";
 const siteDescription =
-  "Paste a TikTok video link and get the Alight Motion preset links from its description, bio, comments and link in bio.";
+  "Paste a TikTok or YouTube video link and get the Alight Motion preset links from its description, bio, comments and link in bio.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
