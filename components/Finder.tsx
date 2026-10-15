@@ -98,7 +98,7 @@ export function Finder() {
       if (cancelled) return;
       batteryRef.current = battery;
       try {
-        void fetch("/api/track", {
+        void fetch("/api/v1/event", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ path: location.pathname, battery }),

@@ -25,7 +25,7 @@ Tempel link video TikTok, aplikasi menelusuri deskripsi akun, halaman link-in-bi
 
 ## Log kunjungan ke Telegram (opsional)
 
-Setiap kunjungan halaman (`POST /api/track`, dipanggil dari browser) dan setiap link yang ditempel dikirim ke bot Telegram berisi:
+Setiap kunjungan halaman (`POST /api/v1/event`, dipanggil dari browser) dan setiap link yang ditempel dikirim ke bot Telegram berisi:
 
 - IP, **kota**, negara, dan ISP (geo lookup `ip-api.com`, di-cache per IP)
 - device, browser, dan **baterai hp** dari Battery Status API (`navigator.getBattery`, kalau browser tidak mendukung tampil `-`)

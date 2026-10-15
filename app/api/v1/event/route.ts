@@ -1,6 +1,6 @@
-import { normalizeBattery, sendLog } from "../../../lib/track";
-import { recordVisit } from "../../../lib/monitor";
-import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
+import { normalizeBattery, sendLog } from "../../../../lib/track";
+import { recordVisit } from "../../../../lib/monitor";
+import { limitByIp, tooManyRequests } from "../../../../lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
