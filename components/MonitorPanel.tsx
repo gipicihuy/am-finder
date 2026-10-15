@@ -62,6 +62,7 @@ export function MonitorPanel() {
   }, []);
 
   const max = Math.max(1, ...(data?.week.map(d => d.count) || [1]));
+  const kwMax = Math.max(1, ...(data?.keywords.map(k => k.count) || [1]));
 
   return (
     <div className="mon-grid">
@@ -122,15 +123,15 @@ export function MonitorPanel() {
           <h2 className="mon-card-title">Paling sering dicari</h2>
         </div>
         {(data?.keywords.length ?? 0) > 0 ? (
-          <div className="mon-table">
-            <div className="mon-row is-head">
-              <span>Kata kunci</span>
-              <span>Jumlah</span>
-            </div>
-            {data?.keywords.map(k => (
-              <div className="mon-row" key={k.word}>
-                <span className="mon-word">{k.word}</span>
-                <span className="mon-count">{k.count.toLocaleString("id-ID")}×</span>
+          <div className="mon-kw-list">
+            {data?.keywords.map((k, i) => (
+              <div className="mon-kw" key={k.word}>
+                <span className="mon-kw-rank">{i + 1}</span>
+                <span className="mon-kw-word">{k.word}</span>
+                <span className="mon-kw-bar" aria-hidden="true">
+                  <span style={{ width: `${Math.max(3, Math.round((k.count / kwMax) * 100))}%` }} />
+                </span>
+                <span className="mon-kw-count">{k.count.toLocaleString("id-ID")}</span>
               </div>
             ))}
           </div>
