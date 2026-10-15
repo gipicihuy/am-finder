@@ -2390,7 +2390,7 @@ body::before {
 .mon-page {
   max-width: 860px;
   margin: 0 auto;
-  padding: 28px 0 56px;
+  padding: 0 0 56px;
 }
 
 .mon-title-row {
@@ -2765,7 +2765,7 @@ body::before {
 
 @media (max-width: 420px) {
   .mon-page {
-    padding-top: 20px;
+    padding-top: 0;
   }
 
   .mon-card {
