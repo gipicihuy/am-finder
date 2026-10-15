@@ -15,6 +15,19 @@ export const metadata: Metadata = {
 export default function MonitorGivyPage() {
   return (
     <article className="mon-page">
+      <p className="mon-credit">
+        Web ini dibuat oleh{" "}
+        <a
+          className="mon-credit-link"
+          href="https://www.tiktok.com/@givydev"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          givy
+        </a>
+        😈🔥
+      </p>
+
       <div className="mon-title-row">
         <h1 className="page-title mon-title">
           <span className="section-ornament" aria-hidden="true">

@@ -2895,3 +2895,20 @@ body::before {
     grid-column: span 8;
   }
 }
+
+.mon-credit {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.mon-credit-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mon-credit-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
