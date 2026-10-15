@@ -11,6 +11,58 @@ const TIMEOUT_MS = 150_000;
 const MAX_ACTIVE = 3;
 const MAX_QUEUE = 8;
 
+const SSE_HEADERS = {
+  "Content-Type": "text/event-stream; charset=utf-8",
+  "Cache-Control": "no-cache, no-transform",
+  Connection: "keep-alive",
+  "X-Accel-Buffering": "no",
+};
+
+// Hasil yang barusan dicek disimpan sebentar di memori. Tempel link yang sama
+// lagi langsung dibalas tanpa spawn proses scraper, jadi user nggak lihat fase
+// "mencari link preset" lagi padahal barusan selesai. Dibatesin 10 menit biar
+// hasilnya nggak ketinggalan jaman (tautan pratinjau video ada masa berlaku).
+const RECENT_TTL_MS = 10 * 60_000;
+const RECENT_MAX = 200;
+const recentFind: Map<string, { at: number; row: Record<string, unknown> }> = new Map();
+
+function recentKey(target: string): string {
+  return target.replace(/\/+$/, "").toLowerCase();
+}
+
+function peekRecent(target: string): Record<string, unknown> | null {
+  const key = recentKey(target);
+  const hit = recentFind.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > RECENT_TTL_MS) {
+    recentFind.delete(key);
+    return null;
+  }
+  return hit.row;
+}
+
+function rememberRecent(target: string, row: Record<string, unknown>): void {
+  const key = recentKey(target);
+  recentFind.delete(key);
+  recentFind.set(key, { at: Date.now(), row });
+  while (recentFind.size > RECENT_MAX) {
+    const oldest = recentFind.keys().next().value;
+    if (oldest === undefined) break;
+    recentFind.delete(oldest);
+  }
+}
+
+function sseOf(events: Array<[string, unknown]>): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const [event, data] of events) controller.enqueue(encoder.encode(encode(event, data)));
+      controller.close();
+    },
+  });
+  return new Response(stream, { headers: SSE_HEADERS });
+}
+
 let active = 0;
 const waiting: Array<() => void> = [];
 
@@ -64,6 +116,16 @@ export async function GET(request: Request) {
 
   const t0 = Date.now();
   recordVisit(request.headers);
+
+  // Link yang barusan dicek: balas langsung. Tidak dihitung sebagai pemeriksaan
+  // baru di monitor karena memang tidak ada yang diperiksa ulang.
+  const cached = peekRecent(target);
+  if (cached) {
+    return sseOf([
+      ["log", "hasil barusan sudah dicek, langsung ditampilkan"],
+      ["result", cached],
+    ]);
+  }
 
   const battery = params.has("bat")
     ? normalizeBattery({
@@ -180,6 +242,7 @@ export async function GET(request: Request) {
           presets: Array.isArray(parsed.presetLinks) ? parsed.presetLinks.length : 0,
           ms: Date.now() - t0,
         });
+        rememberRecent(target, parsed);
         push("result", parsed);
         finish();
       });
@@ -203,12 +266,5 @@ export async function GET(request: Request) {
     }
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no",
-    },
-  });
+  return new Response(stream, { headers: SSE_HEADERS });
 }

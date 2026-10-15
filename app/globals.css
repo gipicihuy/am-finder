@@ -2668,17 +2668,6 @@ body::before {
   color: var(--foreground);
 }
 
-.mon-act-tag {
-  padding: 3px 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--surface-3);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
 
 .mon-act-list {
   display: flex;

@@ -142,7 +142,6 @@ export function MonitorPanel() {
       <section className="mon-card mon-act">
         <div className="mon-act-head">
           <h2 className="mon-act-title">Aktivitas terbaru</h2>
-          <span className="mon-act-tag">Disamarkan</span>
         </div>
         {(data?.recent.length ?? 0) > 0 ? (
           <div className="mon-act-list">
