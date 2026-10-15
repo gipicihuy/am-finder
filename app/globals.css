@@ -2778,8 +2778,9 @@ body::before {
   }
 }
 
-/* Monitor — tampilan desktop: grid dashboard lebar (di HP tetap satu kolom) */
-@media (min-width: 1000px) {
+/* Monitor — tampilan desktop: grid dashboard lebar (di HP tetap satu kolom).
+   Mulai 900px supaya "situs desktop" di HP (lebar virtual ~980px) ikut kena. */
+@media (min-width: 900px) {
   .mon-page {
     max-width: none;
     width: min(1120px, calc(100vw - 80px));
@@ -2815,12 +2816,12 @@ body::before {
   }
 
   .mon-a-words {
-    grid-column: span 4;
+    grid-column: span 12;
     order: 4;
   }
 
   .mon-a-act {
-    grid-column: span 8;
+    grid-column: span 12;
     order: 5;
   }
 
@@ -2881,5 +2882,16 @@ body::before {
     grid-column: 5;
     grid-row: 1 / span 2;
     justify-self: end;
+  }
+}
+
+/* layar lebar: kata kunci dan aktivitas berdampingan */
+@media (min-width: 1200px) {
+  .mon-a-words {
+    grid-column: span 4;
+  }
+
+  .mon-a-act {
+    grid-column: span 8;
   }
 }
