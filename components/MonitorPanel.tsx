@@ -64,8 +64,8 @@ export function MonitorPanel() {
   const max = Math.max(1, ...(data?.week.map(d => d.count) || [1]));
 
   return (
-    <>
-      <section className="mon-card">
+    <div className="mon-grid">
+      <section className="mon-card mon-a-active">
         <div className="mon-card-head">
           <h2 className="mon-card-title">Pengguna aktif sekarang</h2>
         </div>
@@ -88,7 +88,7 @@ export function MonitorPanel() {
         )}
       </section>
 
-      <section className="mon-card">
+      <section className="mon-card mon-a-stats">
         <div className="mon-stats">
           <Stat value={data?.today.visitors ?? 0} label="Pengunjung hari ini" />
           <Stat value={data?.today.searches ?? 0} label="Kali mencari hari ini" />
@@ -97,7 +97,7 @@ export function MonitorPanel() {
         </div>
       </section>
 
-      <section className="mon-card">
+      <section className="mon-card mon-a-chart">
         <div className="mon-card-head">
           <h2 className="mon-card-title">Pengunjung 7 hari terakhir</h2>
         </div>
@@ -117,7 +117,7 @@ export function MonitorPanel() {
         </div>
       </section>
 
-      <section className="mon-card">
+      <section className="mon-card mon-a-words">
         <div className="mon-card-head">
           <h2 className="mon-card-title">Paling sering dicari</h2>
         </div>
@@ -139,7 +139,7 @@ export function MonitorPanel() {
         )}
       </section>
 
-      <section className="mon-card mon-act">
+      <section className="mon-card mon-act mon-a-act">
         <div className="mon-act-head">
           <h2 className="mon-act-title">Aktivitas terbaru</h2>
         </div>
@@ -172,6 +172,6 @@ export function MonitorPanel() {
           <div className="mon-empty">Belum ada aktivitas.</div>
         )}
       </section>
-    </>
+    </div>
   );
 }
