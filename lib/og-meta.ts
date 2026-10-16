@@ -2,10 +2,11 @@
 //
 // Kenapa dipisah: halaman preset itu kerangka kosong yang diisi dari browser.
 // Judul videonya baru diketahui dari luar, dan tariknya di server cuma boleh
-// dilakukan buat bot pratinjau (WhatsApp/Telegram/Facebook/dll) — bukan buat
-// tiap pengunjung. Jadi fetch-nya dibatasi ketat: satu kali coba (TikTok boleh
-// ulang kalau kena kuota), total waktunya dibatasi, di-cache 24 jam, dan yang
-// lebih penting cuma jalan kalau User-Agent-nya memang bot pratinjau.
+  // dilakukan buat bot pratinjau (WhatsApp/Telegram/Facebook/dll) — bukan buat
+  // tiap pengunjung. Jadi fetch-nya dibatasi ketat: satu kali coba (TikTok boleh
+  // ulang kalau kena kuota), total waktunya dibatasi, dan hasilnya di-cache 7
+  // hari (judul/penulis video jarang berubah, sementara kuota tikwm cuma
+  // 10.000/hari dan dipakai bareng sama pencarian & scraper).
 //
 // Sumber per sumber video (satu request kecil, TIDAK PERNAH spawn amfinder.js,
 // tidak mengambil komentar):
@@ -41,16 +42,42 @@ const ATTEMPT_TIMEOUT_MS = 2000;
 const FETCH_BUDGET_MS = 6000;
 const LIMIT_SLEEP_MS = 1100;
 const LIMIT_RETRIES = 2;
-const SUCCESS_TTL_MS = 24 * 60 * 60_000;
-const FAIL_TTL_MS = 60 * 60_000;
+  // Kuota tikwm harian (10.000/hari) dipakai bareng sama pencarian dan
+  // scraper. Selama kuota habis, setiap percuma tetap dihitung tikwm — jadi
+  // begitu terdeteksi habis, tahan dulu semua request keluar sampai cooldown
+  // selesai. Tanpa ini, tiap bot pratinjau yang datang membakar kuota sia-sia.
+  const QUOTA_COOLDOWN_MS = 15 * 60_000;
+  let quotaUntil = 0;
+  // Isi: { until: <epoch ms>, dur: <ms> }. Dideklarasikan setelah DATA_DIR.
+  let QUOTA_FILE = "";
+  // File bersama yang ditulis scraper (lib/amfinder.js) dan pencarian
+  // (lib/ttsearch.js). Kalau mereka duluan tahu kuota harian habis, preview OG
+  // ikut berhenti tanpa perlu membuang satu request lagi buat membuktikannya.
+  function sharedQuotaBlocked(): number {
+    try {
+      const s = JSON.parse(readFileSync(QUOTA_FILE, "utf8")) as { until?: unknown };
+      return typeof s?.until === "number" ? Math.max(0, s.until - Date.now()) : 0;
+    } catch {
+      return 0;
+    }
+  }
+  const quotaExhausted = () => Date.now() < quotaUntil || sharedQuotaBlocked() > 0;
+  function noteQuotaExhausted(): void {
+    quotaUntil = Date.now() + QUOTA_COOLDOWN_MS;
+  }
+  const isDailyQuotaMsg = (m: string) => /request\s*\/\s*\d+\s*day/i.test(m);
+
+  const SUCCESS_TTL_MS = 7 * 24 * 60 * 60_000;
+  const FAIL_TTL_MS = 60 * 60_000;
 const MAX_ENTRIES = 200;
 const IMG_MAX_BYTES = 400_000;
 const IMG_MIN_BYTES = 200;
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const CACHE_FILE = path.join(DATA_DIR, "og-meta.json");
-const IMG_DIR = path.join(DATA_DIR, "og-img");
-const FLUSH_MS = 5_000;
+  const DATA_DIR = path.join(process.cwd(), "data");
+  const CACHE_FILE = path.join(DATA_DIR, "og-meta.json");
+  const IMG_DIR = path.join(DATA_DIR, "og-img");
+  const FLUSH_MS = 5_000;
+  QUOTA_FILE = path.join(DATA_DIR, "tikwm-quota.json");
 
 // UA netral buat request keluar. tikwm kadang nolak kalau UA-nya kosong.
 const OUTBOUND_UA = "Mozilla/5.0 (compatible; AMPresetFinder/1.0)";
@@ -231,6 +258,7 @@ async function saveTiktokCover(id: string, url: string): Promise<string | null> 
 
 type TiktokPayload = {
   code?: unknown;
+  msg?: unknown;
   data?: { id?: unknown; title?: unknown; cover?: unknown; author?: { nickname?: unknown } } | null;
 } | null;
 
@@ -251,6 +279,11 @@ async function fetchTiktok(id: string): Promise<OgMeta | null> {
     if (raw && raw.code === 0 && raw.data) {
       j = raw;
       break;
+    }
+    // Kuota harian habis: berhenti mencoba dan tahan semua request berikutnya.
+    if (raw && raw.code === -1 && isDailyQuotaMsg(String(raw.msg || ""))) {
+      noteQuotaExhausted();
+      return null;
     }
     // code -1 = kuota tikwm (1 request/detik) keburu dipakai pencarian.
     // Tunggu sebentar lalu ulang, sampai jatah waktunya habis.
@@ -313,6 +346,11 @@ export async function getOgMeta(
   const k = key(source, id);
   const cached = readFresh(s, k);
   if (cached.hit) return cached.meta;
+
+  // Kuota harian habis: jangan buang request — langsung kasih preview generik.
+  // Sengaja tidak menulis entri gagal, supaya begitu cooldown lewat video ini
+  // bisa langsung dicoba lagi.
+  if (quotaExhausted()) return null;
 
   // Batasi per IP baru setelah cache dicek — yang sudah ada di cache tidak
   // mengeluarkan request apa pun, jadi nggak perlu dibatasi. Tanpa batas ini
