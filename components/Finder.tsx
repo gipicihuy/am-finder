@@ -1,6 +1,6 @@
 "use client";
 
-import { isVideoLink, videoIdOf } from "@/lib/tiktok-link";
+import { isVideoLink, shortCodeOf, videoIdOf } from "@/lib/tiktok-link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { FindResult } from "@/lib/types";
@@ -129,7 +129,19 @@ export function Finder({
   }, []);
 
   function remember(link: string) {
-    const next = [link, ...history.filter((item) => item !== link)].slice(0, 6);
+    // Sumber kebenarannya localStorage, bukan state React. Efek mount di
+    // halaman preset bisa memanggil search() di tick yang sama waktu riwayat
+    // belum sempat masuk state — state-nya masih [], dan riwayat lama ikut
+    // tertimpa kalau cuma mengandalkan state.
+    let prev: string[] = [];
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed)) prev = parsed.filter((x): x is string => typeof x === "string");
+    } catch {
+      /* riwayat lokal bukan kebutuhan utama */
+    }
+    const next = [link, ...prev.filter((item) => item !== link)].slice(0, 6);
     setHistory(next);
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
@@ -299,13 +311,20 @@ export function Finder({
   // satu video selalu punya satu alamat yang bisa dibagiin. Nggak dipanggil
   // lewat router — biar panel hasilnya tidak hilang.
   function openDetailAddress(target: string, data: FindResult) {
+    const short = shortCodeOf(target);
     const fromInput = videoIdOf(target);
     const source =
       fromInput?.source ??
       (/youtube|youtu\.be/i.test(data.videoUrl ?? "") ? "youtube" : "tiktok");
     const id = fromInput?.id ?? (typeof data.videoId === "string" ? data.videoId : null);
     if (!id) return;
-    const next = `/preset/${source}/${id}`;
+    // Link pendek (vt.tiktok.com/xxx) dipertahankan bentuk pendeknya di alamat —
+    // jauh lebih enak dilihat daripada ID numerik panjang. Halaman preset memang
+    // menerima kode pendek, jadi tautannya tetap bisa dibuka lagi.
+    const next =
+      short && source === "tiktok"
+        ? `/preset/tiktok/${short}`
+        : `/preset/${source}/${id}`;
     // Sudah berdiri di alamat yang benar (misalnya halaman preset yang ke-mount
     // dengan link ini): jangan tambah entri riwayat yang isinya sama.
     if (window.location.pathname === next) return;
@@ -443,6 +462,13 @@ export function Finder({
                 aria-label="Clear link"
                 onClick={() => {
                   setValue("");
+                  // Draft ikut dihapus — kalau tidak, link yang sama balik lagi
+                  // lewat efek mount waktu halaman di-refresh.
+                  try {
+                    localStorage.removeItem(DRAFT_KEY);
+                  } catch {
+                    /* draft bukan kebutuhan utama */
+                  }
                   inputRef.current?.focus();
                 }}
               >

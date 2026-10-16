@@ -21,8 +21,11 @@ type Source = (typeof SOURCES)[number];
 
 // Bentuk ID per sumber — sengaja ketat supaya alamat sampah langsung 404,
 // bukan diteruskan ke scraper cuma buang-buang jatah rate limit.
+// TikTok menerima dua bentuk: ID numerik panjang, atau kode pendek hasil share
+// (vt.tiktok.com/xxx). Kode pendek diwajibkan mengandung minimal satu huruf
+// supaya tidak tumpang tindih sama ID numerik dan tidak menangkap angka acak.
 const ID_PATTERN: Record<Source, RegExp> = {
-  tiktok: /^\d{15,20}$/,
+  tiktok: /^(?:\d{15,20}|(?=[A-Za-z\d]*[A-Za-z])[A-Za-z\d]{5,20})$/,
   youtube: /^[\w-]{11}$/,
 };
 
@@ -35,10 +38,12 @@ function parse(source: string, id: string): { source: Source; id: string } | nul
 // Link video yang ditempel ke kolom pencari. Sengaja URL lengkap, bukan ID
 // polos, supaya kelihatan seperti tempelan biasa di beranda. Scraper sudah
 // mengenali ID yang tertanam di dalamnya, jadi tidak ada request tambahan.
+// Kode pendek tetap dipakai sebagai kode pendek — tikwm-lah yang me-resolve.
 function videoUrlOf({ source, id }: { source: Source; id: string }): string {
-  return source === "youtube"
-    ? `https://www.youtube.com/watch?v=${id}`
-    : `https://www.tiktok.com/@/video/${id}`;
+  if (source === "youtube") return `https://www.youtube.com/watch?v=${id}`;
+  return /^\d{15,20}$/.test(id)
+    ? `https://www.tiktok.com/@/video/${id}`
+    : `https://vt.tiktok.com/${id}/`;
 }
 
 // Caption TikTok biasanya nempel hashtag dan tautan di belakangnya. Dibuang

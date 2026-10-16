@@ -12,6 +12,16 @@ export function isTikTokLink(value: string): boolean {
   return TIKTOK_LINK.test(v) || /^\d{15,}$/.test(v);
 }
 
+// Kode pendek di link share TikTok (vt./vm.tiktok.com/xxx). Isinya acak dan
+// panjangnya tidak pasti, jadi dibatesin huruf/angka 5-20 karakter.
+const TIKTOK_SHORT = /(?:^|\/\/)(?:vt|vm)\.tiktok\.com\/([A-Za-z0-9]{5,20})(?:[/?#]|$)/i;
+
+/** Kode pendek dari link share TikTok, atau null kalau bukan link pendek. */
+export function shortCodeOf(value: string): string | null {
+  const m = value.trim().match(TIKTOK_SHORT);
+  return m ? m[1] : null;
+}
+
 export function isYoutubeLink(value: string): boolean {
   return YOUTUBE_LINK.test(value.trim());
 }

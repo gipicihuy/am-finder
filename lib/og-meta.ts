@@ -231,11 +231,15 @@ async function saveTiktokCover(id: string, url: string): Promise<string | null> 
 
 type TiktokPayload = {
   code?: unknown;
-  data?: { title?: unknown; cover?: unknown; author?: { nickname?: unknown } } | null;
+  data?: { id?: unknown; title?: unknown; cover?: unknown; author?: { nickname?: unknown } } | null;
 } | null;
 
 async function fetchTiktok(id: string): Promise<OgMeta | null> {
-  const watch = `https://www.tiktok.com/@/video/${id}`;
+  // ID numerik dikirim sebagai URL tonton; kode pendek (vt.tiktok.com/xxx)
+  // dikirim apa adanya — tikwm yang me-resolve redirect-nya.
+  const watch = /^\d{15,}$/.test(id)
+    ? `https://www.tiktok.com/@/video/${id}`
+    : `https://vt.tiktok.com/${id}/`;
   const url = `https://tikwm.com/api/?url=${encodeURIComponent(watch)}`;
   const started = Date.now();
 
@@ -264,9 +268,15 @@ async function fetchTiktok(id: string): Promise<OgMeta | null> {
   // Pilih cover JPEG-nya, bukan origin_cover — yang terakhir berformat WebP dan
   // nggak andal ditampilkan WhatsApp/Facebook.
   const cover = str(d.cover);
+  // Nama file thumbnail harus ID numerik: route /og-img/ menolak selain angka.
+  // Kalau yang diminta kode pendek, angka aslinya diambil dari payload.
+  const fromPayload = str(d.id);
+  const numericId = fromPayload && /^\d{15,}$/.test(fromPayload) ? fromPayload : id;
   const left = FETCH_BUDGET_MS - (Date.now() - started);
   const image =
-    cover && /^https:\/\//.test(cover) && left > 0 ? await saveTiktokCover(id, cover) : null;
+    cover && /^https:\/\//.test(cover) && left > 0 && /^\d{15,}$/.test(numericId)
+      ? await saveTiktokCover(numericId, cover)
+      : null;
   if (!title && !image) return null;
   return { title, author: nickname, image };
 }
