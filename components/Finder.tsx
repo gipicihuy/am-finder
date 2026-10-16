@@ -352,6 +352,34 @@ export function Finder({
     search(value);
   }
 
+  function clearInput() {
+    setValue("");
+    // Draft ikut dihapus — kalau tidak, link yang sama balik lagi lewat efek
+    // mount waktu halaman di-refresh.
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* draft bukan kebutuhan utama */
+    }
+    // Kosongkan kolom berarti selesai dengan video ini. Kalau sedang berdiri
+    // di halaman preset, alamatnya langsung diganti ke beranda dan hasilnya
+    // dibuang — tidak ada lagi yang dicari, jadi tidak ada gunanya tetap
+    // menempel di /preset/<sumber>/<id>. Pakai replaceState supaya entri
+    // halaman preset ikut terhapus dari riwayat, bukan menumpuk di belakang.
+    if (window.location.pathname.startsWith("/preset/")) {
+      detailRef.current = false;
+      setPhase("idle");
+      setResult(null);
+      setError("");
+      try {
+        window.history.replaceState({}, "", "/");
+      } catch {
+        /* history bisa diblokir — abaikan */
+      }
+    }
+    inputRef.current?.focus();
+  }
+
   async function pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
@@ -460,17 +488,7 @@ export function Finder({
                 type="button"
                 className="clear-btn"
                 aria-label="Clear link"
-                onClick={() => {
-                  setValue("");
-                  // Draft ikut dihapus — kalau tidak, link yang sama balik lagi
-                  // lewat efek mount waktu halaman di-refresh.
-                  try {
-                    localStorage.removeItem(DRAFT_KEY);
-                  } catch {
-                    /* draft bukan kebutuhan utama */
-                  }
-                  inputRef.current?.focus();
-                }}
+                onClick={clearInput}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                   <path d="M18 6 6 18" />
