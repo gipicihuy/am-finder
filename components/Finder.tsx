@@ -68,9 +68,12 @@ function SearchPresetIcon() {
 export function Finder({
   initialMode,
   initialQuery,
+  initialUrl,
 }: {
   initialMode?: Mode;
   initialQuery?: string;
+  /** Link video yang langsung ditempel ke kolom URL waktu komponen ke-mount. */
+  initialUrl?: string;
 } = {}) {
   const [value, setValue] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -222,6 +225,24 @@ export function Finder({
     }
   }, []);
 
+  // /preset/<sumber>/<id> nempel Finder di sini supaya tampilannya sama persis
+  // dengan beranda, cuma kolom linknya sudah terisi dan pengecekan langsung
+  // jalan — jadi tautan yang dibagikan langsung menampilkan hasil.
+  // Penanda amfDetail dipasang di awal; tanpa itu, efek pathname di bawah akan
+  // menganggap kita baru keluar dari halaman detail lalu menghapus hasilnya.
+  useEffect(() => {
+    if (!initialUrl) return;
+    detailRef.current = true;
+    try {
+      window.history.replaceState({ ...(window.history.state || {}), amfDetail: true }, "");
+    } catch {
+      /* history bisa diblokir — pencarian tetap jalan */
+    }
+    setValue(initialUrl);
+    search(initialUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Panel yang tidak aktif cuma disembunyikan, jadi video di dalamnya harus
   // dihentikan manual. Listener "play" (fase capture) juga menahan autoplay
   // yang baru jalan saat hasil datang ketika panelnya sedang tersembunyi.
@@ -283,19 +304,32 @@ export function Finder({
       fromInput?.source ??
       (/youtube|youtu\.be/i.test(data.videoUrl ?? "") ? "youtube" : "tiktok");
     const id = fromInput?.id ?? (typeof data.videoId === "string" ? data.videoId : null);
-    if (!id || window.history.state?.amfDetail) return;
+    if (!id) return;
+    const next = `/preset/${source}/${id}`;
+    // Sudah berdiri di alamat yang benar (misalnya halaman preset yang ke-mount
+    // dengan link ini): jangan tambah entri riwayat yang isinya sama.
+    if (window.location.pathname === next) return;
     try {
       localStorage.setItem(DRAFT_KEY, target);
     } catch {
       /* draft bukan kebutuhan utama */
     }
-    window.history.pushState({ amfDetail: true }, "", `/preset/${source}/${id}`);
+    window.history.pushState({ amfDetail: true }, "", next);
     detailRef.current = true;
   }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (phase === "running") return;
+    // Pencarian baru sambil masih berada di halaman detail: lepas penandanya
+    // dulu supaya alamat bisa berganti ke video berikutnya. URL-nya sendiri
+    // menyusul diganti openDetailAddress begitu hasilnya datang.
+    detailRef.current = false;
+    try {
+      window.history.replaceState({}, "", window.location.pathname);
+    } catch {
+      /* history bisa diblokir — abaikan */
+    }
     search(value);
   }
 

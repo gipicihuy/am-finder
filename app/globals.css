@@ -671,36 +671,6 @@ body::before {
   }
 }
 
-/* tombol jalan keluar di halaman /preset/<sumber>/<id> */
-.preset-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 2px 0 18px;
-}
-
-.preset-nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  text-decoration: none;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.preset-nav-link:hover,
-.preset-nav-link:focus-visible {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
 /* meta video: definisi grid tanpa kartu */
 .video-meta {
   margin-top: 24px;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { PresetDetail } from "@/components/PresetDetail";
+import { Finder } from "@/components/Finder";
 import { SectionOrnament } from "@/components/Ornament";
 import { getOgMeta, isPreviewBot } from "@/lib/og-meta";
 
@@ -30,6 +30,15 @@ function parse(source: string, id: string): { source: Source; id: string } | nul
   if (!SOURCES.includes(source as Source)) return null;
   if (!ID_PATTERN[source as Source].test(id)) return null;
   return { source: source as Source, id };
+}
+
+// Link video yang ditempel ke kolom pencari. Sengaja URL lengkap, bukan ID
+// polos, supaya kelihatan seperti tempelan biasa di beranda. Scraper sudah
+// mengenali ID yang tertanam di dalamnya, jadi tidak ada request tambahan.
+function videoUrlOf({ source, id }: { source: Source; id: string }): string {
+  return source === "youtube"
+    ? `https://www.youtube.com/watch?v=${id}`
+    : `https://www.tiktok.com/@/video/${id}`;
 }
 
 // Caption TikTok biasanya nempel hashtag dan tautan di belakangnya. Dibuang
@@ -105,11 +114,12 @@ export default async function PresetPage({ params }: PageProps) {
         <span className="section-ornament" aria-hidden="true">
           <SectionOrnament />
         </span>
-        {/* Judulnya menjelaskan isi halaman. "Find preset links" terdengar seperti
-            perintah dan bikin bingung orang yang baru membuka tautan yang dibagikan. */}
-        Preset dari video ini
+        Find preset links
       </h1>
-      <PresetDetail source={parsed.source} id={parsed.id} />
+      {/* Sama persis dengan beranda, cuma kolom linknya sudah terisi dan
+          pengecekannya langsung jalan. Tombol tab di dalam Finder juga yang
+          bikin orang bisa langsung nyari preset lain tanpa harus balik dulu. */}
+      <Finder initialMode="url" initialUrl={videoUrlOf(parsed)} />
     </>
   );
 }
