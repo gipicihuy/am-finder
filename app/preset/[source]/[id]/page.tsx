@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { PresetDetail } from "@/components/PresetDetail";
 import { SectionOrnament } from "@/components/Ornament";
+import { getOgMeta, isPreviewBot } from "@/lib/og-meta";
 
 // Sengaja force-dynamic: alamat ini bisa sangat banyak (satu per video) dan
 // isinya kerangka yang diisi dari browser. Dibiarkan static, Next bakal coba
 // merendernya waktu build dan malah menggoda kita untuk mengambil data di server.
 export const dynamic = "force-dynamic";
+
+const SITE_URL = "https://amfinder.web.id";
+const SITE_NAME = "AM Preset Finder";
+const OG_DESCRIPTION = "Cari link preset Alight Motion dari video ini";
+// Jaring pengaman kalau fetch metadata gagal: tetap preview ber-brand.
+const FALLBACK_IMAGE = "/og-image.png";
 
 const SOURCES = ["tiktok", "youtube"] as const;
 type Source = (typeof SOURCES)[number];
@@ -24,18 +32,65 @@ function parse(source: string, id: string): { source: Source; id: string } | nul
   return { source: source as Source, id };
 }
 
+// Caption TikTok biasanya nempel hashtag dan tautan di belakangnya. Dibuang
+// dulu biar judul preview rapi, lalu dipotong — platform punya batas panjang
+// sendiri dan judul kepanjangan justru dipotong pakai "…".
+function clipTitle(raw: string): string {
+  const t = raw
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/#[^\s#]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return "";
+  return t.length > 80 ? `${t.slice(0, 79).trimEnd()}…` : t;
+}
+
 type PageProps = { params: Promise<{ source: string; id: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { source, id } = await params;
   const parsed = parse(source, id);
-  // Judulnya generik: judul video aslinya baru diketahui setelah dicek, dan
-  // menariknya di server justru yang dilarang (beban + dibuka bot pratinjau).
+  const generic = parsed
+    ? `${parsed.source === "youtube" ? "Preset YouTube" : "Preset TikTok"} — ${SITE_NAME}`
+    : "Preset — AM Preset Finder";
+  const robots = { index: false as const, follow: false as const };
+  if (!parsed) return { title: generic, robots };
+
+  // Yang bikin server mengambil judul + thumbnail cuma bot pratinjau
+  // (WhatsApp/Telegram/Facebook/dll). Pengunjung manusia dapat preview
+  // generik — nol request keluar, nol delay buka halaman.
+  let meta = null;
+  try {
+    const h = await headers();
+    if (isPreviewBot(h.get("user-agent") || "")) meta = await getOgMeta(parsed.source, parsed.id, h);
+  } catch {
+    /* metadata bukan kewajiban — biarkan yang generik */
+  }
+
+  const title = (meta?.title && clipTitle(meta.title)) || generic;
+  const description = OG_DESCRIPTION;
+  const url = `${SITE_URL}/preset/${parsed.source}/${parsed.id}`;
+  const image = meta?.image || FALLBACK_IMAGE;
+  const alt = meta?.title ? clipTitle(meta.title) || title : title;
+
   return {
-    title: parsed
-      ? `${parsed.source === "youtube" ? "Preset YouTube" : "Preset TikTok"} — AM Preset Finder`
-      : "Preset — AM Preset Finder",
-    robots: { index: false, follow: false },
+    title,
+    description,
+    robots,
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      title,
+      description,
+      url,
+      images: [{ url: image, alt }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
   };
 }
 

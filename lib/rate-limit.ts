@@ -35,6 +35,10 @@ const SCOPES = {
   search: { burst: 6, burstMs: 10_000, sustained: 30, sustainedMs: 60_000, penaltyAt: 60, penaltyMs: 60_000 },
   // Feed dirender ulang tiap 10 menit, jadi plafonnya lebih ketat.
   rekomen: { burst: 4, burstMs: 10_000, sustained: 10, sustainedMs: 60_000, penaltyAt: 25, penaltyMs: 60_000 },
+  // Ambil judul + thumbnail buat pratinjau OG. Ringan (1 request kecil ke
+  // oembed/tikwm), tapi tetap dibatasi: alamat /preset bisa sangat banyak dan
+  // kuota tikwm cuma 10.000/hari, dipakai bareng pencarian.
+  og: { burst: 5, burstMs: 10_000, sustained: 15, sustainedMs: 60_000, penaltyAt: 30, penaltyMs: 60_000 },
 } as const satisfies Record<string, ScopeConfig>;
 
 export type Scope = keyof typeof SCOPES;
@@ -143,7 +147,13 @@ export function checkLimit(key: string, cfg: ScopeConfig, now = Date.now()): Lim
 // Cek limit berdasarkan IP klien. Panggil sebelum kerja berat (spawn, antrian, dsb)
 // biar permintaan yang kelewat langsung ditolak tanpa makan slot.
 export function limitByIp(request: Request, scope: Scope): LimitResult {
-  return checkLimit(`${scope}:${clientIp(request.headers)}`, SCOPES[scope]);
+  return limitHeaders(request.headers, scope);
+}
+
+// Versi yang nerima Headers langsung — dipakai generateMetadata, yang cuma punya
+// Headers dari next/headers dan nggak punya objek Request.
+export function limitHeaders(headers: Headers, scope: Scope): LimitResult {
+  return checkLimit(`${scope}:${clientIp(headers)}`, SCOPES[scope]);
 }
 
 export function tooManyRequests(retryAfterSec: number): Response {
