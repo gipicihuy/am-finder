@@ -279,11 +279,11 @@ export function Finder({
     if (window.location.pathname !== path) window.history.pushState({}, "", path);
   }
 
-  // Keluar dari /preset/<sumber>/<id> (tombol Kembali ATAU jalan lain yang
-  // mengubah alamat): tutup panel hasil. Kolom link sengaja dibiarkan — itu
-  // memang yang diminta. Kondisinya sengaja dobel (listener popstate + efek
-  // pathname) supaya tetap jalan walau salah satunya tidak kepicu; dua-duanya
-  // idempoten, jadi tidak masalah kalau keduanya jalan.
+  // Keluar dari /preset/<sumber>/<id> lewat tombol Kembali/Maju: tutup panel
+  // hasil. Kolom link sengaja dibiarkan — itu memang yang diminta.
+  // Sengaja CUMA dipasang di listener popstate. Ganti tab (URL Video ↔ Cari
+  // Preset) juga mendorong alamat baru, tapi itu bukan berarti keluar dari
+  // halaman detail — orang sering bolak-balik sambil mau lihat hasil yang sama.
   const closeDetail = () => {
     if (!detailRef.current || window.history.state?.amfDetail) return;
     detailRef.current = false;
@@ -292,10 +292,9 @@ export function Finder({
     setError("");
   };
 
-  // Tab mengikuti alamat, kecuali waktu maju/mundur melewati halaman detail —
-  // di situ tabnya jangan ikut berganti.
+  // Tab mengikuti alamat. Panel hasil sengaja tidak ditutup di sini — lihat
+  // catatan di closeDetail.
   useEffect(() => {
-    closeDetail();
     if (pathname === "/search") setMode("search");
     else if (pathname === "/") setMode("url");
     // eslint-disable-next-line react-hooks/exhaustive-deps
