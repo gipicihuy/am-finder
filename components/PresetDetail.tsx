@@ -75,7 +75,20 @@ export function PresetDetail({ source, id }: { source: "tiktok" | "youtube"; id:
   }, [source, id]);
 
   return (
-    <div className="preset-detail">
+    <div>
+      {/* Tombol jalan keluar selalu tampil — termasuk saat masih mencari dan
+          saat hasilnya kosong. Tanpa ini, orang yang membuka /preset/<sumber>/<id>
+          langsung dari tautan yang dibagikan terjebak di satu halaman tanpa jalan
+          lain selain logo kecil di pojok. */}
+      <nav className="preset-nav" aria-label="Navigasi halaman">
+        <a className="preset-nav-link" href="/">
+          <span aria-hidden="true">←</span> Beranda
+        </a>
+        <a className="preset-nav-link" href="/search">
+          Cari preset lain
+        </a>
+      </nav>
+
       {phase === "running" ? (
         <div className="run" aria-live="polite">
           <BrandScan />

@@ -105,7 +105,9 @@ export default async function PresetPage({ params }: PageProps) {
         <span className="section-ornament" aria-hidden="true">
           <SectionOrnament />
         </span>
-        Find preset links
+        {/* Judulnya menjelaskan isi halaman. "Find preset links" terdengar seperti
+            perintah dan bikin bingung orang yang baru membuka tautan yang dibagikan. */}
+        Preset dari video ini
       </h1>
       <PresetDetail source={parsed.source} id={parsed.id} />
     </>

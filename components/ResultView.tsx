@@ -421,35 +421,11 @@ export function ResultView({ result }: { result: FindResult }) {
       ? ui.states.noLink
       : (result.message ?? ui.states.notFound);
 
-  if (presets.length === 0) {
-    const shares = result.shareLinks ?? [];
-    return (
-      <div className="state state-miss" role="status">
-        <strong>❌ {commentsDisabled ? ui.states.commentsDisabled : missText}</strong>
-        {shares.length ? (
-          <div className="miss-sources">
-            <p className="miss-sources-title">{ui.states.shareSources}</p>
-            <div className="miss-sources-list">
-              {shares.map((share) => (
-                <a
-                  key={share.url}
-                  className="share-row"
-                  href={share.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className="share-icon">
-                    <ShareIcon share={share} />
-                  </span>
-                  <span className="share-label">{shareLabel(share)}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    );
-  }
+  // Bagian video selalu dirender, termasuk waktu link preset tidak ditemukan.
+  // Kalau tidak, orang yang membuka /preset/<sumber>/<id> langsung cuma melihat
+  // pesan "tidak ditemukan" tanpa tahu video apa yang baru saja dicek — halaman
+  // terasa buntu dan tidak ada gunanya.
+  const shares = result.shareLinks ?? [];
 
   return (
     <>
@@ -495,6 +471,32 @@ export function ResultView({ result }: { result: FindResult }) {
         </div>
       </section>
 
+      {presets.length === 0 ? (
+        <div className="state state-miss" role="status">
+          <strong>❌ {commentsDisabled ? ui.states.commentsDisabled : missText}</strong>
+          {shares.length ? (
+            <div className="miss-sources">
+              <p className="miss-sources-title">{ui.states.shareSources}</p>
+              <div className="miss-sources-list">
+                {shares.map((share) => (
+                  <a
+                    key={share.url}
+                    className="share-row"
+                    href={share.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className="share-icon">
+                      <ShareIcon share={share} />
+                    </span>
+                    <span className="share-label">{shareLabel(share)}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : (
       <section className="preset-section" aria-label="Preset links">
           <div className="section-head">
             <h2 className="section-title">
@@ -557,6 +559,7 @@ export function ResultView({ result }: { result: FindResult }) {
             </button>
           )}
       </section>
+      )}
     </>
   );
 }
