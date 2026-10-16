@@ -9,6 +9,9 @@ import { FoundToast } from "@/components/FoundToast";
 import { ArrowRuleOrnament, GridIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
+const STATE_KEY = "amfinder:search-state";
+const STATE_TTL = 30 * 60 * 1000; // hasil pencarian yang disimpan kedaluwarsa setelah 30 menit
+const DETAIL_HASH = "#detail"; // entri riwayat saat halaman detail video terbuka
 import { ui } from "@/lib/ui";
 import { HowSteps } from "@/components/HowSteps";
 
@@ -85,6 +88,10 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   const [lastUrl, setLastUrl] = useState("");
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const prevOpen = useRef("");
+  const openUrlRef = useRef("");
+  const listYRef = useRef(0);
+  const doCloseRef = useRef<() => void>(() => {});
+  const snapRef = useRef({ q: "", query: "", cands: [] as Candidate[], limit: 3, last: "" });
   const [searchedQuery, setSearchedQuery] = useState("");
   const [openUrl, setOpenUrl] = useState("");
   const [details, setDetails] = useState<Record<string, Detail>>({});
@@ -96,6 +103,101 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
       searchRef.current?.close();
       checkRef.current?.close();
     };
+  }, []);
+
+  useEffect(() => {
+    openUrlRef.current = openUrl;
+  }, [openUrl]);
+
+  function persistState() {
+    const snap = snapRef.current;
+    if (!snap.cands.length) return;
+    try {
+      sessionStorage.setItem(
+        STATE_KEY,
+        JSON.stringify({ t: Date.now(), ...snap, y: openUrlRef.current ? listYRef.current : window.scrollY }),
+      );
+    } catch {
+      // storage penuh / diblokir — abaikan
+    }
+  }
+
+  // Simpan keadaan pencarian ke sessionStorage supaya selamat dari reload
+  // (browser HP sering membuang tab di latar belakang).
+  useEffect(() => {
+    snapRef.current = { q, query: searchedQuery, cands, limit: candLimit, last: lastUrl };
+    persistState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, searchedQuery, cands, candLimit, lastUrl]);
+
+  useEffect(() => {
+    const save = () => persistState();
+    const onHide = () => {
+      if (document.visibilityState === "hidden") persistState();
+    };
+    window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", save);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Pulihkan hasil pencarian terakhir (maks 30 menit) lalu gulir ke tempatnya.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STATE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (!saved || Date.now() - saved.t > STATE_TTL || !Array.isArray(saved.cands) || !saved.cands.length) {
+        sessionStorage.removeItem(STATE_KEY);
+        return;
+      }
+      setCands(saved.cands);
+      setQ(saved.q || "");
+      setSearchedQuery(saved.query || "");
+      setCandLimit(saved.limit || 3);
+      setLastUrl(saved.last || "");
+      const last: string = saved.last || "";
+      const y: number = saved.y || 0;
+      let tries = 0;
+      const tick = () => {
+        if (last) {
+          const el = cardRefs.current[last];
+          if (el && el.offsetParent !== null) {
+            el.scrollIntoView({ block: "center" });
+            return;
+          }
+        } else {
+          const section = document.querySelector<HTMLElement>('section[aria-label="Search results"]');
+          if (section && section.offsetParent !== null) {
+            window.scrollTo({ top: y });
+            return;
+          }
+        }
+        // tunggu daftar tampil & panel tab terlihat (maks ~1,5 detik)
+        if (++tries < 90) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    } catch {
+      // data rusak — abaikan
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Detail video = entri riwayat: swipe/tombol back bawaan HP menutup detail
+  // (kembali ke daftar), bukan keluar dari halaman.
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash !== DETAIL_HASH && openUrlRef.current) doCloseRef.current();
+    };
+    window.addEventListener("hashchange", onHash);
+    if (window.location.hash === DETAIL_HASH) {
+      // sisa entri detail setelah reload: detailnya sudah nggak ada, buang
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   // Selama loading full-screen: kunci scroll (posisi halaman dipegang),
@@ -216,8 +318,10 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   }, [openUrl]);
 
   function openVideo(url: string) {
+    listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
+    if (window.location.hash !== DETAIL_HASH) window.location.hash = DETAIL_HASH;
     window.scrollTo({ top: 0 });
     if (details[url]?.state === "done") return;
 
@@ -257,6 +361,15 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   }
 
   function closeVideo() {
+    // tombol Kembali: mundur satu entri riwayat (hashchange yang menutup detail)
+    if (window.location.hash === DETAIL_HASH) {
+      window.history.back();
+      return;
+    }
+    doClose();
+  }
+
+  function doClose() {
     checkRef.current?.close();
     checkRef.current = null;
     setDetails((prev) => {
@@ -268,6 +381,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     });
     setOpenUrl("");
   }
+  doCloseRef.current = doClose;
 
   const linkBtn: React.CSSProperties = {
     background: "none",
