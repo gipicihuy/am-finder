@@ -11,7 +11,6 @@ import { ArrowRuleOrnament, GridIcon } from "@/components/Ornament";
 const VIEW_KEY = "amfinder:view";
 const STATE_KEY = "amfinder:search-state";
 const STATE_TTL = 30 * 60 * 1000; // hasil pencarian yang disimpan kedaluwarsa setelah 30 menit
-const DETAIL_HASH = "#detail"; // entri riwayat saat halaman detail video terbuka
 import { ui } from "@/lib/ui";
 import { HowSteps } from "@/components/HowSteps";
 
@@ -186,18 +185,18 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Detail video = entri riwayat: swipe/tombol back bawaan HP menutup detail
-  // (kembali ke daftar), bukan keluar dari halaman.
+  // Detail video = entri riwayat (tanpa mengubah alamat): swipe/tombol back
+  // bawaan HP menutup detail dan kembali ke daftar, bukan keluar dari halaman.
   useEffect(() => {
-    const onHash = () => {
-      if (window.location.hash !== DETAIL_HASH && openUrlRef.current) doCloseRef.current();
+    const onPop = () => {
+      if (!window.history.state?.amfDetail && openUrlRef.current) doCloseRef.current();
     };
-    window.addEventListener("hashchange", onHash);
-    if (window.location.hash === DETAIL_HASH) {
-      // sisa entri detail setelah reload: detailnya sudah nggak ada, buang
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    window.addEventListener("popstate", onPop);
+    if (window.history.state?.amfDetail) {
+      // sisa penanda detail setelah reload: detailnya sudah nggak ada, bersihkan
+      window.history.replaceState({}, "");
     }
-    return () => window.removeEventListener("hashchange", onHash);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   // Selama loading full-screen: kunci scroll (posisi halaman dipegang),
@@ -321,7 +320,7 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
-    if (window.location.hash !== DETAIL_HASH) window.location.hash = DETAIL_HASH;
+    if (!window.history.state?.amfDetail) window.history.pushState({ amfDetail: true }, "");
     window.scrollTo({ top: 0 });
     if (details[url]?.state === "done") return;
 
@@ -361,8 +360,8 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
   }
 
   function closeVideo() {
-    // tombol Kembali: mundur satu entri riwayat (hashchange yang menutup detail)
-    if (window.location.hash === DETAIL_HASH) {
+    // tombol Kembali: mundur satu entri riwayat (popstate yang menutup detail)
+    if (window.history.state?.amfDetail) {
       window.history.back();
       return;
     }
