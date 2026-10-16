@@ -1,7 +1,8 @@
 "use client";
 
-import { isVideoLink } from "@/lib/tiktok-link";
+import { isVideoLink, videoIdOf } from "@/lib/tiktok-link";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { FindResult } from "@/lib/types";
 import { ui } from "@/lib/ui";
 import { ResultView } from "@/components/ResultView";
@@ -29,7 +30,10 @@ async function readBattery(): Promise<Battery | null> {
 }
 
 const HISTORY_KEY = "amfinder:history";
-const MODE_KEY = "amfinder:mode";
+// Kolom link disimpan di sini supaya masih terisi waktu tombol Kembali dari
+// alamat detail (/preset/...) atau waktu pindah tab — komponennya memang ikut
+// di-unmount, jadi state React-nya hilang.
+const DRAFT_KEY = "amfinder:draft";
 
 type Mode = "url" | "search";
 
@@ -61,15 +65,23 @@ function SearchPresetIcon() {
   );
 }
 
-export function Finder() {
+export function Finder({
+  initialMode,
+  initialQuery,
+}: {
+  initialMode?: Mode;
+  initialQuery?: string;
+} = {}) {
   const [value, setValue] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<FindResult | null>(null);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<string[]>([]);
-  const [mode, setMode] = useState<Mode>("url");
+  const [mode, setMode] = useState<Mode>(initialMode ?? "url");
+  const pathname = usePathname();
   const [searchDetailOpen, setSearchDetailOpen] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
+  const detailRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
   const batteryRef = useRef<Battery | null>(null);
@@ -140,6 +152,11 @@ export function Finder() {
     finishedRef.current = false;
     remember(target);
     setValue(target);
+    try {
+      localStorage.setItem(DRAFT_KEY, target);
+    } catch {
+      /* draft bukan kebutuhan utama */
+    }
     window.dispatchEvent(new Event(SEARCH_STARTED_EVENT));
     setPhase("running");
     setResult(null);
@@ -167,6 +184,7 @@ export function Finder() {
         }
         setResult(data);
         setPhase("done");
+        openDetailAddress(target, data);
       } catch {
         setPhase("error");
         setError("unreadable response from server");
@@ -197,9 +215,10 @@ export function Finder() {
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(MODE_KEY) === "search") setMode("search");
+      const draft = localStorage.getItem(DRAFT_KEY);
+      if (draft) setValue(draft);
     } catch {
-      // storage diblokir — tetap di mode default
+      // storage diblokir — kolom link dibiarkan kosong
     }
   }, []);
 
@@ -218,12 +237,60 @@ export function Finder() {
   }, [mode]);
 
   function chooseMode(next: Mode) {
+    if (mode === next) return;
     setMode(next);
+    // Alamat ikut tab (/ buat URL Video, /search buat Cari Preset). Pakai
+    // pushState biasa, bukan router, supaya komponen tetap hidup dan panel yang
+    // satunya nggak ke-reset. Next tetap sinkron sendiri lewat ACTION_RESTORE.
+    const path = next === "search" ? "/search" : "/";
+    if (window.location.pathname !== path) window.history.pushState({}, "", path);
+  }
+
+  // Keluar dari /preset/<sumber>/<id> (tombol Kembali ATAU jalan lain yang
+  // mengubah alamat): tutup panel hasil. Kolom link sengaja dibiarkan — itu
+  // memang yang diminta. Kondisinya sengaja dobel (listener popstate + efek
+  // pathname) supaya tetap jalan walau salah satunya tidak kepicu; dua-duanya
+  // idempoten, jadi tidak masalah kalau keduanya jalan.
+  const closeDetail = () => {
+    if (!detailRef.current || window.history.state?.amfDetail) return;
+    detailRef.current = false;
+    setPhase("idle");
+    setResult(null);
+    setError("");
+  };
+
+  // Tab mengikuti alamat, kecuali waktu maju/mundur melewati halaman detail —
+  // di situ tabnya jangan ikut berganti.
+  useEffect(() => {
+    closeDetail();
+    if (pathname === "/search") setMode("search");
+    else if (pathname === "/") setMode("url");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  useEffect(() => {
+    const onPop = closeDetail;
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Alamat berubah ke /preset/<sumber>/<id> begitu pengecekan selesai, jadi
+  // satu video selalu punya satu alamat yang bisa dibagiin. Nggak dipanggil
+  // lewat router — biar panel hasilnya tidak hilang.
+  function openDetailAddress(target: string, data: FindResult) {
+    const fromInput = videoIdOf(target);
+    const source =
+      fromInput?.source ??
+      (/youtube|youtu\.be/i.test(data.videoUrl ?? "") ? "youtube" : "tiktok");
+    const id = fromInput?.id ?? (typeof data.videoId === "string" ? data.videoId : null);
+    if (!id || window.history.state?.amfDetail) return;
     try {
-      localStorage.setItem(MODE_KEY, next);
+      localStorage.setItem(DRAFT_KEY, target);
     } catch {
-      // abaikan
+      /* draft bukan kebutuhan utama */
     }
+    window.history.pushState({ amfDetail: true }, "", `/preset/${source}/${id}`);
+    detailRef.current = true;
   }
 
   function onSubmit(event: FormEvent) {
@@ -300,6 +367,7 @@ export function Finder() {
       <div id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden={mode !== "search"}>
         <SearchTest
           embedded
+          initialQuery={initialQuery}
           onTikTokLink={(link) => {
             setValue(link);
             chooseMode("url");

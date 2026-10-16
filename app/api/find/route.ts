@@ -3,6 +3,7 @@ import path from "node:path";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordUrl, recordVisit } from "../../../lib/monitor";
+import { isBareVideoId, videoIdOf } from "../../../lib/tiktok-link";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,32 +24,69 @@ const SSE_HEADERS = {
 // "mencari link preset" lagi padahal barusan selesai. Dibatesin 10 menit biar
 // hasilnya nggak ketinggalan jaman (tautan pratinjau video ada masa berlaku).
 const RECENT_TTL_MS = 10 * 60_000;
-const RECENT_MAX = 200;
+// Satu hasil bisa nempel di beberapa kunci (URL aslinya + ID videonya), jadi
+// batasnya dikali 2 dari jumlah baris yang diinginkan.
+const RECENT_MAX = 400;
 const recentFind: Map<string, { at: number; row: Record<string, unknown> }> = new Map();
 
 function recentKey(target: string): string {
   return target.replace(/\/+$/, "").toLowerCase();
 }
 
-function peekRecent(target: string): Record<string, unknown> | null {
-  const key = recentKey(target);
-  const hit = recentFind.get(key);
-  if (!hit) return null;
-  if (Date.now() - hit.at > RECENT_TTL_MS) {
-    recentFind.delete(key);
-    return null;
+/**
+ * Semua kunci yang boleh dipakai buat memanggil satu hasil.
+ * URL aslinya selalu ikut, plus ID videonya — supaya link pendek yang sudah
+ * di-resolve dan alamat /preset/<sumber>/<id> ketemu ke entri yang sama dan
+ * nggak perlu dicek ulang ke TikTok/YouTube.
+ */
+function recentKeys(target: string, row?: Record<string, unknown>): string[] {
+  const keys: string[] = [`t:${recentKey(target)}`];
+
+  const rawVideoUrl = row?.videoUrl;
+  const videoUrl = typeof rawVideoUrl === "string" ? rawVideoUrl : "";
+  const rawId = row?.videoId;
+  const id = typeof rawId === "string" ? rawId : null;
+  if (id) {
+    keys.push(`${/youtube|youtu\.be/i.test(videoUrl) ? "yt" : "tt"}:${id}`);
   }
-  return hit.row;
+
+  const direct = videoIdOf(target);
+  if (direct) keys.push(`${direct.source === "youtube" ? "yt" : "tt"}:${direct.id}`);
+
+  return [...new Set(keys)];
+}
+
+function peekRecent(target: string): Record<string, unknown> | null {
+  const now = Date.now();
+  for (const key of recentKeys(target)) {
+    const hit = recentFind.get(key);
+    if (!hit) continue;
+    if (now - hit.at > RECENT_TTL_MS) {
+      recentFind.delete(key);
+      continue;
+    }
+    return hit.row;
+  }
+  return null;
 }
 
 function rememberRecent(target: string, row: Record<string, unknown>): void {
-  const key = recentKey(target);
-  recentFind.delete(key);
-  recentFind.set(key, { at: Date.now(), row });
+  const at = Date.now();
+  for (const key of recentKeys(target, row)) {
+    recentFind.delete(key);
+    recentFind.set(key, { at, row });
+  }
   while (recentFind.size > RECENT_MAX) {
-    const oldest = recentFind.keys().next().value;
-    if (oldest === undefined) break;
-    recentFind.delete(oldest);
+    let oldestKey: string | null = null;
+    let oldestAt = Infinity;
+    for (const [key, value] of recentFind) {
+      if (value.at < oldestAt) {
+        oldestAt = value.at;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey === null) break;
+    recentFind.delete(oldestKey);
   }
 }
 
@@ -87,6 +125,10 @@ function normalizeTarget(raw: string | null): string | null {
   if (!raw) return null;
   let value = raw.trim().slice(0, 2048);
   if (!value) return null;
+  // ID video polos (TikTok 15-20 digit / YouTube 11 char) diteruskan apa adanya.
+  // Resolvernya memang nerima ID langsung tanpa mengikuti redirect, jadi nggak
+  // perlu dipaksa jadi URL — nambah URL palsu cuma buang request.
+  if (isBareVideoId(value)) return value;
   if (!/^https?:\/\//i.test(value)) {
     if (!/^[a-z0-9.-]+\.[a-z]{2,}([/?#]|$)/i.test(value)) return null;
     value = "https://" + value;
@@ -220,6 +262,8 @@ export async function GET(request: Request) {
           error?: string;
           found?: boolean;
           presetLinks?: unknown[];
+          videoId?: string;
+          videoUrl?: string;
         } | null = null;
         try {
           parsed = JSON.parse(stdout);

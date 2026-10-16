@@ -1,6 +1,6 @@
 "use client";
 
-import { isVideoLink } from "@/lib/tiktok-link";
+import { isVideoLink, presetPathOf } from "@/lib/tiktok-link";
 import { useEffect, useRef, useState } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
@@ -75,9 +75,16 @@ type SearchTestProps = {
   onTikTokLink?: (url: string) => void;
   /** Dipanggil saat halaman detail video dibuka/ditutup. */
   onDetailChange?: (open: boolean) => void;
+  /** Kata kunci dari alamat /search?q=... — dipakai buat auto-cari waktu dibuka langsung. */
+  initialQuery?: string;
 };
 
-export default function SearchTest({ embedded = false, onTikTokLink, onDetailChange }: SearchTestProps = {}) {
+export default function SearchTest({
+  embedded = false,
+  onTikTokLink,
+  onDetailChange,
+  initialQuery = "",
+}: SearchTestProps = {}) {
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
@@ -143,14 +150,38 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Pulihkan hasil pencarian terakhir (maks 30 menit) lalu gulir ke tempatnya.
   useEffect(() => {
     try {
+      if (localStorage.getItem(VIEW_KEY) === "grid") setView("grid");
+    } catch {
+      // storage diblokir — tetap tampilan daftar
+    }
+  }, []);
+
+  // Pulihkan hasil pencarian terakhir (maks 30 menit) lalu gulir ke tempatnya.
+  // Kalau tidak ada yang tersimpan, jalankan kata kunci dari alamat — itulah yang
+  // bikin link /search?q=... yang dibagiin nunjukkin hasil yang sama.
+  useEffect(() => {
+    let restored = false;
+    try {
       const raw = sessionStorage.getItem(STATE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      if (!saved || Date.now() - saved.t > STATE_TTL || !Array.isArray(saved.cands) || !saved.cands.length) {
+      const saved = raw ? JSON.parse(raw) : null;
+      if (
+        saved &&
+        Date.now() - saved.t <= STATE_TTL &&
+        Array.isArray(saved.cands) &&
+        saved.cands.length
+      ) {
+        restored = true;
+      } else if (raw) {
         sessionStorage.removeItem(STATE_KEY);
+      }
+      if (!restored) {
+        const query = initialQuery.trim();
+        if (query.length >= 3) {
+          setQ(query);
+          search(query);
+        }
         return;
       }
       setCands(saved.cands);
@@ -185,8 +216,9 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Detail video = entri riwayat (tanpa mengubah alamat): swipe/tombol back
-  // bawaan HP menutup detail dan kembali ke daftar, bukan keluar dari halaman.
+  // Detail video = entri riwayat dengan alamat /preset/tiktok/<id>, jadi bisa
+  // dibagiin. Swipe/tombol back bawaan HP tetap menutup detail dan kembali ke
+  // daftar, bukan keluar dari halaman — Next kembali lewat tree yang tersimpan.
   useEffect(() => {
     const onPop = () => {
       if (!window.history.state?.amfDetail && openUrlRef.current) doCloseRef.current();
@@ -216,14 +248,6 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openUrl]);
 
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(VIEW_KEY) === "grid") setView("grid");
-    } catch {
-      // storage diblokir — tetap tampilan daftar
-    }
-  }, []);
-
   function toggleView() {
     const next = view === "grid" ? "list" : "grid";
     setView(next);
@@ -245,8 +269,8 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     setQ(value);
   }
 
-  function search() {
-    const query = q.trim();
+  function search(override?: string) {
+    const query = (override ?? q).trim();
     if (query.length < 3 || searching) return;
     searchRef.current?.close();
     checkRef.current?.close();
@@ -283,9 +307,28 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
       }
       setCands(items);
       setLastUrl("");
-      setCandLimit(view === "grid" ? 4 : 3);
+      const limit = view === "grid" ? 4 : 3;
+      setCandLimit(limit);
       setSearchedQuery(query);
       setDetails({});
+      // Hasil ditulis dulu ke sessionStorage, baru alamatnya diganti — kalau
+      // urutannya kebalik, tampilan bisa ke-reset duluan waktu /search dirender ulang.
+      snapRef.current = { q: query, query, cands: items, limit, last: "" };
+      try {
+        sessionStorage.setItem(
+          STATE_KEY,
+          JSON.stringify({ t: Date.now(), q: query, query, cands: items, limit, last: "", y: 0 }),
+        );
+      } catch {
+        // storage penuh / diblokir — abaikan
+      }
+      // Alamat ikut kata kunci: /search?q=... Supaya panel dan posisi scroll tidak
+      // ikut ter-reset, pakai replaceState — Next cuma sinkron useSearchParams-nya.
+      const nextPath = "/search";
+      const nextSearch = `?q=${encodeURIComponent(query)}`;
+      if (window.location.pathname !== nextPath || window.location.search !== nextSearch) {
+        window.history.replaceState(window.history.state, "", nextPath + nextSearch);
+      }
     });
 
     source.addEventListener("error", (event) => {
@@ -320,7 +363,14 @@ export default function SearchTest({ embedded = false, onTikTokLink, onDetailCha
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
-    if (!window.history.state?.amfDetail) window.history.pushState({ amfDetail: true }, "");
+    // Alamat detail yang bisa dibagiin (/preset/tiktok/<id>). ID-nya diambil dari
+    // URL kandidat yang memang selalu berbentuk tiktok.com/@user/video/<id>, jadi
+    // tidak perlu nunggu pengecekan selesai. Kalau ID-nya tidak terbaca, alamat
+    // dibiarkan seperti semula supaya tombol Kembali tetap bekerja.
+    const detailPath = presetPathOf(url);
+    if (!window.history.state?.amfDetail) {
+      window.history.pushState({ amfDetail: true }, "", detailPath ?? "");
+    }
     window.scrollTo({ top: 0 });
     if (details[url]?.state === "done") return;
 

@@ -65,6 +65,10 @@ export type FindResult = {
     bioLink?: string | null;
     avatar?: string;
   };
+  // ID video yang sudah di-resolve server (selalu ada saat --all). Dipakai buat
+  // menyusun alamat /preset/<sumber>/<id>, termasuk dari link pendek yang aslinya
+  // belum mengandung ID.
+  videoId?: string;
   error?: string;
 };
 
