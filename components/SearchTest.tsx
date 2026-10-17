@@ -75,6 +75,11 @@ function vtName(url: string): string {
   return `cand-${(h >>> 0).toString(36)}`;
 }
 
+/** Thumbnail dimorph terpisah supaya gambarnya ikut meluncur, bukan cuma cross-fade. */
+function thumbName(url: string): string {
+  return `${vtName(url)}-t`;
+}
+
 type SearchTestProps = {
   /** Dipakai di dalam Home (tab Cari Preset): tanpa judul/padding sendiri. */
   embedded?: boolean;
@@ -653,6 +658,7 @@ export default function SearchTest({
                 >
                   <span
                     style={{
+                      viewTransitionName: thumbName(c.url),
                       position: "relative",
                       width: "100%",
                       aspectRatio: "9 / 16",
@@ -717,6 +723,7 @@ export default function SearchTest({
                 >
                   <span
                     style={{
+                      viewTransitionName: thumbName(c.url),
                       position: "relative",
                       width: 64,
                       height: 86,

@@ -1064,18 +1064,18 @@ body::before {
 
 /* Gerak kartu: dipercepat di awal, mendarat lembut — tanpa overshoot biar kalem. */
 ::view-transition-group(*) {
-  animation-duration: 260ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 ::view-transition-old(*) {
-  animation-duration: 140ms;
+  animation-duration: 130ms;
   animation-timing-function: ease-out;
 }
 
 ::view-transition-new(*) {
-  animation-duration: 260ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
