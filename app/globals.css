@@ -1062,6 +1062,22 @@ body::before {
   animation: none;
 }
 
+/* Gerak kartu: dipercepat di awal, mendarat lembut — tanpa overshoot biar kalem. */
+::view-transition-group(*) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+::view-transition-old(*) {
+  animation-duration: 140ms;
+  animation-timing-function: ease-out;
+}
+
+::view-transition-new(*) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
