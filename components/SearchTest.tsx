@@ -68,6 +68,13 @@ const ChevronRight = () => (
   </svg>
 );
 
+/** Nama unik per kartu supaya browser bisa memorph posisinya saat ganti list/grid. */
+function vtName(url: string): string {
+  let h = 0;
+  for (let i = 0; i < url.length; i++) h = (h * 31 + url.charCodeAt(i)) | 0;
+  return `cand-${(h >>> 0).toString(36)}`;
+}
+
 type SearchTestProps = {
   /** Dipakai di dalam Home (tab Cari Preset): tanpa judul/padding sendiri. */
   embedded?: boolean;
@@ -93,6 +100,7 @@ export default function SearchTest({
   const [view, setView] = useState<"list" | "grid">("list");
   const [lastUrl, setLastUrl] = useState("");
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const deckRef = useRef<HTMLDivElement | null>(null);
   const prevOpen = useRef("");
   const openUrlRef = useRef("");
   const listYRef = useRef(0);
@@ -250,13 +258,40 @@ export default function SearchTest({
 
   function toggleView() {
     const next = view === "grid" ? "list" : "grid";
-    setView(next);
-    // grid tampil per 4 kartu: bulatkan jumlah yang sedang tampil ke atas
-    if (next === "grid") setCandLimit((limit) => Math.ceil(limit / 4) * 4);
+    const apply = () => {
+      setView(next);
+      // grid tampil per 4 kartu: bulatkan jumlah yang sedang tampil ke atas
+      if (next === "grid") setCandLimit((limit) => Math.ceil(limit / 4) * 4);
+    };
     try {
       localStorage.setItem(VIEW_KEY, next);
     } catch {
       // abaikan
+    }
+
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+    };
+
+    if (!reduce && typeof doc.startViewTransition === "function") {
+      // morph halus list <-> grid lewat View Transitions API
+      doc.startViewTransition(apply);
+      return;
+    }
+
+    apply();
+    // fallback buat browser tanpa View Transitions API
+    if (!reduce) {
+      deckRef.current?.animate(
+        [
+          { opacity: 0, transform: "translateY(6px)" },
+          { opacity: 1, transform: "translateY(0)" },
+        ],
+        { duration: 240, easing: "ease-out" }
+      );
     }
   }
 
@@ -586,7 +621,11 @@ export default function SearchTest({
                   <GridIcon />
                 </button>
               </div>
-              <div style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 } : undefined}>
+              <div
+                ref={deckRef}
+                className="cand-deck"
+                style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 } : undefined}
+              >
               {cands.slice(0, candLimit).map((c) => view === "grid" ? (
                 <button
                   key={c.url}
@@ -597,6 +636,7 @@ export default function SearchTest({
                   aria-label={`Check presets from ${c.handle || "this video"}`}
                   onClick={() => openVideo(c.url)}
                   style={{
+                    viewTransitionName: vtName(c.url),
                     display: "flex",
                     flexDirection: "column",
                     gap: 8,
@@ -659,6 +699,7 @@ export default function SearchTest({
                   aria-label={`Check presets from ${c.handle || "this video"}`}
                   onClick={() => openVideo(c.url)}
                   style={{
+                    viewTransitionName: vtName(c.url),
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
