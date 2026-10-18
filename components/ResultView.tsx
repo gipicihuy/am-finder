@@ -429,6 +429,7 @@ export function ResultView({ result }: { result: FindResult }) {
 
   return (
     <>
+      {presets.length > 0 ? (
       <section className="video-meta" aria-label="Content info">
         <div className="content-head">
         <VideoPreview
@@ -470,6 +471,7 @@ export function ResultView({ result }: { result: FindResult }) {
         </div>
         </div>
       </section>
+      ) : null}
 
       {presets.length === 0 ? (
         <div className="state state-miss" role="status">
