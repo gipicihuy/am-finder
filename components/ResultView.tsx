@@ -412,14 +412,11 @@ export function ResultView({ result }: { result: FindResult }) {
   const description = result.video?.description?.trim();
 
   const commentsDisabled = result.checked?.commentsDisabled === true;
-  // Kalau tidak ada link preset: kalau video terdeteksi terkait preset atau punya
-  // sumber lain, pesannya "link tidak ditemukan". Kalau konteks tak terdeteksi,
-  // pakai pesan detail dari scraper (apa saja yang sudah dicek) — jangan mengklaim
-  // video tidak mengandung preset padahal kita cuma tidak menemukan linknya.
-  const missText =
-    result.shareLinks?.length || result.checked?.context !== "none"
-      ? ui.states.noLink
-      : (result.message ?? ui.states.notFound);
+  // Kalau tidak ada link preset: kalau kata kunci preset terdeteksi (konteks !=
+  // "none") tapi linknya tidak ketemu, pesannya "link tidak ditemukan". Kalau
+  // konteks preset tidak terdeteksi sama sekali, berarti video memang tidak
+  // mengandung preset — walaupun ada sumber lain seperti Chat WA.
+  const missText = result.checked?.context !== "none" ? ui.states.noLink : ui.states.notFound;
 
   // Bagian video selalu dirender, termasuk waktu link preset tidak ditemukan.
   // Kalau tidak, orang yang membuka /preset/<sumber>/<id> langsung cuma melihat
