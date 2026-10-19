@@ -309,6 +309,36 @@ export default function SearchTest({
     setQ(value);
   }
 
+  // Tombol X mengosongkan kolom SEKALIGUS membuang hasil pencarian lama.
+  // Tanpa ini, "bekas" hasil tetap tampil dan ikut dipulihkan dari sessionStorage
+  // setiap kali halaman dibuka ulang / pindah tab.
+  function clearSearch() {
+    searchRef.current?.close();
+    searchRef.current = null;
+    setSearching(false);
+    setError("");
+    setQ("");
+    setCands([]);
+    setSearchedQuery("");
+    setLastUrl("");
+    setCandLimit(3);
+    setDetails({});
+    snapRef.current = { q: "", query: "", cands: [], limit: 3, last: "" };
+    try {
+      sessionStorage.removeItem(STATE_KEY);
+    } catch {
+      // storage diblokir — abaikan
+    }
+    // Buang ?q= dari alamat supaya refresh tidak menjalankan ulang pencarian lama.
+    if (window.location.pathname === "/search" && window.location.search) {
+      try {
+        window.history.replaceState(window.history.state, "", "/search");
+      } catch {
+        // history bisa diblokir — abaikan
+      }
+    }
+  }
+
   function search(override?: string) {
     const query = (override ?? q).trim();
     if (query.length < 3 || searching) return;
@@ -533,7 +563,7 @@ export default function SearchTest({
                   onChange={(e) => changeQuery(e.target.value)}
                 />
                 {q ? (
-                  <button type="button" className="clear-btn" aria-label="Clear" onClick={() => setQ("")}>
+                  <button type="button" className="clear-btn" aria-label="Clear" onClick={clearSearch}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                       <path d="M18 6 6 18" />
                       <path d="m6 6 12 12" />
