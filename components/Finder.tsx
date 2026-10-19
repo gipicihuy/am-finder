@@ -88,6 +88,8 @@ export function Finder({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
   const batteryRef = useRef<Battery | null>(null);
+  // Kata kunci terkini dari tab Cari Preset, dipakai buat menjaga ?q= di alamat.
+  const searchQueryRef = useRef("");
 
   useEffect(() => {
     // App Android nyuntik objek `AndroidClipboard` ke halaman (buat tombol paste).
@@ -275,8 +277,13 @@ export function Finder({
     // Alamat ikut tab (/ buat URL Video, /search buat Cari Preset). Pakai
     // pushState biasa, bukan router, supaya komponen tetap hidup dan panel yang
     // satunya nggak ke-reset. Next tetap sinkron sendiri lewat ACTION_RESTORE.
-    const path = next === "search" ? "/search" : "/";
-    if (window.location.pathname !== path) window.history.pushState({}, "", path);
+    // Kata kunci terakhir dibawa ke alamat supaya pindah tab bolak-balik tidak
+    // menghilangkan ?q= dari tautan /search.
+    const query = searchQueryRef.current.trim();
+    const path =
+      next === "search" ? (query ? `/search?q=${encodeURIComponent(query)}` : "/search") : "/";
+    const current = window.location.pathname + window.location.search;
+    if (current !== path) window.history.pushState({}, "", path);
   }
 
   // Keluar dari /preset/<sumber>/<id> lewat tombol Kembali/Maju: tutup panel
@@ -453,6 +460,9 @@ export function Finder({
             chooseMode("url");
           }}
           onDetailChange={setSearchDetailOpen}
+          onQueryChange={(next) => {
+            searchQueryRef.current = next;
+          }}
         />
       </div>
 

@@ -89,6 +89,8 @@ type SearchTestProps = {
   onDetailChange?: (open: boolean) => void;
   /** Kata kunci dari alamat /search?q=... — dipakai buat auto-cari waktu dibuka langsung. */
   initialQuery?: string;
+  /** Dipanggil tiap kata kunci berubah, supaya induk bisa menuliskannya di alamat. */
+  onQueryChange?: (query: string) => void;
 };
 
 export default function SearchTest({
@@ -96,6 +98,7 @@ export default function SearchTest({
   onTikTokLink,
   onDetailChange,
   initialQuery = "",
+  onQueryChange,
 }: SearchTestProps = {}) {
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
@@ -127,6 +130,16 @@ export default function SearchTest({
   useEffect(() => {
     openUrlRef.current = openUrl;
   }, [openUrl]);
+
+  // Beritahu induk (Finder) kata kunci terkini supaya saat pindah tab, alamat
+  // /search?q=... tidak kehilangan kata kuncinya.
+  const onQueryChangeRef = useRef(onQueryChange);
+  useEffect(() => {
+    onQueryChangeRef.current = onQueryChange;
+  });
+  useEffect(() => {
+    onQueryChangeRef.current?.(q);
+  }, [q]);
 
   function persistState() {
     const snap = snapRef.current;
