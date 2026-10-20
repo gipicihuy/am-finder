@@ -57,6 +57,14 @@ export type FindResult = {
     playUrlNoWm?: string;
     width?: number;
     height?: number;
+    // Sound/musik dari embed TikTok. Tidak diisi untuk YouTube.
+    music?: {
+      id?: string | null;
+      title?: string;
+      author?: string;
+      original?: boolean;
+      playUrl?: string | null;
+    } | null;
   };
   authorDetail?: {
     uniqueId?: string;

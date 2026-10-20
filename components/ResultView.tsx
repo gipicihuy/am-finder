@@ -36,6 +36,38 @@ function formatCount(value?: number | null): string | null {
   return String(value);
 }
 
+function clipText(value: unknown, max: number): string {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+function soundPageHref(id: unknown): string | null {
+  const raw = typeof id === "string" ? id.trim() : "";
+  return /^\d{5,25}$/.test(raw)
+    ? `https://www.tiktok.com/music/original-sound-${raw}`
+    : null;
+}
+
+function audioHref(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.toLowerCase();
+    const allowed = ["tiktokcdn.com", "tiktokcdn-us.com", "tiktokcdn-eu.com", "tiktokv.com"];
+    if (!allowed.some((domain) => host === domain || host.endsWith(`.${domain}`))) return null;
+    const expires = Number(url.searchParams.get("VExpiration") || 0);
+    if (expires && expires * 1000 <= Date.now() + 60_000) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 function ratioBox(ratio?: string) {
   const m = ratio?.match(/^(\d{1,3}):(\d{1,3})$/);
   const max = 60;
@@ -410,6 +442,12 @@ export function ResultView({ result }: { result: FindResult }) {
   const likes = formatCount(stats?.likes);
   const comments = formatCount(stats?.comments);
   const description = result.video?.description?.trim();
+  const music = result.video?.music;
+  const soundTitle = clipText(music?.title, 80);
+  const soundAuthor = clipText(music?.author, 60);
+  const soundLink = soundPageHref(music?.id);
+  const soundAudio = audioHref(music?.playUrl);
+  const hasSound = Boolean(soundTitle || soundAuthor || soundLink);
 
   const commentsDisabled = result.checked?.commentsDisabled === true;
   // Kalau tidak ada link preset: kalau kata kunci preset terdeteksi (konteks !=
@@ -426,7 +464,7 @@ export function ResultView({ result }: { result: FindResult }) {
 
   return (
     <>
-      {presets.length > 0 ? (
+      {result.video ? (
       <section className="video-meta" aria-label="Content info">
         <div className="content-head">
         <VideoPreview
@@ -467,6 +505,44 @@ export function ResultView({ result }: { result: FindResult }) {
         </dl>
         </div>
         </div>
+        {hasSound ? (
+          <div className="sound-info">
+            <dl className="meta-grid sound-grid">
+              <div className="meta-item">
+                <dt>Sound</dt>
+                <dd>
+                  {soundLink ? (
+                    <a href={soundLink} target="_blank" rel="noopener noreferrer">
+                      {soundTitle || "Sound TikTok"}
+                    </a>
+                  ) : (
+                    soundTitle || "Sound TikTok"
+                  )}
+                  {soundAuthor ? <span className="sound-author"> · {soundAuthor}</span> : null}
+                </dd>
+              </div>
+            </dl>
+            {soundLink || soundAudio ? (
+              <div className="sound-actions">
+                {soundLink ? (
+                  <a className="text-btn" href={soundLink} target="_blank" rel="noopener noreferrer">
+                    Buka sound di TikTok
+                  </a>
+                ) : null}
+                {soundAudio ? (
+                  <a className="btn-open" href={soundAudio} target="_blank" rel="noopener noreferrer">
+                    Audio dari video
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+            {soundAudio ? (
+              <p className="sound-note">
+                Audio diputar/diunduh langsung dari server TikTok. Hak cipta milik pembuat/label.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </section>
       ) : null}
 
