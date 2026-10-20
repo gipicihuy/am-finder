@@ -731,7 +731,8 @@ export default function SearchTest({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => pickSuggestion(item)}
             >
-              {label}
+              {/* satu span: kalau teks + <b> jadi item flex terpisah, spasi di tepinya hilang */}
+              <span>{label}</span>
             </button>
           );
         })}
