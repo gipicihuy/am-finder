@@ -1,4 +1,5 @@
-import { getSuggestions } from "@/lib/suggest";
+import { cleanSuggestion, getSuggestions } from "@/lib/suggest";
+import { remoteSuggest } from "@/lib/google-suggest";
 import { limitByIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -17,7 +18,24 @@ export async function GET(request: Request) {
     return Response.json({ ok: true, items: [] });
   }
 
-  const items = await getSuggestions(query, 8);
+  const LIMIT = 8;
+  const local = await getSuggestions(query, LIMIT);
+  let items = local;
+
+  // Index lokal tetap prioritas. Kalau stoknya masih sedikit, lengkapi dari
+  // Google supaya saran tidak terasa kering. Query pendek tidak dikirim keluar.
+  if (local.length < LIMIT - 1) {
+    const remote = await remoteSuggest(query);
+    const merged = [...local];
+    for (const raw of remote) {
+      const text = cleanSuggestion(raw);
+      if (!text || merged.includes(text)) continue;
+      merged.push(text);
+      if (merged.length >= LIMIT) break;
+    }
+    items = merged;
+  }
+
   return Response.json(
     { ok: true, items },
     { headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=120" } },

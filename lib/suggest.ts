@@ -19,6 +19,11 @@ const EXTRAS_FILE = path.join(DATA_DIR, "suggest-extras.jsonl");
 const CHECK_INTERVAL_MS = 20_000;
 const MIN_REBUILD_MS = 2 * 60_000;
 const MAX_EXTRAS_BYTES = 4 * 1024 * 1024;
+const MIN_LENGTH = 3;
+const MAX_LENGTH = 60;
+// Monitor sumbernya luas, minta >= 2x. /api/search = user mengetik sendiri.
+const MIN_MONITOR_HITS = 2;
+const MIN_SEARCH_HITS = 1;
 
 let entries: Entry[] = [];
 let weights = new Map<string, number>();
@@ -30,11 +35,43 @@ let building: Promise<void> | null = null;
 const appended = new Set<string>();
 
 function normalize(value: string): string {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
+  return value
+    .normalize("NFKC")
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, " ")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const URL_RE =
+  /(?:https?:\/\/|www\.|wa\.me|t\.me|drive\.google|alight(?:creative)?|vt\.tiktok|tiktok\.com)/i;
+const DOMAIN_RE = /\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/i;
+
+// Null = layak jadi saran. Selain itu berisi alasan penolakan.
+function rejectReason(text: string): string | null {
+  if (text.length < MIN_LENGTH) return "terlalu pendek";
+  if (text.length > MAX_LENGTH) return "terlalu panjang";
+  if (text.startsWith("preset am")) return "awalan preset am";
+  if (text.includes("@")) return "@handle/email";
+  if (URL_RE.test(text) || DOMAIN_RE.test(text)) return "url/domain";
+  if (/\d{5,}/.test(text)) return "deret angka";
+  if ((text.match(/\d/g) || []).length >= 8) return "terlalu banyak angka";
+
+  const chars = [...text].filter((ch) => !/\s/.test(ch));
+  const letters = chars.filter((ch) => /\p{L}/u.test(ch)).length;
+  if (letters < 3) return "tanpa huruf";
+  if (letters / chars.length < 0.6) return "mayoritas simbol";
+  return null;
 }
 
 function usable(value: string): boolean {
-  return value.length >= 3 && !value.startsWith("preset");
+  return rejectReason(value) === null;
+}
+
+/** Bersihkan saran dari sumber luar (mis. Google). Null = tidak layak tampil. */
+export function cleanSuggestion(raw: string): string | null {
+  const text = normalize(raw);
+  return usable(text) ? text : null;
 }
 
 // --- Pemecah kata tanpa spasi ---------------------------------------------
@@ -158,19 +195,22 @@ function readMonitorWeights(): Map<string, number> {
   return map;
 }
 
-function readExtras(): string[] {
-  const out: string[] = [];
+function readExtras(ignoreSize = false): Map<string, number> {
+  const counts = new Map<string, number>();
   try {
     const stat = fs.statSync(EXTRAS_FILE);
-    if (stat.size === 0 || stat.size > MAX_EXTRAS_BYTES) return out;
+    if (stat.size === 0) return counts;
+    if (!ignoreSize && stat.size > MAX_EXTRAS_BYTES) return counts;
     const raw = fs.readFileSync(EXTRAS_FILE, "utf8");
     for (const line of raw.split("\n")) {
-      if (!line) continue;
+      if (!line.trim()) continue;
       try {
-        const item = JSON.parse(line) as { q?: string };
+        const item = JSON.parse(line) as { q?: string; n?: number };
         if (typeof item.q !== "string") continue;
         const text = normalize(item.q);
-        if (usable(text)) out.push(text);
+        if (!usable(text)) continue;
+        const n = Math.max(1, Number(item.n) || 1);
+        counts.set(text, (counts.get(text) || 0) + n);
       } catch {
         /* baris setengah tertulis — abaikan */
       }
@@ -178,22 +218,29 @@ function readExtras(): string[] {
   } catch {
     /* file belum ada */
   }
-  return out;
+  return counts;
 }
 
 async function build(): Promise<void> {
   const monitor = readMonitorWeights();
   const extras = readExtras();
-  const dict = buildDictionary([...weights.keys(), ...monitor.keys(), ...extras]);
+  const dict = buildDictionary(
+    [...monitor.keys(), ...extras.keys()].filter((query) => !rejectReason(query)),
+  );
   const next = new Map<string, number>();
   const add = (raw: string, weight: number) => {
     const text = prettify(normalize(raw), dict);
     if (!usable(text)) return;
     next.set(text, Math.max(weight, next.get(text) || 0));
   };
-  for (const [key, weight] of weights) add(key, weight);
-  for (const [key, weight] of monitor) add(key, weight);
-  for (const key of extras) add(key, 1);
+  // Index lama (termasuk sisa data cache tikwm) sengaja TIDAK dipertahankan;
+  // sumber resmi cuma monitor + query yang benar-benar masuk lewat /api/search.
+  for (const [key, weight] of monitor) {
+    if (weight >= MIN_MONITOR_HITS) add(key, weight);
+  }
+  for (const [key, weight] of extras) {
+    if (weight >= MIN_SEARCH_HITS) add(key, weight);
+  }
 
   weights = next;
   runtimeDict = null;
@@ -249,12 +296,15 @@ async function compactExtras(): Promise<void> {
   if (Date.now() - lastCompact < 60_000) return;
   lastCompact = Date.now();
   if (fileStat(EXTRAS_FILE).size <= MAX_EXTRAS_BYTES) return;
-  const unique = [...new Set(readExtras())].slice(-20_000);
+  const counts = readExtras(true);
+  const unique = [...counts.keys()].slice(-20_000);
   const temp = `${EXTRAS_FILE}.tmp`;
   try {
     await fs.promises.writeFile(
       temp,
-      unique.map((q) => JSON.stringify({ q })).join("\n") + (unique.length ? "\n" : ""),
+      unique
+        .map((q) => JSON.stringify({ q, n: counts.get(q) || 1 }))
+        .join("\n") + (unique.length ? "\n" : ""),
     );
     await fs.promises.rename(temp, EXTRAS_FILE);
   } catch {

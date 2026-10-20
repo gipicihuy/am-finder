@@ -1,21 +1,58 @@
 import fs from "node:fs";
 import path from "node:path";
-import readline from "node:readline";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const MONITOR_FILE = path.join(DATA_DIR, "monitor.json");
-const SEARCH_CACHE = path.join(DATA_DIR, "ttsearch.cache.json");
+const EXTRAS_FILE = path.join(DATA_DIR, "suggest-extras.jsonl");
 const INDEX_FILE = path.join(DATA_DIR, "suggest.json");
 const PUBLIC_FILE = path.join(process.cwd(), "public", "suggest.json");
-const PREFIX = '  "preset am ';
-const SUFFIX = '": {';
+
+const MIN_LENGTH = 3;
+const MAX_LENGTH = 60;
+// Monitor itu sumber luas (banyak sekali frasa sekali lewat), jadi minta >= 2x.
+// /api/search adalah user benar-benar mengetik di kolom pencarian, 1x sudah cukup.
+const MIN_MONITOR_HITS = 2;
+const MIN_SEARCH_HITS = 1;
 
 function normalize(value) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
+  return String(value)
+    .normalize("NFKC")
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, " ")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function usable(value) {
-  return value.length >= 3 && !value.startsWith("preset");
+const URL_RE =
+  /(?:https?:\/\/|www\.|wa\.me|t\.me|drive\.google|alight(?:creative)?|vt\.tiktok|tiktok\.com)/i;
+const DOMAIN_RE = /\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/i;
+
+// Alasan sebuah teks tidak layak jadi saran. Null = layak.
+function rejectReason(text) {
+  if (text.length < MIN_LENGTH) return "terlalu pendek";
+  if (text.length > MAX_LENGTH) return "terlalu panjang";
+  if (text.startsWith("preset am")) return "awalan preset am";
+  if (text.includes("@")) return "@handle/email";
+  if (URL_RE.test(text) || DOMAIN_RE.test(text)) return "url/domain";
+  if (/\d{5,}/.test(text)) return "deret angka";
+  if ((text.match(/\d/g) || []).length >= 8) return "terlalu banyak angka";
+
+  const chars = [...text].filter((ch) => !/\s/.test(ch));
+  const letters = chars.filter((ch) => /\p{L}/u.test(ch)).length;
+  if (letters < 3) return "tanpa huruf";
+  if (letters / chars.length < 0.6) return "mayoritas simbol";
+  return null;
+}
+
+function safeSample(text) {
+  return (
+    text
+      .replace(/(?:https?:\/\/|www\.)\S+/gi, "<url>")
+      .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b\S*/gi, "<domain>")
+      .replace(/@\S+/g, "@***")
+      .replace(/\d/g, "#")
+      .slice(0, MAX_LENGTH) || "-"
+  );
 }
 
 // Beberapa user mengetik tanpa spasi ("duniayang nanti"). Saat membangun
@@ -75,86 +112,79 @@ function prettify(query, dict) {
     .join(" ");
 }
 
-function readKeywords() {
-  const map = new Map();
+function readMonitor() {
+  const counts = new Map();
   try {
     const parsed = JSON.parse(fs.readFileSync(MONITOR_FILE, "utf8"));
-    for (const [key, count] of Object.entries(parsed.keywords || {})) {
+    for (const [key, value] of Object.entries(parsed.keywords || {})) {
       const text = normalize(key);
-      if (!usable(text)) continue;
-      map.set(text, Math.max(1, Number(count) || 1));
+      if (!text) continue;
+      const n = Math.max(1, Number(value) || 1);
+      counts.set(text, (counts.get(text) || 0) + n);
     }
   } catch {
     /* monitor belum ada */
   }
-  return map;
+  return counts;
 }
 
-async function readCachedQueries() {
-  const out = [];
+// Menghitung frekuensi query /api/search. Format lama cuma { q }, format baru
+// { q, n }. Duplikat baris tetap dihitung supaya ambang bisa dipakai.
+function readExtras() {
+  const counts = new Map();
   try {
-    const rl = readline.createInterface({
-      input: fs.createReadStream(SEARCH_CACHE, { encoding: "utf8" }),
-      crlfDelay: Infinity,
-    });
-    for await (const line of rl) {
-      if (!line.startsWith(PREFIX) || !line.endsWith(SUFFIX)) continue;
-      const query = line.slice(PREFIX.length, -SUFFIX.length);
-      if (query) out.push(query);
+    const raw = fs.readFileSync(EXTRAS_FILE, "utf8");
+    for (const line of raw.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const item = JSON.parse(line);
+        const text = normalize(item.q || "");
+        if (!text) continue;
+        const n = Math.max(1, Number(item.n) || 1);
+        counts.set(text, (counts.get(text) || 0) + n);
+      } catch {
+        /* baris setengah tertulis — abaikan */
+      }
     }
   } catch {
-    /* cache belum ada */
+    /* file belum ada */
   }
-  return out;
+  return counts;
 }
 
-function cacheSignature() {
-  const st = fs.statSync(SEARCH_CACHE);
-  return `${st.mtimeMs}:${st.size}`;
-}
+const monitor = readMonitor();
+const extras = readExtras();
 
-function tailComplete() {
-  const fd = fs.openSync(SEARCH_CACHE, "r");
-  try {
-    const { size } = fs.fstatSync(fd);
-    const length = Math.min(256, size);
-    const buffer = Buffer.alloc(length);
-    fs.readSync(fd, buffer, 0, length, size - length);
-    return /\}\s*\}$/.test(buffer.toString("utf8"));
-  } finally {
-    fs.closeSync(fd);
-  }
-}
+const monitorHits = [...monitor].filter(([, n]) => n >= MIN_MONITOR_HITS);
+const searchHits = [...extras].filter(([, n]) => n >= MIN_SEARCH_HITS);
 
-// File cache ditulis ulang setiap ada pencarian. Ambil snapshot yang utuh:
-// ukuran/mtime harus sama sebelum & sesudah scan, dan ujung JSON valid.
-let cached = [];
-for (let attempt = 0; attempt < 6; attempt++) {
-  const before = cacheSignature();
-  cached = await readCachedQueries();
-  const after = cacheSignature();
-  if (before === after && cached.length > 100 && tailComplete()) break;
-  console.log(`cache sedang ditulis ulang, ulangi (${attempt + 1}/6)…`);
-  cached = [];
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-}
-if (!cached.length) {
-  console.error("Gagal membaca cache secara utuh. Coba lagi saat sepi.");
-  process.exit(1);
-}
-
-const monitor = readKeywords();
-const dictionary = buildDictionary([...monitor.keys(), ...cached]);
+const dictionary = buildDictionary(
+  [...monitorHits, ...searchHits]
+    .map(([query]) => query)
+    .filter((query) => !rejectReason(query)),
+);
 const weights = new Map();
+const dropped = new Map();
+
+function noteDrop(reason, text) {
+  const bucket = dropped.get(reason) || { count: 0, samples: new Set() };
+  bucket.count += 1;
+  if (bucket.samples.size < 3) bucket.samples.add(safeSample(text));
+  dropped.set(reason, bucket);
+}
 
 function add(raw, weight) {
-  const text = prettify(normalize(raw), dictionary);
-  if (!usable(text)) return;
+  const text = prettify(raw, dictionary);
+  const reason = rejectReason(text);
+  if (reason) {
+    noteDrop(reason, text);
+    return;
+  }
   weights.set(text, Math.max(weight, weights.get(text) || 0));
 }
 
-for (const [raw, weight] of monitor) add(raw, weight);
-for (const raw of cached) add(raw, 1);
+for (const [raw, count] of monitorHits) add(raw, count);
+for (const [raw, count] of searchHits) add(raw, count);
 
 const entries = [...weights.entries()]
   .map(([s, w]) => ({ s, w }))
@@ -166,7 +196,24 @@ fs.writeFileSync(temp, payload);
 fs.renameSync(temp, INDEX_FILE);
 // Versi statis buat dibaca langsung oleh browser (autocomplete instan).
 fs.mkdirSync(path.dirname(PUBLIC_FILE), { recursive: true });
-fs.writeFileSync(PUBLIC_FILE, payload);
+const publicTemp = `${PUBLIC_FILE}.tmp`;
+fs.writeFileSync(publicTemp, payload);
+fs.renameSync(publicTemp, PUBLIC_FILE);
+
+console.log(
+  `sumber: monitor ${monitor.size} (lolos ${MIN_MONITOR_HITS}x: ${monitorHits.length}), ` +
+    `/api/search ${extras.size} (lolos ${MIN_SEARCH_HITS}x: ${searchHits.length})`,
+);
+const belowMonitor = monitor.size - monitorHits.length;
+const belowSearch = extras.size - searchHits.length;
+if (belowMonitor || belowSearch) {
+  console.log(`di bawah ambang: monitor ${belowMonitor}, /api/search ${belowSearch}`);
+}
+const totalDropped = [...dropped.values()].reduce((sum, bucket) => sum + bucket.count, 0);
+console.log(`dibuang filter: ${totalDropped}`);
+for (const [reason, bucket] of [...dropped].sort((a, b) => b[1].count - a[1].count)) {
+  console.log(`  - ${reason}: ${bucket.count} — ${[...bucket.samples].join(" | ")}`);
+}
 console.log(
   `suggest.json: ${entries.length} entries (${Math.round(Buffer.byteLength(payload) / 1024)} KB)`,
 );
