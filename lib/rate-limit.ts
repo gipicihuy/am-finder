@@ -33,6 +33,9 @@ const SCOPES = {
   // /api/find nge-spawn lib/amfinder.js — yang paling mahal.
   find: { burst: 6, burstMs: 10_000, sustained: 30, sustainedMs: 60_000, penaltyAt: 60, penaltyMs: 60_000 },
   search: { burst: 6, burstMs: 10_000, sustained: 30, sustainedMs: 60_000, penaltyAt: 60, penaltyMs: 60_000 },
+  // Autocomplete dipanggil tiap user berhenti mengetik. Murah (index di memori),
+  // jadi plafonnya longgar; kalau tetap kena limit, route balikin list kosong.
+  suggest: { burst: 30, burstMs: 10_000, sustained: 200, sustainedMs: 60_000, penaltyAt: 400, penaltyMs: 30_000 },
   // Feed dirender ulang tiap 10 menit, jadi plafonnya lebih ketat.
   rekomen: { burst: 4, burstMs: 10_000, sustained: 10, sustainedMs: 60_000, penaltyAt: 25, penaltyMs: 60_000 },
   // Ambil judul + thumbnail buat pratinjau OG. Ringan (1 request kecil ke

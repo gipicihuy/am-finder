@@ -4,6 +4,7 @@ import { searchTiktok, setLog } from "../../../lib/ttsearch";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordCari, recordVisit } from "../../../lib/monitor";
+import { rememberQuery } from "../../../lib/suggest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -260,6 +261,9 @@ export async function GET(request: Request) {
   if (!query) {
     return Response.json({ ok: false, error: "query minimal 3 karakter" }, { status: 400 });
   }
+
+  // Simpan kata kunci buat autocomplete (murah, tidak menunggu hasil).
+  rememberQuery(query);
 
   const limit = limitByIp(request, "search");
   if (!limit.ok) return tooManyRequests(limit.retryAfterSec);

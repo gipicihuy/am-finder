@@ -1,7 +1,7 @@
 "use client";
 
 import { isVideoLink, presetPathOf } from "@/lib/tiktok-link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
@@ -103,6 +103,16 @@ export default function SearchTest({
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
+  const [suggests, setSuggests] = useState<string[]>([]);
+  const [sugOpen, setSugOpen] = useState(false);
+  const [sugActive, setSugActive] = useState(-1);
+  const sugAbort = useRef<AbortController | null>(null);
+  const sugSuppressRef = useRef("");
+  const sugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sugBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [indexReady, setIndexReady] = useState(false);
+  const sugIndex = useRef<Array<{ s: string; w: number }> | null>(null);
+  const sugIndexLoading = useRef<Promise<void> | null>(null);
   const [cands, setCands] = useState<Candidate[]>([]);
   const [candLimit, setCandLimit] = useState(3);
   const [view, setView] = useState<"list" | "grid">("list");
@@ -130,6 +140,142 @@ export default function SearchTest({
   useEffect(() => {
     openUrlRef.current = openUrl;
   }, [openUrl]);
+
+  const queryRef = useRef(q);
+  queryRef.current = q;
+
+  function loadSuggestIndex(): Promise<void> {
+    if (sugIndex.current) return Promise.resolve();
+    if (sugIndexLoading.current) return sugIndexLoading.current;
+    sugIndexLoading.current = fetch("/suggest.json")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: Array<{ s?: string; w?: number }> | null) => {
+        if (!Array.isArray(data)) return;
+        sugIndex.current = data
+          .filter((item) => item && typeof item.s === "string")
+          .map((item) => ({ s: item.s as string, w: Math.max(1, Number(item.w) || 1) }));
+        setIndexReady(true);
+      })
+      .catch(() => {
+        /* fallback ke /api/suggest */
+      })
+      .finally(() => {
+        sugIndexLoading.current = null;
+      });
+    return sugIndexLoading.current;
+  }
+
+  function localSuggest(query: string, limit = 8): string[] {
+    const index = sugIndex.current;
+    if (!index) return [];
+    const needle = query.toLowerCase();
+    const scored: Array<{ s: string; score: number; w: number }> = [];
+    for (const entry of index) {
+      const at = entry.s.indexOf(needle);
+      if (at < 0) continue;
+      const starts = at === 0;
+      const exact = starts && entry.s.length === needle.length;
+      const spaced = starts && entry.s[needle.length] === " ";
+      const boundary = starts || entry.s[at - 1] === " ";
+      scored.push({
+        s: entry.s,
+        score: exact ? 0 : spaced ? 1 : starts ? 2 : boundary ? 3 : 4,
+        w: entry.w,
+      });
+    }
+    scored.sort(
+      (a, b) =>
+        a.score - b.score ||
+        b.w - a.w ||
+        a.s.length - b.s.length ||
+        a.s.localeCompare(b.s),
+    );
+    return scored.slice(0, limit).map((item) => item.s);
+  }
+
+  // Saran pencarian: index statis (/suggest.json) difilter langsung di browser,
+  // jadi tidak ada round-trip waktu mengetik. /api/suggest tetap dipanggil di
+  // latar belakang buat menambah query baru yang belum masuk index.
+  useEffect(() => {
+    const query = q.trim();
+    // Jangan buka saran lagi untuk kata kunci yang baru saja dicari — panelnya
+    // bakal nutupin hasil. User harus mengetik lagi untuk memunculkan saran.
+    if (openUrl || query.length < 2 || query === sugSuppressRef.current) {
+      setSuggests([]);
+      setSugOpen(false);
+      setSugActive(-1);
+      return;
+    }
+
+    void loadSuggestIndex();
+    const local = localSuggest(query);
+    if (local.length) {
+      setSuggests(local);
+      setSugOpen(true);
+      setSugActive(-1);
+    } else {
+      setSuggests([]);
+      setSugOpen(false);
+      setSugActive(-1);
+    }
+
+    if (sugTimer.current) clearTimeout(sugTimer.current);
+    sugTimer.current = setTimeout(
+      () => {
+        const controller = new AbortController();
+        sugAbort.current = controller;
+        fetch(`/api/suggest?q=${encodeURIComponent(query)}`, { signal: controller.signal })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data: { items?: string[] } | null) => {
+            if (!data?.items?.length) return;
+            // Respons lama boleh selesai, tapi jangan menimpa query terkini.
+            if (queryRef.current.trim() !== query) return;
+            const merged = [...localSuggest(query)];
+            for (const item of data.items) {
+              if (!merged.includes(item)) merged.push(item);
+            }
+            setSuggests(merged.slice(0, 8));
+            setSugOpen(merged.length > 0);
+            setSugActive(-1);
+          })
+          .catch(() => {
+            /* autocomplete gagal bukan masalah besar — biarkan kosong */
+          });
+      },
+      query.length <= 2 ? 0 : 60,
+    );
+
+    return () => {
+      if (sugTimer.current) clearTimeout(sugTimer.current);
+    };
+  }, [q, openUrl, indexReady]);
+
+  // Panaskan index sekali setelah halaman tenang, biar ketikan pertama instan.
+  useEffect(() => {
+    const timer = setTimeout(() => void loadSuggestIndex(), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => () => sugAbort.current?.abort(), []);
+
+  function onSuggestFocus() {
+    const query = q.trim();
+    if (openUrl || query.length < 2 || query === sugSuppressRef.current) return;
+    if (sugBlurTimer.current) clearTimeout(sugBlurTimer.current);
+    void loadSuggestIndex();
+    const local = localSuggest(query);
+    const items = local.length ? local : suggests;
+    if (items.length) {
+      setSuggests(items);
+      setSugOpen(true);
+      setSugActive(-1);
+    }
+  }
+
+  function onSuggestBlur() {
+    if (sugBlurTimer.current) clearTimeout(sugBlurTimer.current);
+    sugBlurTimer.current = setTimeout(() => setSugOpen(false), 80);
+  }
 
   // Beritahu induk (Finder) kata kunci terkini supaya saat pindah tab, alamat
   // /search?q=... tidak kehilangan kata kuncinya.
@@ -314,6 +460,7 @@ export default function SearchTest({
   }
 
   function changeQuery(value: string) {
+    sugSuppressRef.current = "";
     if (embedded && isVideoLink(value)) {
       onTikTokLink?.(value.trim());
       setQ("");
@@ -352,9 +499,38 @@ export default function SearchTest({
     }
   }
 
+  function pickSuggestion(value: string) {
+    sugSuppressRef.current = value;
+    setSugOpen(false);
+    setSugActive(-1);
+    setSuggests([]);
+    setQ(value);
+    search(value);
+  }
+
+  function onSuggestKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!sugOpen || !suggests.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSugActive((prev) => (prev + 1) % suggests.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSugActive((prev) => (prev <= 0 ? suggests.length - 1 : prev - 1));
+    } else if (event.key === "Enter" && sugActive >= 0) {
+      event.preventDefault();
+      pickSuggestion(suggests[sugActive]);
+    } else if (event.key === "Escape") {
+      setSugOpen(false);
+      setSugActive(-1);
+    }
+  }
+
   function search(override?: string) {
     const query = (override ?? q).trim();
     if (query.length < 3 || searching) return;
+    sugSuppressRef.current = query;
+    setSugOpen(false);
+    setSugActive(-1);
     searchRef.current?.close();
     checkRef.current?.close();
     setSearching(true);
@@ -528,6 +704,39 @@ export default function SearchTest({
 
   const current = openUrl ? details[openUrl] : undefined;
   const candidate = cands.find((c) => c.url === openUrl);
+  const suggestQuery = q.trim();
+  const suggestPanel =
+    sugOpen && suggests.length > 0 ? (
+      <div className="suggest-panel" role="listbox" aria-label="Saran pencarian">
+        {suggests.map((item, index) => {
+          const at = item.toLowerCase().indexOf(suggestQuery.toLowerCase());
+          const label =
+            at < 0 ? (
+              item
+            ) : (
+              <>
+                {item.slice(0, at)}
+                <b>{item.slice(at, at + suggestQuery.length)}</b>
+                {item.slice(at + suggestQuery.length)}
+              </>
+            );
+          return (
+            <button
+              key={item}
+              type="button"
+              role="option"
+              aria-selected={index === sugActive}
+              className="suggest-item"
+              data-active={index === sugActive}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => pickSuggestion(item)}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
 
   return (
     <div
@@ -574,6 +783,9 @@ export default function SearchTest({
                   aria-label="Search keyword"
                   value={q}
                   onChange={(e) => changeQuery(e.target.value)}
+                  onKeyDown={onSuggestKeyDown}
+                  onFocus={onSuggestFocus}
+                  onBlur={onSuggestBlur}
                 />
                 {q ? (
                   <button type="button" className="clear-btn" aria-label="Clear" onClick={clearSearch}>
@@ -588,6 +800,7 @@ export default function SearchTest({
                 {searching ? ui.buttons.searching : ui.buttons.search}
               </button>
             </form>
+            {suggestPanel}
           </div>
           ) : (
           <form
@@ -596,24 +809,29 @@ export default function SearchTest({
               search();
             }}
           >
-            <input
-              value={q}
-              onChange={(e) => changeQuery(e.target.value)}
-              placeholder="Cari nama lagu atau kata kunci..."
-              aria-label="Search keyword"
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                height: 52,
-                background: SURFACE,
-                border: `1px solid ${BORDER}`,
-                borderRadius: 14,
-                color: FG,
-                padding: "0 16px",
-                fontSize: 16,
-                marginBottom: 12,
-              }}
-            />
+            <div style={{ position: "relative", marginBottom: 12 }}>
+              <input
+                value={q}
+                onChange={(e) => changeQuery(e.target.value)}
+                onKeyDown={onSuggestKeyDown}
+                onFocus={onSuggestFocus}
+                onBlur={onSuggestBlur}
+                placeholder="Cari nama lagu atau kata kunci..."
+                aria-label="Search keyword"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  height: 52,
+                  background: SURFACE,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 14,
+                  color: FG,
+                  padding: "0 16px",
+                  fontSize: 16,
+                }}
+              />
+              {suggestPanel}
+            </div>
             <button
               type="submit"
               disabled={searching}
