@@ -119,6 +119,16 @@ function PresetThumb({ preset }: { preset: PresetLink }) {
   );
 }
 
+function MusicIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 18V6l11-2v12" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="17.5" cy="16" r="2.5" />
+    </svg>
+  );
+}
+
 function OpenIcon() {
   return (
     <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -507,40 +517,41 @@ export function ResultView({ result }: { result: FindResult }) {
         </div>
         {hasSound ? (
           <div className="sound-info">
-            <dl className="meta-grid sound-grid">
-              <div className="meta-item">
-                <dt>Sound</dt>
-                <dd>
-                  {soundLink ? (
-                    <a href={soundLink} target="_blank" rel="noopener noreferrer">
-                      {soundTitle || "Sound TikTok"}
-                    </a>
-                  ) : (
-                    soundTitle || "Sound TikTok"
-                  )}
-                  {soundAuthor ? <span className="sound-author"> · {soundAuthor}</span> : null}
-                </dd>
-              </div>
-            </dl>
-            {soundLink || soundAudio ? (
-              <div className="sound-actions">
-                {soundLink ? (
-                  <a className="text-btn" href={soundLink} target="_blank" rel="noopener noreferrer">
-                    Buka sound di TikTok
-                  </a>
-                ) : null}
-                {soundAudio ? (
-                  <a className="btn-open" href={soundAudio} target="_blank" rel="noopener noreferrer">
-                    Audio dari video
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-            {soundAudio ? (
-              <p className="sound-note">
-                Audio diputar/diunduh langsung dari server TikTok. Hak cipta milik pembuat/label.
-              </p>
-            ) : null}
+            <div className="sound-row">
+              <span className="sound-icon" aria-hidden="true">
+                <MusicIcon />
+              </span>
+              <span className="sound-text">
+                <span className="sound-title">{soundTitle || "Sound TikTok"}</span>
+                <span className="sound-sub">
+                  {soundAuthor && !soundTitle?.includes(soundAuthor) ? soundAuthor : "Sound video ini"}
+                </span>
+              </span>
+              {soundLink ? (
+                <a
+                  className="sound-btn"
+                  href={soundLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Buka sound di TikTok"
+                  title="Buka sound di TikTok"
+                >
+                  <OpenIcon />
+                </a>
+              ) : null}
+              {soundAudio ? (
+                <a
+                  className="sound-btn is-primary"
+                  href={soundAudio}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Unduh audio dari video"
+                  title="Unduh audio"
+                >
+                  <DownloadIcon />
+                </a>
+              ) : null}
+            </div>
           </div>
         ) : null}
       </section>
