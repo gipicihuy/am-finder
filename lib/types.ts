@@ -63,6 +63,7 @@ export type FindResult = {
       title?: string;
       author?: string;
       original?: boolean;
+      cover?: string | null;
       playUrl?: string | null;
     } | null;
   };

@@ -42,6 +42,9 @@ const SCOPES = {
   // oembed/tikwm), tapi tetap dibatasi: alamat /preset bisa sangat banyak dan
   // kuota tikwm cuma 10.000/hari, dipakai bareng pencarian.
   og: { burst: 5, burstMs: 10_000, sustained: 15, sustainedMs: 60_000, penaltyAt: 30, penaltyMs: 60_000 },
+  // Unduhan audio: satu klik bisa menarik file beberapa ratus KB. Batasnya
+  // lebih ketat dari API biasa; konkurensi global diatur di route /api/audio.
+  audio: { burst: 2, burstMs: 10_000, sustained: 5, sustainedMs: 60_000, penaltyAt: 8, penaltyMs: 60_000 },
 } as const satisfies Record<string, ScopeConfig>;
 
 export type Scope = keyof typeof SCOPES;

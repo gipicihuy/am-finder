@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
+import { soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
 import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { ui } from "@/lib/ui";
@@ -52,20 +53,44 @@ function soundPageHref(id: unknown): string | null {
     : null;
 }
 
-function audioHref(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "https:") return null;
-    const host = url.hostname.toLowerCase();
-    const allowed = ["tiktokcdn.com", "tiktokcdn-us.com", "tiktokcdn-eu.com", "tiktokv.com"];
-    if (!allowed.some((domain) => host === domain || host.endsWith(`.${domain}`))) return null;
-    const expires = Number(url.searchParams.get("VExpiration") || 0);
-    if (expires && expires * 1000 <= Date.now() + 60_000) return null;
-    return url.toString();
-  } catch {
-    return null;
+function isAndroidApp(): boolean {
+  return typeof navigator !== "undefined" && /AMFinderApp\/1\.0/i.test(navigator.userAgent);
+}
+
+function filenameFromDisposition(value: string | null): string | null {
+  if (!value) return null;
+  const utf8 = value.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8) {
+    try {
+      return decodeURIComponent(utf8[1].trim().replace(/^"|"$/g, ""));
+    } catch {
+      /* pakai fallback di bawah */
+    }
   }
+  const quoted = value.match(/filename\s*=\s*"([^"]+)"/i);
+  if (quoted) return quoted[1];
+  const plain = value.match(/filename\s*=\s*([^;]+)/i);
+  return plain ? plain[1].trim() : null;
+}
+
+async function audioErrorMessage(res: Response): Promise<string> {
+  try {
+    const body: unknown = await res.json();
+    if (
+      body &&
+      typeof body === "object" &&
+      "error" in body &&
+      typeof body.error === "string" &&
+      body.error.trim()
+    ) {
+      return body.error.trim();
+    }
+  } catch {
+    /* respons bukan JSON */
+  }
+  if (res.status === 429) return "Terlalu banyak unduhan, coba lagi sebentar.";
+  if (res.status === 413) return "File audio terlalu besar.";
+  return "Gagal mengunduh audio.";
 }
 
 function ratioBox(ratio?: string) {
@@ -434,6 +459,10 @@ function RatioFrame({ ratio }: { ratio?: string }) {
 export function ResultView({ result }: { result: FindResult }) {
   const [allowMotion, setAllowMotion] = useState(true);
   const [presetLimit, setPresetLimit] = useState(3);
+  const [audioBusy, setAudioBusy] = useState(false);
+  const [audioError, setAudioError] = useState("");
+  const [coverFailed, setCoverFailed] = useState(false);
+  const downloadSeq = useRef(0);
 
   useEffect(() => {
     setAllowMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -441,6 +470,10 @@ export function ResultView({ result }: { result: FindResult }) {
 
   useEffect(() => {
     setPresetLimit(3);
+    downloadSeq.current += 1;
+    setAudioBusy(false);
+    setAudioError("");
+    setCoverFailed(false);
   }, [result]);
 
   const presets = result.presetLinks ?? [];
@@ -456,8 +489,68 @@ export function ResultView({ result }: { result: FindResult }) {
   const soundTitle = clipText(music?.title, 80);
   const soundAuthor = clipText(music?.author, 60);
   const soundLink = soundPageHref(music?.id);
-  const soundAudio = audioHref(music?.playUrl);
-  const hasSound = Boolean(soundTitle || soundAuthor || soundLink);
+  const soundAudio = soundUrl(music?.playUrl);
+  const soundCover = soundCoverUrl(music?.cover);
+  const videoId = result.videoId;
+  const hasSound = Boolean(soundTitle || soundAuthor || soundLink || soundAudio);
+
+  async function handleDownload() {
+    if (!soundAudio || !videoId || audioBusy) return;
+
+    // WebView APK v1.5 belum punya DownloadListener. Buka link CDN di browser
+    // (perilaku lama) sampai APK v1.6 membawa handler unduhan native.
+    if (isAndroidApp()) {
+      const link = document.createElement("a");
+      link.href = soundAudio;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+
+    const requestId = downloadSeq.current + 1;
+    downloadSeq.current = requestId;
+    setAudioBusy(true);
+    setAudioError("");
+    try {
+      const res = await fetch(`/api/audio/${encodeURIComponent(videoId)}`, {
+        cache: "no-store",
+      });
+      if (downloadSeq.current !== requestId) return;
+      if (!res.ok) {
+        setAudioError(await audioErrorMessage(res));
+        return;
+      }
+      const blob = await res.blob();
+      if (downloadSeq.current !== requestId) return;
+      if (!blob.size) {
+        setAudioError("File audio kosong.");
+        return;
+      }
+      const type = res.headers.get("content-type") || blob.type || "audio/mpeg";
+      const name =
+        filenameFromDisposition(res.headers.get("content-disposition")) ||
+        soundFileName(soundTitle, videoId, type);
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = name;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 30_000);
+    } catch (error) {
+      if (downloadSeq.current !== requestId) return;
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setAudioError("Gagal mengunduh audio.");
+      }
+    } finally {
+      if (downloadSeq.current === requestId) setAudioBusy(false);
+    }
+  }
 
   const commentsDisabled = result.checked?.commentsDisabled === true;
   // Kalau tidak ada link preset: kalau kata kunci preset terdeteksi (konteks !=
@@ -518,8 +611,24 @@ export function ResultView({ result }: { result: FindResult }) {
         {hasSound ? (
           <div className="sound-info">
             <div className="sound-row">
-              <span className="sound-icon" aria-hidden="true">
-                <MusicIcon />
+              <span
+                className={`sound-icon${soundCover && !coverFailed ? " has-cover" : ""}`}
+                aria-hidden="true"
+              >
+                {soundCover && !coverFailed ? (
+                  <img
+                    className="sound-cover"
+                    src={soundCover}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    onError={() => setCoverFailed(true)}
+                  />
+                ) : null}
+                <span className="sound-icon-glyph">
+                  <MusicIcon />
+                </span>
               </span>
               <span className="sound-text">
                 <span className="sound-title">{soundTitle || "Sound TikTok"}</span>
@@ -539,19 +648,33 @@ export function ResultView({ result }: { result: FindResult }) {
                   <OpenIcon />
                 </a>
               ) : null}
-              {soundAudio ? (
-                <a
+              {soundAudio && videoId ? (
+                <button
+                  type="button"
                   className="sound-btn is-primary"
-                  href={soundAudio}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Unduh audio dari video"
-                  title="Unduh audio"
+                  onClick={handleDownload}
+                  disabled={audioBusy}
+                  aria-busy={audioBusy}
+                  aria-label={audioBusy ? "Mengunduh audio" : "Unduh audio dari video"}
+                  title={audioBusy ? "Mengunduh audio" : "Unduh audio"}
                 >
-                  <DownloadIcon />
-                </a>
+                  {audioBusy ? <span className="spinner" aria-hidden="true" /> : <DownloadIcon />}
+                </button>
               ) : null}
             </div>
+            {audioError ? (
+              <p className="sound-error" role="status">
+                {audioError}
+                {soundAudio ? (
+                  <>
+                    {" "}
+                    <a href={soundAudio} target="_blank" rel="noopener noreferrer">
+                      Buka audio
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </section>
