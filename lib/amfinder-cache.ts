@@ -9,9 +9,12 @@ type CacheEntry = {
   ttl?: unknown;
   v?: {
     video?: {
+      playUrl?: unknown;
+      playUrlNoWm?: unknown;
       music?: {
         title?: unknown;
         playUrl?: unknown;
+        original?: unknown;
       } | null;
     } | null;
   } | null;
@@ -38,7 +41,12 @@ async function loadCache(): Promise<CacheFile | null> {
   }
 }
 
-export type CachedSound = { title: string; playUrl: string };
+export type CachedSound = {
+  title: string;
+  playUrl: string;
+  original: boolean;
+  videoPlayUrl: string | null;
+};
 
 /**
  * Ambil sound dari cache hasil /api/find. Tidak pernah scraping dan tidak
@@ -58,7 +66,8 @@ export async function cachedSoundForVideo(videoId: string): Promise<CachedSound 
   const ttl = typeof entry.ttl === "number" ? entry.ttl : 3600;
   if (Date.now() - entry.t >= ttl * 1000) return null;
 
-  const music = entry.v?.video?.music;
+  const video = entry.v?.video;
+  const music = video?.music;
   if (!music || typeof music.playUrl !== "string") return null;
 
   const playUrl = soundUrl(music.playUrl);
@@ -67,5 +76,8 @@ export async function cachedSoundForVideo(videoId: string): Promise<CachedSound 
   return {
     title: cleanSoundTitle(music.title, 80),
     playUrl,
+    original: music.original === true,
+    videoPlayUrl:
+      soundUrl(video?.playUrlNoWm) || soundUrl(video?.playUrl) || null,
   };
 }

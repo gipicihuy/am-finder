@@ -1,4 +1,5 @@
-import { cachedSoundForVideo } from "@/lib/amfinder-cache";
+import { spawn } from "node:child_process";
+import { cachedSoundForVideo, type CachedSound } from "@/lib/amfinder-cache";
 import {
   contentDisposition,
   parseSoundUrl,
@@ -13,6 +14,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 15 * 1024 * 1024;
+const MAX_EXACT_BYTES = 15 * 1024 * 1024;
+const PROBE_TIMEOUT_MS = 8_000;
+const DURATION_TOLERANCE_SEC = 1;
 const MAX_REDIRECTS = 3;
 const HEADER_TIMEOUT_MS = 12_000;
 const TOTAL_TIMEOUT_MS = 90_000;
@@ -147,6 +151,208 @@ async function fetchUpstream(initial: URL, signal: AbortSignal): Promise<Respons
   }
 }
 
+function probeDuration(rawUrl: string, signal: AbortSignal): Promise<number | null> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve(null);
+      return;
+    }
+    const proc = spawn(
+      "ffprobe",
+      [
+        "-v",
+        "error",
+        "-user_agent",
+        UA,
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=nw=1:nk=1",
+        rawUrl,
+      ],
+      { stdio: ["ignore", "pipe", "ignore"] },
+    );
+    let out = "";
+    let done = false;
+    const finish = (value: number | null) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      resolve(value);
+    };
+    const onAbort = () => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* proses sudah mati */
+      }
+      finish(null);
+    };
+    const timer = setTimeout(() => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* proses sudah mati */
+      }
+      finish(null);
+    }, PROBE_TIMEOUT_MS);
+    signal.addEventListener("abort", onAbort, { once: true });
+    proc.stdout?.on("data", (chunk: Buffer) => {
+      if (out.length < 64) out += chunk.toString();
+    });
+    proc.on("error", () => finish(null));
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        finish(null);
+        return;
+      }
+      const value = Number.parseFloat(out.trim());
+      finish(Number.isFinite(value) && value > 0 ? value : null);
+    });
+  });
+}
+
+async function exactAudioResponse(
+  video: URL,
+  sound: CachedSound,
+  id: string,
+  signal: AbortSignal,
+  onDone: () => void,
+): Promise<Response | null> {
+  const proc = spawn(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-user_agent",
+      UA,
+      "-i",
+      video.toString(),
+      "-vn",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-movflags",
+      "frag_keyframe+empty_moov",
+      "-f",
+      "mp4",
+      "pipe:1",
+    ],
+    { stdio: ["ignore", "pipe", "pipe"] },
+  );
+
+  const headers = new Headers({
+    "Content-Type": "audio/mp4",
+    "Content-Disposition": contentDisposition(
+      soundFileName(sound.title, id, "audio/mp4"),
+      soundFileName("", id, "audio/mp4"),
+    ),
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Accept-Ranges": "none",
+  });
+
+  return new Promise((resolve) => {
+    let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let buffered: Uint8Array[] = [];
+    let sent = 0;
+    let settled = false;
+    let finished = false;
+
+    const kill = () => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* proses sudah mati */
+      }
+    };
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      signal.removeEventListener("abort", kill);
+      kill();
+      onDone();
+    };
+    signal.addEventListener("abort", kill, { once: true });
+
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      kill();
+      resolve(null);
+    };
+
+    proc.stdout?.on("data", (chunk: Buffer) => {
+      if (settled && !controller) return;
+      sent += chunk.byteLength;
+      if (sent > MAX_EXACT_BYTES) {
+        if (controller) {
+          try {
+            controller.error(new Error("file audio terlalu besar"));
+          } catch {
+            /* stream sudah ditutup */
+          }
+          finish();
+        } else {
+          fail();
+        }
+        return;
+      }
+      const value = new Uint8Array(chunk);
+      if (controller) {
+        try {
+          controller.enqueue(value);
+        } catch {
+          kill();
+        }
+        return;
+      }
+      buffered.push(value);
+      if (settled) return;
+
+      settled = true;
+      const stream = new ReadableStream<Uint8Array>({
+        start(next) {
+          controller = next;
+          for (const item of buffered) next.enqueue(item);
+          buffered = [];
+        },
+        cancel() {
+          finish();
+        },
+      });
+      resolve(new Response(stream, { status: 200, headers }));
+    });
+
+    proc.stderr?.resume();
+    proc.on("error", () => fail());
+    proc.on("close", (code) => {
+      if (!settled) {
+        fail();
+        return;
+      }
+      if (!controller) return;
+      if (code === 0) {
+        try {
+          controller.close();
+        } catch {
+          /* stream sudah ditutup */
+        }
+      } else {
+        try {
+          controller.error(new Error("gagal mengekstrak audio"));
+        } catch {
+          /* stream sudah ditutup */
+        }
+      }
+      finish();
+    });
+  });
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -181,10 +387,12 @@ export async function GET(
   const onRequestAbort = () => abortCtrl.abort();
   request.signal.addEventListener("abort", onRequestAbort, { once: true });
   const totalTimer = setTimeout(() => abortCtrl.abort(), TOTAL_TIMEOUT_MS);
-  let headerTimer: ReturnType<typeof setTimeout> | null = setTimeout(
-    () => abortCtrl.abort(),
-    HEADER_TIMEOUT_MS,
-  );
+  let headerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const armHeaderTimer = () => {
+    if (headerTimer) clearTimeout(headerTimer);
+    headerTimer = setTimeout(() => abortCtrl.abort(), HEADER_TIMEOUT_MS);
+  };
 
   const cleanup = () => {
     if (finished) return;
@@ -201,6 +409,34 @@ export async function GET(
     return audioError(404, "Audio tidak tersedia atau link sudah kedaluwarsa");
   }
 
+  const videoInitial = sound.videoPlayUrl ? parseSoundUrl(sound.videoPlayUrl) : null;
+  let useExact = !!videoInitial && !sound.original;
+  if (videoInitial && sound.original) {
+    const [musicDuration, videoDuration] = await Promise.all([
+      probeDuration(sound.playUrl, abortCtrl.signal),
+      probeDuration(videoInitial.toString(), abortCtrl.signal),
+    ]);
+    useExact =
+      musicDuration !== null &&
+      videoDuration !== null &&
+      Math.abs(musicDuration - videoDuration) > DURATION_TOLERANCE_SEC;
+  }
+  if (useExact && videoInitial) {
+    const exact = await exactAudioResponse(
+      videoInitial,
+      sound,
+      id,
+      abortCtrl.signal,
+      cleanup,
+    );
+    if (exact) return exact;
+  }
+  if (abortCtrl.signal.aborted) {
+    cleanup();
+    return audioError(408, "Permintaan dibatalkan");
+  }
+
+  armHeaderTimer();
   let upstream: Response;
   try {
     upstream = await fetchUpstream(initial, abortCtrl.signal);
