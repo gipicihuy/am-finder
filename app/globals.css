@@ -774,21 +774,28 @@ body::before {
 .sound-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
+/* Tanpa cover: kotak dengan ikon not di tengah. */
 .sound-icon {
   position: relative;
   flex: none;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  overflow: hidden;
+  width: 54px;
+  height: 54px;
+  box-sizing: border-box;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
   color: var(--accent);
+}
+
+/* Dengan cover: foto tampil utuh, ikon not pindah jadi lencana di pojok kanan bawah. */
+.sound-icon.has-cover {
+  border: 0;
+  background: none;
 }
 
 .sound-cover {
@@ -796,14 +803,10 @@ body::before {
   inset: 0;
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   object-fit: cover;
-}
-
-.sound-icon.has-cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.38);
 }
 
 .sound-icon-glyph {
@@ -811,6 +814,24 @@ body::before {
   z-index: 1;
   display: grid;
   place-items: center;
+}
+
+.sound-icon.has-cover .sound-icon-glyph {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 3px var(--background);
+}
+
+.sound-icon.has-cover .sound-icon-glyph svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.6;
 }
 
 .sound-text {
