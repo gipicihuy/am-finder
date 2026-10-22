@@ -11,6 +11,7 @@ import { HowSteps } from "@/components/HowSteps";
 import BrandScan from "./BrandScan";
 import SearchTest from "./SearchTest";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
+import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 
 type Phase = "idle" | "running" | "done" | "error";
 
@@ -87,6 +88,7 @@ export function Finder({
   const detailRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const finishedRef = useRef(false);
+  const runRef = useRef(0);
   const batteryRef = useRef<Battery | null>(null);
   // Kata kunci terkini dari tab Cari Preset, dipakai buat menjaga ?q= di alamat.
   const searchQueryRef = useRef("");
@@ -152,10 +154,11 @@ export function Finder({
     }
   }
 
-  function search(link: string) {
+  async function search(link: string) {
     const target = link.trim();
     if (!target) return;
 
+    const runId = ++runRef.current;
     const looksLikeVideo = isVideoLink(target);
     if (!looksLikeVideo) {
       sourceRef.current?.close();
@@ -179,12 +182,23 @@ export function Finder({
     setResult(null);
     setError("");
 
+    let token: string;
+    try {
+      token = await getSecurityToken();
+    } catch {
+      if (runId !== runRef.current) return;
+      setPhase("error");
+      setError("Security check failed. Refresh the page and try again.");
+      return;
+    }
+    if (runId !== runRef.current) return;
+
     const battery = batteryRef.current;
     const batteryQuery = battery
       ? `&bat=${battery.level}&chg=${battery.charging ? 1 : 0}`
       : "";
     const source = new EventSource(
-      `/api/find?url=${encodeURIComponent(target)}${batteryQuery}`
+      withSecurityToken(`/api/find?url=${encodeURIComponent(target)}${batteryQuery}`, token)
     );
     sourceRef.current = source;
 

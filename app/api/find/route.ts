@@ -4,6 +4,7 @@ import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordUrl, recordVisit } from "../../../lib/monitor";
 import { isBareVideoId, videoIdOf } from "../../../lib/tiktok-link";
+import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -147,6 +148,15 @@ function encode(event: string, data: unknown) {
 }
 
 export async function GET(request: Request) {
+  const guard = guardRequest(request);
+  if (!guard.ok) {
+    return Response.json(
+      { ok: false, error: guard.error },
+      { status: guard.status, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  if (guard.poison) return poisonResponse("find");
+
   const params = new URL(request.url).searchParams;
   const target = normalizeTarget(params.get("url"));
   if (!target) {

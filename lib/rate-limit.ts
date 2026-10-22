@@ -45,6 +45,11 @@ const SCOPES = {
   // Unduhan audio: satu klik bisa menarik file beberapa ratus KB. Batasnya
   // lebih ketat dari API biasa; konkurensi global diatur di route /api/audio.
   audio: { burst: 2, burstMs: 10_000, sustained: 5, sustainedMs: 60_000, penaltyAt: 8, penaltyMs: 60_000 },
+  // Handshake anti-scrape: mahal di client (HMAC chain), jadi jangan sampai
+  // satu IP bisa mengambil challenge tanpa henti.
+  handshake: { burst: 8, burstMs: 10_000, sustained: 30, sustainedMs: 60_000, penaltyAt: 50, penaltyMs: 60_000 },
+  // Laporan dari client (honeypot / runtime watcher).
+  security: { burst: 6, burstMs: 10_000, sustained: 20, sustainedMs: 60_000, penaltyAt: 35, penaltyMs: 60_000 },
 } as const satisfies Record<string, ScopeConfig>;
 
 export type Scope = keyof typeof SCOPES;

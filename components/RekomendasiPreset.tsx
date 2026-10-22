@@ -5,6 +5,7 @@ import type { FindResult, RekomenFeed } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "@/components/BrandScan";
 import { SectionOrnament } from "@/components/Ornament";
+import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 
 type Detail = {
   state: "running" | "done" | "error";
@@ -32,6 +33,7 @@ export default function RekomendasiPreset() {
   const [selected, setSelected] = useState("");
   const [detail, setDetail] = useState<Detail | null>(null);
   const findRef = useRef<EventSource | null>(null);
+  const runRef = useRef(0);
 
   const load = useCallback(async (refresh: boolean) => {
     setLoading(true);
@@ -50,16 +52,33 @@ export default function RekomendasiPreset() {
 
   useEffect(() => {
     load(false);
-    return () => findRef.current?.close();
+    return () => {
+      runRef.current += 1;
+      findRef.current?.close();
+    };
   }, [load]);
 
-  function openVideo(url: string) {
+  async function openVideo(url: string) {
+    const runId = ++runRef.current;
     findRef.current?.close();
     setSelected(url);
     setDetail({ state: "running" });
     window.scrollTo({ top: 0 });
 
-    const source = new EventSource(`/api/find?url=${encodeURIComponent(url)}`);
+    let token: string;
+    try {
+      token = await getSecurityToken();
+    } catch {
+      if (runId === runRef.current) {
+        setDetail({ state: "error", message: "Security check failed. Refresh the page and try again." });
+      }
+      return;
+    }
+    if (runId !== runRef.current) return;
+
+    const source = new EventSource(
+      withSecurityToken(`/api/find?url=${encodeURIComponent(url)}`, token),
+    );
     findRef.current = source;
 
     const finish = (next: Detail) => {
@@ -93,6 +112,7 @@ export default function RekomendasiPreset() {
   }
 
   function closeVideo() {
+    runRef.current += 1;
     findRef.current?.close();
     findRef.current = null;
     setSelected("");

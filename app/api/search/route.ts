@@ -5,6 +5,7 @@ import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordCari, recordVisit } from "../../../lib/monitor";
 import { rememberQuery } from "../../../lib/suggest";
+import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -256,6 +257,15 @@ function runVideo(
 }
 
 export async function GET(request: Request) {
+  const guard = guardRequest(request);
+  if (!guard.ok) {
+    return Response.json(
+      { ok: false, error: guard.error },
+      { status: guard.status, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  if (guard.poison) return poisonResponse("search");
+
   const params = new URL(request.url).searchParams;
   const query = normalizeQuery(params.get("q"));
   if (!query) {

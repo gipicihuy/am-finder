@@ -13,6 +13,7 @@ const STATE_KEY = "amfinder:search-state";
 const STATE_TTL = 30 * 60 * 1000; // hasil pencarian yang disimpan kedaluwarsa setelah 30 menit
 import { ui } from "@/lib/ui";
 import { HowSteps } from "@/components/HowSteps";
+import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 
 const BG = "#0F0F10";
 const SURFACE = "#17171A";
@@ -129,6 +130,8 @@ export default function SearchTest({
   const [details, setDetails] = useState<Record<string, Detail>>({});
   const searchRef = useRef<EventSource | null>(null);
   const checkRef = useRef<EventSource | null>(null);
+  const searchRunRef = useRef(0);
+  const checkRunRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -525,19 +528,34 @@ export default function SearchTest({
     }
   }
 
-  function search(override?: string) {
+  async function search(override?: string) {
     const query = (override ?? q).trim();
     if (query.length < 3 || searching) return;
+    const runId = ++searchRunRef.current;
     sugSuppressRef.current = query;
     setSugOpen(false);
     setSugActive(-1);
     searchRef.current?.close();
     checkRef.current?.close();
+    checkRunRef.current += 1;
     setSearching(true);
     setError("");
     setOpenUrl("");
 
-    const source = new EventSource(`/api/search?mode=pick&q=${encodeURIComponent(query)}`);
+    let token: string;
+    try {
+      token = await getSecurityToken();
+    } catch {
+      if (runId !== searchRunRef.current) return;
+      setSearching(false);
+      setError("Security check failed. Refresh the page and try again.");
+      return;
+    }
+    if (runId !== searchRunRef.current) return;
+
+    const source = new EventSource(
+      withSecurityToken(`/api/search?mode=pick&q=${encodeURIComponent(query)}`, token),
+    );
     searchRef.current = source;
     let items: Candidate[] = [];
 
@@ -618,7 +636,7 @@ export default function SearchTest({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openUrl]);
 
-  function openVideo(url: string) {
+  async function openVideo(url: string) {
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
@@ -634,8 +652,23 @@ export default function SearchTest({
     if (details[url]?.state === "done") return;
 
     checkRef.current?.close();
+    const runId = ++checkRunRef.current;
     setDetails((prev) => ({ ...prev, [url]: { state: "running" } }));
-    const source = new EventSource(`/api/find?url=${encodeURIComponent(url)}`);
+
+    let token: string;
+    try {
+      token = await getSecurityToken();
+    } catch {
+      if (runId === checkRunRef.current) {
+        setDetails((prev) => ({ ...prev, [url]: { state: "error", message: "Security check failed." } }));
+      }
+      return;
+    }
+    if (runId !== checkRunRef.current) return;
+
+    const source = new EventSource(
+      withSecurityToken(`/api/find?url=${encodeURIComponent(url)}`, token),
+    );
     checkRef.current = source;
 
     const finish = (next: Detail) => {

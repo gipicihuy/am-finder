@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SupportModal } from "@/components/SupportModal";
 import { WaChannelToast } from "@/components/WaChannelToast";
+import { AntiScrapeGuard } from "@/components/AntiScrapeGuard";
 import "./globals.css";
 
 // Domain utama. amfinder.cc.cd dan www.amfinder.web.id juga mengarah ke situs ini.
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SiteFooter />
         <SupportModal />
         <WaChannelToast />
+        <AntiScrapeGuard />
       </body>
     </html>
   );
