@@ -81,7 +81,11 @@ async function postJson<T>(body: Record<string, unknown>): Promise<T> {
   });
   const data = (await response.json().catch(() => ({}))) as T & { ok?: boolean; error?: string };
   if (!response.ok || data.ok === false) {
-    throw new Error(data.error || `handshake HTTP ${response.status}`);
+    const error = new Error(data.error || `handshake HTTP ${response.status}`) as Error & {
+      status?: number;
+    };
+    error.status = response.status;
+    throw error;
   }
   return data;
 }
@@ -105,10 +109,7 @@ function quickRisk(): Risk {
   return { score: Math.min(score, 100), reasons };
 }
 
-export async function getSecurityToken(): Promise<string> {
-  const quick = quickRisk();
-  if (quick.score > risk.score) setClientRisk(quick.score, quick.reasons);
-
+async function handshakeOnce(): Promise<string> {
   const did = getDeviceId();
   const challenge = await postJson<{
     cid: string;
@@ -133,6 +134,20 @@ export async function getSecurityToken(): Promise<string> {
   });
 
   return ticket.token;
+}
+
+export async function getSecurityToken(): Promise<string> {
+  const quick = quickRisk();
+  if (quick.score > risk.score) setClientRisk(quick.score, quick.reasons);
+
+  try {
+    return await handshakeOnce();
+  } catch (error) {
+    const status = (error as Error & { status?: number }).status;
+    if (status !== 403 && status !== 429 && status !== undefined && status < 500) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    return handshakeOnce();
+  }
 }
 
 export function withSecurityToken(url: string, token: string): string {

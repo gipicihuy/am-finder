@@ -129,7 +129,6 @@ function installHoneypot(): () => void {
 
   box.addEventListener("input", touched, true);
   box.addEventListener("change", touched, true);
-  box.addEventListener("focusin", () => report(100, ["honeypot focused"]), true);
   box.addEventListener(
     "click",
     () => {
@@ -148,7 +147,7 @@ export function AntiScrapeGuard() {
 
     const first = detect();
     setClientRisk(first.score, first.reasons);
-    if (first.score >= 4) report(first.score, first.reasons);
+    if (first.score >= 8) report(first.score, first.reasons);
 
     let stopped = false;
     let removeHoneypot: (() => void) | null = null;
@@ -160,7 +159,7 @@ export function AntiScrapeGuard() {
       if (stopped) return;
       const next = detect();
       setClientRisk(next.score, next.reasons);
-      if (next.score >= 6) report(next.score, next.reasons);
+      if (next.score >= 8) report(next.score, next.reasons);
     };
 
     const observer = new MutationObserver((mutations) => {

@@ -18,6 +18,7 @@ const MAX_CLOCK_SKEW_MS = 45_000;
 const HMAC_ROUNDS = 4096;
 const MAX_STORE = 20_000;
 const MAX_ALERTS = 4_000;
+const FLAG_MIN_SCORE = 8;
 
 const GOOD_BOT =
   /googlebot|bingbot|duckduckbot|slurp|yandexbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|applebot|petalbot|semrushbot|ahrefsbot/i;
@@ -315,7 +316,7 @@ function flagged(headers: Headers, did: string): boolean {
       s.flags.delete(key);
       return false;
     }
-    return true;
+    return hit.score >= FLAG_MIN_SCORE;
   });
 }
 
@@ -338,12 +339,13 @@ export function markSuspicious(
 
   const s = store();
   const now = Date.now();
-  const flag = { at: now, score, reasons };
-  s.flags.set(`ip:${clientIp(headers)}`, flag);
-  if (did) s.flags.set(`did:${did}`, flag);
-  if (s.flags.size > MAX_STORE) prune(now, s);
-
-  void sendSecurityAlert(headers, { score, reasons, did, path });
+  if (score >= FLAG_MIN_SCORE) {
+    const flag = { at: now, score, reasons };
+    s.flags.set(`ip:${clientIp(headers)}`, flag);
+    if (did) s.flags.set(`did:${did}`, flag);
+    if (s.flags.size > MAX_STORE) prune(now, s);
+    void sendSecurityAlert(headers, { score, reasons, did, path });
+  }
   return score;
 }
 
@@ -408,11 +410,19 @@ export function guardRequest(request: Request): GuardResult {
 
   const serverScore = scoreHeaders(request.headers);
   const score = Math.max(serverScore, checked.ticket.sc || 0);
-  const poison = flagged(request.headers, checked.ticket.did) || score >= 8;
+  const isFlagged = flagged(request.headers, checked.ticket.did);
+  const poison = isFlagged || score >= FLAG_MIN_SCORE;
   if (poison) {
+    console.warn("[security] poison", {
+      score,
+      flagged: isFlagged,
+      path: url.pathname,
+      headerScore: serverScore,
+      clientScore: checked.ticket.sc || 0,
+    });
     void sendSecurityAlert(request.headers, {
       score,
-      reasons: ["risk threshold"],
+      reasons: [isFlagged ? "flagged device/ip" : "risk threshold"],
       did: checked.ticket.did,
       path: url.pathname,
     });
