@@ -1,7 +1,7 @@
 import { AmLogo } from "@/components/AmLogo";
 import { getUi } from "@/lib/ui";
 import { getLocale } from "@/lib/locale-server";
-import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { LanguageMenu } from "@/components/LanguageMenu";
 
 export async function SiteHeader() {
   const ui = getUi(await getLocale());
@@ -17,7 +17,7 @@ export async function SiteHeader() {
           <p className="nav-tagline">{ui.header.tagline}</p>
         </div>
 
-        <LanguageSwitch />
+        <LanguageMenu />
       </div>
     </header>
   );
