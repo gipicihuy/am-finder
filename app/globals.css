@@ -155,23 +155,35 @@ img {
   padding: 0 14px;
   border-right: 1px solid var(--border);
   color: var(--accent);
-  transition: border-color 0.18s ease 0.14s;
-}
-
-.nav-logo svg,
-.nav-name {
-  transition: opacity 0.18s ease 0.14s;
+  transition: border-color 0.2s ease;
 }
 
 html[data-menu="open"] .nav-logo {
   border-right-color: transparent;
-  transition: border-color 0.14s ease;
 }
 
 html[data-menu="open"] .nav-logo svg,
 html[data-menu="open"] .nav-name {
   opacity: 0;
-  transition: opacity 0.14s ease;
+}
+
+html[data-flying] .drawer-logo svg,
+html[data-flying] .drawer-name {
+  opacity: 0;
+}
+
+.brand-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  pointer-events: none;
+}
+
+.brand-flight > * {
+  position: absolute;
+  margin: 0;
+  white-space: nowrap;
+  will-change: transform;
 }
 
 .nav-title {
@@ -3510,9 +3522,7 @@ a.drawer-item:hover {
   .drawer,
   .drawer-backdrop,
   .drawer-panel,
-  .nav-logo,
-  .nav-logo svg,
-  .nav-name {
+  .nav-logo {
     transition: none;
   }
 }

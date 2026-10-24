@@ -8,6 +8,7 @@ import { AmLogo } from "@/components/AmLogo";
 import { LOCALES, type Locale } from "@/lib/i18n";
 import { APK_URL } from "@/lib/app-links";
 import { isInAndroidApp, isIos } from "@/lib/in-app";
+import { clearBrandFlight, flyBrand, prefersReducedMotion } from "@/lib/brand-flight";
 import { useLocale, useUi } from "@/components/LocaleProvider";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -117,28 +118,48 @@ export function SideMenu() {
   const openerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const openRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
     setShowApk(!isInAndroidApp() && !isIos());
   }, []);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  useEffect(
+    () => () => {
+      clearBrandFlight();
+      delete document.documentElement.dataset.menu;
+    },
+    [],
+  );
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (open) root.dataset.menu = "open";
-    return () => {
-      delete root.dataset.menu;
-    };
-  }, [open]);
-
-  const close = useCallback(() => {
-    setOpen(false);
-    openerRef.current?.focus();
+  const openMenu = useCallback(() => {
+    const panel = panelRef.current;
+    openRef.current = true;
+    const flying = panel && !prefersReducedMotion() ? flyBrand("in", panel, () => undefined) : false;
+    if (!flying) clearBrandFlight();
+    document.documentElement.dataset.menu = "open";
+    setOpen(true);
   }, []);
+
+  const closeMenu = useCallback((refocus = true) => {
+    const panel = panelRef.current;
+    openRef.current = false;
+    const finish = () => {
+      delete document.documentElement.dataset.menu;
+    };
+    const flying = panel && !prefersReducedMotion() ? flyBrand("out", panel, finish) : false;
+    if (!flying) {
+      clearBrandFlight();
+      finish();
+    }
+    setOpen(false);
+    if (refocus) openerRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (openRef.current) closeMenu(false);
+  }, [pathname, closeMenu]);
 
   useEffect(() => {
     if (!open) return;
@@ -149,7 +170,7 @@ export function SideMenu() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        close();
+        closeMenu();
         return;
       }
       if (event.key !== "Tab" || !panelRef.current) return;
@@ -173,23 +194,23 @@ export function SideMenu() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, close]);
+  }, [open, closeMenu]);
 
   const [donate, whatsapp] = ui.footer.columns[0].items;
   const legal = ui.footer.columns[1].items;
   const finderActive = isFinderPath(pathname);
-  const dismiss = () => setOpen(false);
+  const dismiss = () => closeMenu(false);
 
   const drawer = (
     <div className="drawer" data-open={open} inert={!open}>
-      <div className="drawer-backdrop" onClick={close} />
+      <div className="drawer-backdrop" onClick={() => closeMenu()} />
       <div className="drawer-panel" role="dialog" aria-modal="true" aria-label={ui.menu.title} ref={panelRef}>
         <div className="drawer-head">
           <Link className="drawer-logo" href="/" aria-label={ui.header.homeLabel} onClick={dismiss}>
             <AmLogo size={32} />
           </Link>
           <span className="drawer-name">{ui.header.brand}</span>
-          <button ref={closeRef} type="button" className="drawer-close" aria-label={ui.menu.close} onClick={close}>
+          <button ref={closeRef} type="button" className="drawer-close" aria-label={ui.menu.close} onClick={() => closeMenu()}>
             <CloseIcon />
           </button>
         </div>
@@ -283,7 +304,7 @@ export function SideMenu() {
         aria-label={ui.menu.open}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen(true)}
+        onClick={openMenu}
       >
         <MenuIcon />
       </button>
