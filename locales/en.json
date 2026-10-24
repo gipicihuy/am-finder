@@ -11,6 +11,22 @@
   "common": {
     "close": "Close"
   },
+  "menu": {
+    "title": "Menu",
+    "open": "Open menu",
+    "close": "Close menu",
+    "comingSoon": "Coming soon",
+    "groups": {
+      "presets": "Presets",
+      "support": "Support"
+    },
+    "items": {
+      "find": "Find Presets",
+      "history": "History",
+      "whatsapp": "WhatsApp Channel",
+      "donate": "Support"
+    }
+  },
   "home": {
     "tagline": "Find Alight Motion presets from any TikTok or YouTube link",
     "title": "Find preset links"

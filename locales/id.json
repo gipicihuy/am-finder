@@ -11,6 +11,22 @@
   "common": {
     "close": "Tutup"
   },
+  "menu": {
+    "title": "Menu",
+    "open": "Buka menu",
+    "close": "Tutup menu",
+    "comingSoon": "Segera hadir",
+    "groups": {
+      "presets": "Preset",
+      "support": "Support"
+    },
+    "items": {
+      "find": "Cari Preset",
+      "history": "Histori",
+      "whatsapp": "Saluran WhatsApp",
+      "donate": "Dukungan"
+    }
+  },
   "home": {
     "tagline": "Temukan preset Alight Motion dari link TikTok atau YouTube mana pun",
     "title": "Cari link preset"
