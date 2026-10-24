@@ -6,6 +6,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AmLogo } from "@/components/AmLogo";
 import { LOCALES, type Locale } from "@/lib/i18n";
+import { APK_URL } from "@/lib/app-links";
+import { isInAndroidApp, isIos } from "@/lib/in-app";
 import { useLocale, useUi } from "@/components/LocaleProvider";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -60,6 +62,14 @@ function ChatIcon() {
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 4v11M7.5 11.5L12 16l4.5-4.5M5 20h14" />
+    </svg>
+  );
+}
+
 function HeartIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -103,12 +113,14 @@ export function SideMenu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showApk, setShowApk] = useState(false);
   const openerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+    setShowApk(!isInAndroidApp() && !isIos());
   }, []);
 
   useEffect(() => {
@@ -194,6 +206,16 @@ export function SideMenu() {
               </span>
             </div>
           </div>
+
+          {showApk && (
+            <div className="drawer-group">
+              <p className="drawer-label">{ui.menu.groups.app}</p>
+              <a className="drawer-item" href={APK_URL} target="_blank" rel="noopener noreferrer">
+                <DownloadIcon />
+                <span>{ui.menu.items.apk}</span>
+              </a>
+            </div>
+          )}
 
           <div className="drawer-group">
             <p className="drawer-label">{ui.menu.groups.support}</p>

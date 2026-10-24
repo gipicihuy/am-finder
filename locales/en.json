@@ -18,11 +18,13 @@
     "comingSoon": "Coming soon",
     "groups": {
       "presets": "Presets",
+      "app": "App",
       "support": "Support"
     },
     "items": {
       "find": "Find Presets",
       "history": "History",
+      "apk": "Download Android App",
       "whatsapp": "WhatsApp Channel",
       "donate": "Donate"
     }

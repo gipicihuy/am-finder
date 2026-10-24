@@ -18,11 +18,13 @@
     "comingSoon": "Segera hadir",
     "groups": {
       "presets": "Preset",
+      "app": "Aplikasi",
       "support": "Dukungan"
     },
     "items": {
       "find": "Cari Preset",
       "history": "Histori",
+      "apk": "Unduh Aplikasi Android",
       "whatsapp": "Saluran WhatsApp",
       "donate": "Donasi"
     }
