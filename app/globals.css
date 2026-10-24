@@ -155,16 +155,23 @@ img {
   padding: 0 14px;
   border-right: 1px solid var(--border);
   color: var(--accent);
+  transition: border-color 0.18s ease 0.14s;
 }
 
 .nav-logo svg,
 .nav-name {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease 0.14s;
+}
+
+html[data-menu="open"] .nav-logo {
+  border-right-color: transparent;
+  transition: border-color 0.14s ease;
 }
 
 html[data-menu="open"] .nav-logo svg,
 html[data-menu="open"] .nav-name {
   opacity: 0;
+  transition: opacity 0.14s ease;
 }
 
 .nav-title {
@@ -3242,7 +3249,7 @@ body::before {
   inset: 0;
   z-index: 120;
   visibility: hidden;
-  transition: visibility 0s linear 0.24s;
+  transition: visibility 0s linear 0.28s;
 }
 
 .drawer[data-open="true"] {
@@ -3255,7 +3262,7 @@ body::before {
   inset: 0;
   background: rgba(0, 0, 0, 0.62);
   opacity: 0;
-  transition: opacity 0.24s ease;
+  transition: opacity 0.28s ease;
 }
 
 .drawer[data-open="true"] .drawer-backdrop {
@@ -3273,7 +3280,7 @@ body::before {
   background: var(--background);
   border-left: 1px solid var(--border);
   transform: translateX(100%);
-  transition: transform 0.24s ease;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .drawer[data-open="true"] .drawer-panel {
@@ -3503,6 +3510,7 @@ a.drawer-item:hover {
   .drawer,
   .drawer-backdrop,
   .drawer-panel,
+  .nav-logo,
   .nav-logo svg,
   .nav-name {
     transition: none;
