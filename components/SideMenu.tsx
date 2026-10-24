@@ -127,6 +127,14 @@ export function SideMenu() {
     setOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (open) root.dataset.menu = "open";
+    return () => {
+      delete root.dataset.menu;
+    };
+  }, [open]);
+
   const close = useCallback(() => {
     setOpen(false);
     openerRef.current?.focus();

@@ -157,6 +157,16 @@ img {
   color: var(--accent);
 }
 
+.nav-logo svg,
+.nav-name {
+  transition: opacity 0.2s ease;
+}
+
+html[data-menu="open"] .nav-logo svg,
+html[data-menu="open"] .nav-name {
+  opacity: 0;
+}
+
 .nav-title {
   display: flex;
   flex: 1 1 0;
@@ -3492,7 +3502,9 @@ a.drawer-item:hover {
 @media (prefers-reduced-motion: reduce) {
   .drawer,
   .drawer-backdrop,
-  .drawer-panel {
+  .drawer-panel,
+  .nav-logo svg,
+  .nav-name {
     transition: none;
   }
 }
