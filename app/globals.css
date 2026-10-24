@@ -153,13 +153,7 @@ img {
   justify-content: center;
   flex: none;
   padding: 0 14px;
-  border-right: 1px solid var(--border);
   color: var(--accent);
-  transition: border-color 0.2s ease;
-}
-
-html[data-menu="open"] .nav-logo {
-  border-right-color: transparent;
 }
 
 html[data-menu="open"] .nav-logo svg,
@@ -3313,7 +3307,6 @@ body::before {
   align-items: center;
   justify-content: center;
   width: 60px;
-  border-right: 1px solid var(--border);
   color: var(--accent);
 }
 
@@ -3521,8 +3514,7 @@ a.drawer-item:hover {
 @media (prefers-reduced-motion: reduce) {
   .drawer,
   .drawer-backdrop,
-  .drawer-panel,
-  .nav-logo {
+  .drawer-panel {
     transition: none;
   }
 }
