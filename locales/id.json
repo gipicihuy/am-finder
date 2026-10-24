@@ -18,13 +18,13 @@
     "comingSoon": "Segera hadir",
     "groups": {
       "presets": "Preset",
-      "support": "Support"
+      "support": "Dukungan"
     },
     "items": {
       "find": "Cari Preset",
       "history": "Histori",
       "whatsapp": "Saluran WhatsApp",
-      "donate": "Dukungan"
+      "donate": "Donasi"
     }
   },
   "home": {

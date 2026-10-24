@@ -3285,6 +3285,7 @@ body::before {
   justify-content: center;
   width: 60px;
   border-right: 1px solid var(--border);
+  color: var(--accent);
 }
 
 .drawer-name {
@@ -3366,6 +3367,7 @@ body::before {
 
 a.drawer-item:hover {
   background: var(--surface);
+  color: var(--foreground);
 }
 
 .drawer-item[aria-current="page"] {
@@ -3380,8 +3382,15 @@ a.drawer-item:hover {
   cursor: default;
 }
 
+.drawer-item-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
 .drawer-badge {
-  margin-left: auto;
   padding: 2px 7px;
   border: 1px solid var(--border);
   font-size: 11px;
@@ -3430,17 +3439,11 @@ a.drawer-item:hover {
   height: 38px;
   border: 1px solid var(--border);
   border-radius: 0;
-  color: var(--accent);
 }
 
 .drawer-card-icon svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 24px;
+  height: 16px;
 }
 
 .drawer-card-text {

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AmLogo } from "@/components/AmLogo";
-import { LOCALES } from "@/lib/i18n";
+import { LOCALES, type Locale } from "@/lib/i18n";
 import { useLocale, useUi } from "@/components/LocaleProvider";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -68,11 +68,31 @@ function HeartIcon() {
   );
 }
 
-function GlobeIcon() {
+function FlagIcon({ code }: { code: Locale }) {
+  const uid = useId().replace(/:/g, "");
+  if (code === "id") {
+    return (
+      <svg viewBox="0 0 3 2" aria-hidden="true" focusable="false">
+        <rect width="3" height="1" fill="#CE1126" />
+        <rect y="1" width="3" height="1" fill="#FFFFFF" />
+      </svg>
+    );
+  }
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
+    <svg viewBox="0 0 60 30" aria-hidden="true" focusable="false">
+      <clipPath id={`${uid}-s`}>
+        <path d="M0,0 v30 h60 v-30 z" />
+      </clipPath>
+      <clipPath id={`${uid}-t`}>
+        <path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z" />
+      </clipPath>
+      <g clipPath={`url(#${uid}-s)`}>
+        <path d="M0,0 v30 h60 v-30 z" fill="#012169" />
+        <path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" strokeWidth="6" />
+        <path d="M0,0 L60,30 M60,0 L0,30" clipPath={`url(#${uid}-t)`} stroke="#C8102E" strokeWidth="4" />
+        <path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" strokeWidth="10" />
+        <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" strokeWidth="6" />
+      </g>
     </svg>
   );
 }
@@ -168,8 +188,10 @@ export function SideMenu() {
             </Link>
             <div className="drawer-item is-disabled" aria-disabled="true">
               <ClockIcon />
-              <span>{ui.menu.items.history}</span>
-              <span className="drawer-badge">{ui.menu.comingSoon}</span>
+              <span className="drawer-item-text">
+                {ui.menu.items.history}
+                <span className="drawer-badge">{ui.menu.comingSoon}</span>
+              </span>
             </div>
           </div>
 
@@ -196,7 +218,7 @@ export function SideMenu() {
           </div>
           <div className="drawer-card">
             <span className="drawer-card-icon">
-              <GlobeIcon />
+              <FlagIcon code={locale} />
             </span>
             <span className="drawer-card-text">
               <b>{ui.lang.label}</b>
