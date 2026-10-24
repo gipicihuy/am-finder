@@ -219,6 +219,14 @@ body::before {
 }
 
 /* page head */
+.page-tagline {
+  margin: 0 0 8px;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .page-title {
   display: flex;
   align-items: center;

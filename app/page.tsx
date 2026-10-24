@@ -7,6 +7,7 @@ export default async function HomePage() {
   const ui = getUi(await getLocale());
   return (
     <>
+      <p className="page-tagline">{ui.home.tagline}</p>
       <h1 className="page-title">
         <span className="section-ornament" aria-hidden="true">
           <SectionOrnament />
