@@ -48,9 +48,9 @@ export function LanguageMenu() {
       >
         <svg width="28" height="28" viewBox="0 0 256 256" aria-hidden="true" focusable="false">
           <g fill="currentColor">
-            <rect x="24" y="64" width="208" height="24" rx="12" />
-            <rect x="44" y="114" width="188" height="24" rx="12" />
-            <rect x="64" y="164" width="168" height="24" rx="12" />
+            <rect x="32" y="60" width="192" height="24" rx="12" />
+            <rect x="32" y="116" width="192" height="24" rx="12" />
+            <rect x="32" y="172" width="192" height="24" rx="12" />
           </g>
         </svg>
       </button>

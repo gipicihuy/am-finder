@@ -176,13 +176,6 @@ img {
   color: var(--foreground);
 }
 
-.nav-tagline {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--muted);
-}
-
 @media (min-width: 480px) {
   .nav-logo {
     padding: 0 20px;
@@ -190,10 +183,6 @@ img {
 
   .nav-title {
     padding: 12px 20px;
-  }
-
-  .nav-tagline {
-    font-size: 12.5px;
   }
 }
 
@@ -3211,7 +3200,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
+  width: 60px;
   padding: 0;
   border: 0;
   border-radius: 0;

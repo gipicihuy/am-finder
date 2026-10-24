@@ -14,7 +14,6 @@ export async function SiteHeader() {
 
         <div className="nav-title">
           <span className="nav-name">{ui.header.brand}</span>
-          <p className="nav-tagline">{ui.header.tagline}</p>
         </div>
 
         <LanguageMenu />
