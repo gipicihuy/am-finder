@@ -111,6 +111,7 @@ export default function SearchTest({
   const [sugActive, setSugActive] = useState(-1);
   const sugAbort = useRef<AbortController | null>(null);
   const sugSuppressRef = useRef("");
+  const sugFocusedRef = useRef(false);
   const sugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sugBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [indexReady, setIndexReady] = useState(false);
@@ -216,7 +217,7 @@ export default function SearchTest({
     const local = localSuggest(query);
     if (local.length) {
       setSuggests(local);
-      setSugOpen(true);
+      setSugOpen(sugFocusedRef.current);
       setSugActive(-1);
     } else {
       setSuggests([]);
@@ -240,7 +241,7 @@ export default function SearchTest({
               if (!merged.includes(item)) merged.push(item);
             }
             setSuggests(merged.slice(0, 8));
-            setSugOpen(merged.length > 0);
+            setSugOpen(merged.length > 0 && sugFocusedRef.current);
             setSugActive(-1);
           })
           .catch(() => {
@@ -264,6 +265,7 @@ export default function SearchTest({
   useEffect(() => () => sugAbort.current?.abort(), []);
 
   function onSuggestFocus() {
+    sugFocusedRef.current = true;
     const query = q.trim();
     if (openUrl || query.length < 2 || query === sugSuppressRef.current) return;
     if (sugBlurTimer.current) clearTimeout(sugBlurTimer.current);
@@ -278,6 +280,7 @@ export default function SearchTest({
   }
 
   function onSuggestBlur() {
+    sugFocusedRef.current = false;
     if (sugBlurTimer.current) clearTimeout(sugBlurTimer.current);
     sugBlurTimer.current = setTimeout(() => setSugOpen(false), 80);
   }
@@ -362,6 +365,7 @@ export default function SearchTest({
         return;
       }
       setCands(saved.cands);
+      sugSuppressRef.current = (saved.q || "").trim();
       setQ(saved.q || "");
       setSearchedQuery(saved.query || "");
       setCandLimit(saved.limit || 3);
