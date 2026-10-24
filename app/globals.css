@@ -194,12 +194,12 @@ a:focus-visible {
 }
 
 .main {
-  padding-block: 44px 32px;
+  padding-block: 24px 32px;
 }
 
 @media (min-width: 768px) {
   .main {
-    padding-block: 60px 40px;
+    padding-block: 36px 40px;
   }
 }
 
