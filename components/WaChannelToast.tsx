@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WhatsAppIcon } from "@/components/ShareIcons";
+import { useUi } from "@/components/LocaleProvider";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 
 const CHANNEL_URL = "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r";
@@ -13,6 +14,7 @@ const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
  * Sekali per page load (tidak muncul lagi setelah ditutup), tanpa localStorage/cookie.
  */
 export function WaChannelToast() {
+  const ui = useUi();
   const [phase, setPhase] = useState<"idle" | "in" | "out" | "gone">("idle");
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -58,18 +60,18 @@ export function WaChannelToast() {
       ref={rootRef}
       className={phase === "out" ? "wa-toast is-leaving" : "wa-toast"}
       role="group"
-      aria-label="Saluran WhatsApp AM Finder"
+      aria-label={ui.toast.waLabel}
     >
       <a className="wa-toast-link" href={CHANNEL_URL} target="_blank" rel="noopener noreferrer">
         <span className="wa-toast-head">
           <span className="wa-toast-chip">
             <WhatsAppIcon />
           </span>
-          <span>Join saluran wa AM Finder</span>
+          <span>{ui.toast.waTitle}</span>
         </span>
-        <span className="wa-toast-body">Agar mendapatkan info update terbaru</span>
+        <span className="wa-toast-body">{ui.toast.waBody}</span>
       </a>
-      <button type="button" className="wa-toast-close" onClick={close} aria-label="Tutup">
+      <button type="button" className="wa-toast-close" onClick={close} aria-label={ui.common.close}>
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
           <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
         </svg>

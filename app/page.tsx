@@ -1,14 +1,17 @@
 import { Finder } from "@/components/Finder";
 import { SectionOrnament } from "@/components/Ornament";
+import { getLocale } from "@/lib/locale-server";
+import { getUi } from "@/lib/ui";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const ui = getUi(await getLocale());
   return (
     <>
       <h1 className="page-title">
         <span className="section-ornament" aria-hidden="true">
           <SectionOrnament />
         </span>
-        Find preset links
+        {ui.home.title}
       </h1>
       <Finder />
     </>

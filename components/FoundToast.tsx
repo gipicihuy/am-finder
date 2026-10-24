@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useUi } from "@/components/LocaleProvider";
+import { format } from "@/lib/i18n";
 
 const HOLD_MS = 5750; // lama toast terlihat penuh (+ EXIT_MS = total 6 detik)
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
@@ -14,6 +16,7 @@ const MIN_AFTER_RELEASE_MS = 2000; // sisa waktu minimal setelah jari/kursor dil
  * dengan sisa waktu minimal MIN_AFTER_RELEASE_MS.
  */
 export function FoundToast({ count }: { count: number }) {
+  const ui = useUi();
   const [phase, setPhase] = useState<"in" | "out" | "gone">("in");
   const leaveTimer = useRef<number | undefined>(undefined);
   const removeTimer = useRef<number | undefined>(undefined);
@@ -82,9 +85,9 @@ export function FoundToast({ count }: { count: number }) {
       onFocus={pause}
       onBlur={resume}
     >
-      <span>{count} preset ditemukan</span>
+      <span>{count === 1 ? ui.toast.foundOne : format(ui.toast.found, { count })}</span>
       <span className="found-toast-action" aria-hidden="true">
-        Lihat
+        {ui.toast.view}
       </span>
     </button>
   );

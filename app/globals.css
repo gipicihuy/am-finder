@@ -3201,3 +3201,48 @@ body::before {
     grid-column: 4;
   }
 }
+
+.nav-lang {
+  display: flex;
+  align-items: center;
+  flex: none;
+  padding: 0 10px;
+  border-left: 1px solid var(--border);
+}
+
+.lang-switch {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.lang-btn {
+  min-width: 36px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-btn:hover {
+  color: var(--foreground);
+}
+
+.lang-btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+@media (min-width: 480px) {
+  .nav-lang {
+    padding: 0 16px;
+  }
+}

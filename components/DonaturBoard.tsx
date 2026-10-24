@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SectionOrnament } from "@/components/Ornament";
-import { ui } from "@/lib/ui";
+import { donaturText } from "@/lib/donatur-text";
 import {
   donorColor,
   donorInitials,
@@ -10,7 +10,7 @@ import {
   type DonaturSummary,
 } from "@/lib/donatur";
 
-const text = ui.donatur;
+const text = donaturText;
 const TOP_VISIBLE = 8;
 
 function Avatar({ name }: { name: string }) {

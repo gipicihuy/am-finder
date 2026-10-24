@@ -1,6 +1,6 @@
 "use client";
 
-import { ui } from "@/lib/ui";
+import { useUi } from "@/components/LocaleProvider";
 import { AmLogo } from "@/components/AmLogo";
 
 function followAnchor(event: React.MouseEvent<HTMLAnchorElement>, href: string) {
@@ -14,6 +14,7 @@ function followAnchor(event: React.MouseEvent<HTMLAnchorElement>, href: string) 
 }
 
 export function SiteFooter() {
+  const ui = useUi();
   return (
     <footer className="site-footer">
       <div className="shell footer-inner">

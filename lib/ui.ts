@@ -1,75 +1,11 @@
-import raw from "@/ui.json";
+import en from "@/locales/en.json";
+import id from "@/locales/id.json";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
-type UiLink = { label: string; href?: string };
+export type UiTexts = typeof en;
 
-type UiColumn = {
-  title: string;
-  items: UiLink[];
-};
+const dictionaries: Record<Locale, UiTexts> = { en, id };
 
-type UiTexts = {
-  buttons: {
-    search: string;
-    searching: string;
-    paste: string;
-    copy: string;
-    copied: string;
-    openPreset: string;
-    openFile: string;
-  };
-  states: {
-    loading: string;
-    notFound: string;
-    commentsDisabled: string;
-    noLink: string;
-    shareSources: string;
-    shareChat: string;
-    shareChannel: string;
-    shareGroup: string;
-    shareTelegram: string;
-    howTitle: string;
-    howSteps: string[];
-    searchHowSteps: string[];
-  };
-  header: {
-    brand: string;
-    tagline: string;
-  };
-  footer: {
-    brand: string;
-    note: string;
-    columns: UiColumn[];
-    copyright: string;
-    disclaimer: string;
-  };
-  donatur: {
-    title: string;
-    intro: string;
-    monthlyTitle: string;
-    topTitle: string;
-    listTitle: string;
-    seeAll: string;
-    topDonation: string;
-    collectedLabel: string;
-    targetLabel: string;
-    reachedLabel: string;
-    targetExceeded: string;
-    monthlyTarget: number;
-    colName: string;
-    colAmount: string;
-    colDate: string;
-    counterBefore: string;
-    counterMiddle: string;
-    counterAfter: string;
-    totalLabel: string;
-    peopleLabel: string;
-    empty: string;
-    emptyTop: string;
-    emptyMonthly: string;
-    emptyMonthlyCta: string;
-    donate: string;
-    donateHref: string;
-  };
-};
-
-export const ui: UiTexts = raw;
+export function getUi(locale: Locale): UiTexts {
+  return dictionaries[locale] ?? dictionaries[DEFAULT_LOCALE];
+}

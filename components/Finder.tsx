@@ -4,7 +4,7 @@ import { isVideoLink, shortCodeOf, videoIdOf } from "@/lib/tiktok-link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { FindResult } from "@/lib/types";
-import { ui } from "@/lib/ui";
+import { useUi } from "@/components/LocaleProvider";
 import { ResultView } from "@/components/ResultView";
 import { FoundToast } from "@/components/FoundToast";
 import { HowSteps } from "@/components/HowSteps";
@@ -81,6 +81,7 @@ export function Finder({
   const [result, setResult] = useState<FindResult | null>(null);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<string[]>([]);
+  const ui = useUi();
   const [mode, setMode] = useState<Mode>(initialMode ?? "url");
   const pathname = usePathname();
   const [searchDetailOpen, setSearchDetailOpen] = useState(false);
@@ -164,7 +165,7 @@ export function Finder({
       sourceRef.current?.close();
       finishedRef.current = true;
       setPhase("error");
-      setError("That link is not from TikTok or YouTube. Paste a video link first.");
+      setError(ui.finder.errNotVideo);
       return;
     }
 
@@ -188,7 +189,7 @@ export function Finder({
     } catch {
       if (runId !== runRef.current) return;
       setPhase("error");
-      setError("Security check failed. Refresh the page and try again.");
+      setError(ui.finder.errSecurity);
       return;
     }
     if (runId !== runRef.current) return;
@@ -210,7 +211,7 @@ export function Finder({
         const data = JSON.parse((event as MessageEvent).data) as FindResult;
         if (data.ok === false) {
           setPhase("error");
-          setError(data.error || "the scraper could not process this link");
+          setError(data.error || ui.finder.errScraper);
           return;
         }
         setResult(data);
@@ -218,7 +219,7 @@ export function Finder({
         openDetailAddress(target, data);
       } catch {
         setPhase("error");
-        setError("unreadable response from server");
+        setError(ui.finder.errUnreadable);
       }
     });
 
@@ -230,16 +231,16 @@ export function Finder({
         source.close();
         setPhase("error");
         try {
-          setError(JSON.parse(data).message || "something went wrong, try again");
+          setError(JSON.parse(data).message || ui.finder.errGeneric);
         } catch {
-          setError("something went wrong, try again");
+          setError(ui.finder.errGeneric);
         }
         return;
       }
       if (source.readyState === EventSource.CLOSED) {
         finishedRef.current = true;
         setPhase("error");
-        setError("connection closed before it finished, try again");
+        setError(ui.finder.errClosed);
       }
     });
   }
@@ -426,7 +427,7 @@ export function Finder({
 
   return (
     <>
-      <div className="mode-tabs" role="tablist" aria-label="Mode pencarian">
+      <div className="mode-tabs" role="tablist" aria-label={ui.finder.tabsLabel}>
         <button
           type="button"
           role="tab"
@@ -437,7 +438,7 @@ export function Finder({
           onClick={() => chooseMode("url")}
         >
           <UrlIcon />
-          URL Video
+          {ui.finder.tabUrl}
         </button>
         <button
           type="button"
@@ -449,19 +450,17 @@ export function Finder({
           onClick={() => chooseMode("search")}
         >
           <SearchPresetIcon />
-          Cari Preset
+          {ui.finder.tabSearch}
         </button>
       </div>
 
       {mode === "url" ? (
         <p className="page-sub" data-nosnippet>
-          Masukkan link video TikTok atau YouTube untuk mencari link preset di deskripsi, bio,
-          komentar, dan balasannya.
+          {ui.finder.subUrl}
         </p>
       ) : !searchDetailOpen ? (
         <p className="page-sub" data-nosnippet>
-          Cari pakai nama lagu atau kata kunci, lalu pilih video untuk mencari link preset di
-          deskripsi, bio, komentar, dan balasannya.
+          {ui.finder.subSearch}
         </p>
       ) : null}
 
@@ -484,7 +483,7 @@ export function Finder({
       <div className="search-wrap">
         <form className="search-form" role="search" onSubmit={onSubmit}>
           <label className="sr-only" htmlFor="tt">
-            TikTok or YouTube video link
+            {ui.finder.linkLabel}
           </label>
           <span className="search-field">
             <span className="search-icon" aria-hidden="true">
@@ -502,7 +501,7 @@ export function Finder({
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              placeholder="https://vt.tiktok.com/xxx atau youtu.be/xxx"
+              placeholder={ui.finder.placeholder}
               value={value}
               onChange={(event) => setValue(event.target.value)}
             />
@@ -510,7 +509,7 @@ export function Finder({
               <button
                 type="button"
                 className="clear-btn"
-                aria-label="Clear link"
+                aria-label={ui.finder.clearLink}
                 onClick={clearInput}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
@@ -565,7 +564,7 @@ export function Finder({
 
       {phase === "error" ? (
         <div className="state state-error" role="alert">
-          <strong>Search stopped.</strong>
+          <strong>{ui.finder.searchStopped}</strong>
           {error}
         </div>
       ) : null}

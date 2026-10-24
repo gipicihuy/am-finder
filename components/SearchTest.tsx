@@ -11,7 +11,8 @@ import { ArrowRuleOrnament, GridIcon } from "@/components/Ornament";
 const VIEW_KEY = "amfinder:view";
 const STATE_KEY = "amfinder:search-state";
 const STATE_TTL = 30 * 60 * 1000; // hasil pencarian yang disimpan kedaluwarsa setelah 30 menit
-import { ui } from "@/lib/ui";
+import { useUi } from "@/components/LocaleProvider";
+import { format } from "@/lib/i18n";
 import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 
@@ -101,6 +102,7 @@ export default function SearchTest({
   initialQuery = "",
   onQueryChange,
 }: SearchTestProps = {}) {
+  const ui = useUi();
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
@@ -375,7 +377,7 @@ export default function SearchTest({
             return;
           }
         } else {
-          const section = document.querySelector<HTMLElement>('section[aria-label="Search results"]');
+          const section = document.querySelector<HTMLElement>('section[data-results="search"]');
           if (section && section.offsetParent !== null) {
             window.scrollTo({ top: y });
             return;
@@ -548,7 +550,7 @@ export default function SearchTest({
     } catch {
       if (runId !== searchRunRef.current) return;
       setSearching(false);
-      setError("Security check failed. Refresh the page and try again.");
+      setError(ui.finder.errSecurity);
       return;
     }
     if (runId !== searchRunRef.current) return;
@@ -579,7 +581,7 @@ export default function SearchTest({
       setSearching(false);
       if (!items.length) {
         setCands([]);
-        setError("No videos found. Try different keywords.");
+        setError(ui.search.errNoVideos);
         return;
       }
       setCands(items);
@@ -613,13 +615,13 @@ export default function SearchTest({
       const data = (event as MessageEvent).data;
       if (typeof data === "string" && data) {
         try {
-          fail(JSON.parse(data).message || "Something went wrong. Try again.");
+          fail(JSON.parse(data).message || ui.search.errGeneric);
         } catch {
-          fail("Something went wrong. Try again.");
+          fail(ui.search.errGeneric);
         }
         return;
       }
-      if (source.readyState === EventSource.CLOSED) fail("Connection lost. Try again.");
+      if (source.readyState === EventSource.CLOSED) fail(ui.search.errConnection);
     });
   }
 
@@ -660,7 +662,7 @@ export default function SearchTest({
       token = await getSecurityToken();
     } catch {
       if (runId === checkRunRef.current) {
-        setDetails((prev) => ({ ...prev, [url]: { state: "error", message: "Security check failed." } }));
+        setDetails((prev) => ({ ...prev, [url]: { state: "error", message: ui.search.errSecurityShort } }));
       }
       return;
     }
@@ -681,14 +683,14 @@ export default function SearchTest({
       try {
         finish({ state: "done", result: JSON.parse((event as MessageEvent).data) as FindResult });
       } catch {
-        finish({ state: "error", message: "Couldn't read the response." });
+        finish({ state: "error", message: ui.search.errUnreadable });
       }
     });
 
     source.addEventListener("error", (event) => {
       const data = (event as MessageEvent).data;
       if (typeof data === "string" && data) {
-        let msg = "Something went wrong.";
+        let msg: string = ui.search.errWrong;
         try {
           msg = JSON.parse(data).message || msg;
         } catch {
@@ -697,7 +699,7 @@ export default function SearchTest({
         finish({ state: "error", message: msg });
         return;
       }
-      if (source.readyState === EventSource.CLOSED) finish({ state: "error", message: "Connection lost." });
+      if (source.readyState === EventSource.CLOSED) finish({ state: "error", message: ui.search.errLost });
     });
   }
 
@@ -740,7 +742,7 @@ export default function SearchTest({
   const suggestQuery = q.trim();
   const suggestPanel =
     sugOpen && suggests.length > 0 ? (
-      <div className="suggest-panel" role="listbox" aria-label="Saran pencarian">
+      <div className="suggest-panel" role="listbox" aria-label={ui.search.suggestionsLabel}>
         {suggests.map((item, index) => {
           const at = item.toLowerCase().indexOf(suggestQuery.toLowerCase());
           const label =
@@ -784,9 +786,9 @@ export default function SearchTest({
         <>
           {!embedded && (
             <>
-          <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>Cari preset</h1>
+          <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>{ui.search.title}</h1>
           <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.5, margin: "0 0 22px" }}>
-            Ketik nama lagu atau kata kunci, lalu pilih video untuk mencari link presetnya.
+            {ui.search.intro}
           </p>
             </>
           )}
@@ -813,8 +815,8 @@ export default function SearchTest({
                   inputMode="search"
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="Cari nama lagu atau kata kunci..."
-                  aria-label="Search keyword"
+                  placeholder={ui.search.placeholder}
+                  aria-label={ui.search.keywordLabel}
                   value={q}
                   onChange={(e) => changeQuery(e.target.value)}
                   onKeyDown={onSuggestKeyDown}
@@ -822,7 +824,7 @@ export default function SearchTest({
                   onBlur={onSuggestBlur}
                 />
                 {q ? (
-                  <button type="button" className="clear-btn" aria-label="Clear" onClick={clearSearch}>
+                  <button type="button" className="clear-btn" aria-label={ui.search.clear} onClick={clearSearch}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                       <path d="M18 6 6 18" />
                       <path d="m6 6 12 12" />
@@ -850,8 +852,8 @@ export default function SearchTest({
                 onKeyDown={onSuggestKeyDown}
                 onFocus={onSuggestFocus}
                 onBlur={onSuggestBlur}
-                placeholder="Cari nama lagu atau kata kunci..."
-                aria-label="Search keyword"
+                placeholder={ui.search.placeholder}
+                aria-label={ui.search.keywordLabel}
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
@@ -882,7 +884,7 @@ export default function SearchTest({
                 cursor: searching ? "wait" : "pointer",
               }}
             >
-              {searching ? "Searching…" : "Search"}
+              {searching ? `${ui.buttons.searching}…` : ui.buttons.search}
             </button>
           </form>
           )}
@@ -898,12 +900,12 @@ export default function SearchTest({
 
           {embedded && searching && (
             <div className="run" aria-live="polite">
-              <BrandScan title="Mencari video" />
+              <BrandScan title={ui.scan.videos} />
             </div>
           )}
 
           {cands.length > 0 && !(embedded && searching) && (
-            <section aria-label="Search results" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
+            <section aria-label={ui.search.resultsLabel} data-results="search" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
               <div className="result-head">
                 <h2 className="result-count">
                   <span className="result-count-ornament" aria-hidden="true">
@@ -914,7 +916,7 @@ export default function SearchTest({
                 <button
                   type="button"
                   className="view-toggle"
-                  aria-label="Tampilan grid"
+                  aria-label={ui.search.gridView}
                   aria-pressed={view === "grid"}
                   onClick={toggleView}
                 >
@@ -933,7 +935,7 @@ export default function SearchTest({
                     cardRefs.current[c.url] = el;
                   }}
                   type="button"
-                  aria-label={`Check presets from ${c.handle || "this video"}`}
+                  aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
                   onClick={() => openVideo(c.url)}
                   style={{
                     viewTransitionName: vtName(c.url),
@@ -974,7 +976,7 @@ export default function SearchTest({
                     ) : null}
                   </span>
                   <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {c.handle || "TikTok video"}
+                    {c.handle || ui.search.videoFallback}
                   </span>
                   <span
                     style={{
@@ -987,7 +989,7 @@ export default function SearchTest({
                       WebkitBoxOrient: "vertical",
                     }}
                   >
-                    {c.snippet || "No caption"}
+                    {c.snippet || ui.search.noCaption}
                   </span>
                 </button>
               ) : (
@@ -997,7 +999,7 @@ export default function SearchTest({
                     cardRefs.current[c.url] = el;
                   }}
                   type="button"
-                  aria-label={`Check presets from ${c.handle || "this video"}`}
+                  aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
                   onClick={() => openVideo(c.url)}
                   style={{
                     viewTransitionName: vtName(c.url),
@@ -1041,7 +1043,7 @@ export default function SearchTest({
                   </span>
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: "block", fontSize: 15, fontWeight: 700, marginBottom: 5 }}>
-                      {c.handle || "TikTok video"}
+                      {c.handle || ui.search.videoFallback}
                     </span>
                     <span
                       style={{
@@ -1054,7 +1056,7 @@ export default function SearchTest({
                         WebkitBoxOrient: "vertical",
                       }}
                     >
-                      {c.snippet || "No caption"}
+                      {c.snippet || ui.search.noCaption}
                     </span>
                   </span>
                   <ChevronRight />
@@ -1079,7 +1081,7 @@ export default function SearchTest({
                     cursor: "pointer",
                   }}
                 >
-                  Tampilkan lebih banyak
+                  {ui.search.showMore}
                 </button>
               )}
             </section>
@@ -1091,15 +1093,15 @@ export default function SearchTest({
         <>
           <button
             type="button"
-            aria-label="Kembali ke daftar video"
+            aria-label={ui.search.backLabel}
             style={{ ...linkBtn, display: "flex", alignItems: "center", gap: 2, marginLeft: -4 }}
             onClick={closeVideo}
           >
             <ChevronLeft />
-            Kembali
+            {ui.search.back}
           </button>
           {candidate && searchedQuery && (
-            <div style={{ fontSize: 15, fontWeight: 700 }}>Judul : {searchedQuery}</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{ui.search.titleLabel} {searchedQuery}</div>
           )}
           {current?.state === "running" && (
             <div
@@ -1133,7 +1135,7 @@ export default function SearchTest({
           )}
           {current?.state === "error" && (
             <div role="alert" style={{ fontSize: 14, color: DANGER, marginTop: 16 }}>
-              {current.message || "Something went wrong."}
+              {current.message || ui.search.errWrong}
             </div>
           )}
           {current?.state === "done" && current.result && <ResultView result={current.result} />}

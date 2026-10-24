@@ -1,3 +1,7 @@
+"use client";
+
+import { useUi } from "@/components/LocaleProvider";
+
 const BRACKETS = [
   "M3 12V7a4 4 0 0 1 4-4h5",
   "M36 3h5a4 4 0 0 1 4 4v5",
@@ -32,11 +36,13 @@ const KEYFRAMES = `
 
 export default function BrandScan({
   status,
-  title = "Mencari link preset",
+  title,
 }: {
   status?: string;
   title?: string;
 }) {
+  const ui = useUi();
+  const heading = title ?? ui.scan.presets;
   return (
     <div className="bs-wrap" role="status">
       <style>{KEYFRAMES}</style>
@@ -84,7 +90,7 @@ export default function BrandScan({
           <span className="bs-scan" />
         </span>
         <span className="bs-title">
-          {title}
+          {heading}
           <span className="bs-dots">
             <span>.</span>
             <span>.</span>

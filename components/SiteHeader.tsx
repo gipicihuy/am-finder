@@ -1,11 +1,14 @@
 import { AmLogo } from "@/components/AmLogo";
-import { ui } from "@/lib/ui";
+import { getUi } from "@/lib/ui";
+import { getLocale } from "@/lib/locale-server";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const ui = getUi(await getLocale());
   return (
     <header className="site-header" id="top">
       <div className="nav-inner">
-        <a className="nav-logo" href="/" aria-label={`${ui.header.brand}, beranda`}>
+        <a className="nav-logo" href="/" aria-label={ui.header.homeLabel}>
           <AmLogo size={32} />
         </a>
 
@@ -13,6 +16,8 @@ export function SiteHeader() {
           <span className="nav-name">{ui.header.brand}</span>
           <p className="nav-tagline">{ui.header.tagline}</p>
         </div>
+
+        <LanguageSwitch />
       </div>
     </header>
   );

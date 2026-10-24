@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "title": "AM Preset Finder",
+    "description": "Tempel link video TikTok atau YouTube dan dapatkan link preset Alight Motion dari deskripsi, bio, komentar, dan link in bio-nya."
+  },
+  "lang": {
+    "label": "Bahasa",
+    "en": "English",
+    "id": "Bahasa Indonesia"
+  },
+  "common": {
+    "close": "Tutup"
+  },
+  "home": {
+    "title": "Cari link preset"
+  },
+  "buttons": {
+    "search": "Cari",
+    "searching": "Mencari",
+    "paste": "Tempel link",
+    "copy": "Salin",
+    "copied": "Tersalin",
+    "openPreset": "Buka",
+    "openFile": "Ambil file"
+  },
+  "states": {
+    "loading": "Mencari",
+    "notFound": "Video ini tidak mengandung preset!",
+    "commentsDisabled": "Komentar video dinonaktifkan oleh kreator. Link preset tidak dapat diperiksa.",
+    "noLink": "Link preset tidak ditemukan!",
+    "shareSources": "Sumber lain",
+    "shareChat": "Chat WA",
+    "shareChannel": "Saluran WA",
+    "shareGroup": "Grup WA",
+    "shareTelegram": "Telegram",
+    "howTitle": "Langkah-langkah",
+    "howSteps": [
+      "Tempel link TikTok atau YouTube",
+      "AM Preset Finder memindai video, bio, dan komentarnya",
+      "Link preset diambil otomatis",
+      "Salin preset yang kamu butuhkan"
+    ],
+    "searchHowSteps": [
+      "Ketik nama lagu atau kata kunci",
+      "Pilih video dari hasil pencarian",
+      "AM Preset Finder memindai video, bio, dan komentarnya",
+      "Salin preset yang kamu butuhkan"
+    ]
+  },
+  "scan": {
+    "presets": "Mencari link preset",
+    "videos": "Mencari video"
+  },
+  "header": {
+    "brand": "AM Preset Finder",
+    "tagline": "Temukan preset Alight Motion dari link TikTok atau YouTube mana pun",
+    "homeLabel": "AM Preset Finder, beranda"
+  },
+  "footer": {
+    "brand": "AM Preset Finder",
+    "note": "Tempel link TikTok atau YouTube dan dapatkan link preset Alight Motion yang tersembunyi di deskripsi, bio, komentar, dan balasannya. Tanpa akun, tanpa iklan, tanpa pelacakan.",
+    "columns": [
+      {
+        "title": "Dukungan",
+        "items": [
+          {
+            "label": "Sociabuzz",
+            "href": "https://sociabuzz.com/givyo/tribe"
+          },
+          {
+            "label": "Saluran WhatsApp",
+            "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r"
+          }
+        ]
+      },
+      {
+        "title": "Legal",
+        "items": [
+          {
+            "label": "Ketentuan Layanan",
+            "href": "/terms"
+          },
+          {
+            "label": "Kebijakan Privasi",
+            "href": "/privacy"
+          }
+        ]
+      }
+    ],
+    "copyright": "© 2026 Givy. Hak cipta dilindungi.",
+    "disclaimer": "Tidak berafiliasi dengan TikTok, YouTube, maupun Alight Motion."
+  },
+  "finder": {
+    "tabsLabel": "Mode pencarian",
+    "tabUrl": "URL Video",
+    "tabSearch": "Cari Preset",
+    "subUrl": "Masukkan link video TikTok atau YouTube untuk mencari link preset di deskripsi, bio, komentar, dan balasannya.",
+    "subSearch": "Cari pakai nama lagu atau kata kunci, lalu pilih video untuk mencari link preset di deskripsi, bio, komentar, dan balasannya.",
+    "linkLabel": "Link video TikTok atau YouTube",
+    "placeholder": "https://vt.tiktok.com/xxx atau youtu.be/xxx",
+    "clearLink": "Hapus link",
+    "searchStopped": "Pencarian berhenti.",
+    "errNotVideo": "Link itu bukan dari TikTok atau YouTube. Tempel link video dulu.",
+    "errSecurity": "Pemeriksaan keamanan gagal. Muat ulang halaman lalu coba lagi.",
+    "errScraper": "pencari tidak bisa memproses link ini",
+    "errUnreadable": "respons dari server tidak bisa dibaca",
+    "errGeneric": "terjadi kesalahan, coba lagi",
+    "errClosed": "koneksi terputus sebelum selesai, coba lagi"
+  },
+  "result": {
+    "audioTooMany": "Terlalu banyak unduhan, coba lagi sebentar.",
+    "audioTooLarge": "File audio terlalu besar.",
+    "audioFailed": "Gagal mengunduh audio.",
+    "audioEmpty": "File audio kosong.",
+    "close": "Tutup",
+    "pause": "Jeda video",
+    "play": "Putar video",
+    "openPreview": "Buka pratinjau",
+    "expand": "Perbesar",
+    "contentInfo": "Info konten",
+    "account": "Akun",
+    "comments": "Komentar",
+    "views": "Views",
+    "likes": "Likes",
+    "noAccount": "tanpa akun",
+    "soundFallback": "Sound TikTok",
+    "soundOfVideo": "Sound video ini",
+    "openSound": "Buka sound di TikTok",
+    "downloadingAudio": "Mengunduh audio",
+    "downloadAudioLong": "Unduh audio dari video",
+    "downloadAudio": "Unduh audio",
+    "openAudio": "Buka audio",
+    "presetLinks": "Link preset",
+    "preset5mb": "Preset 5MB",
+    "fileXml": "File XML",
+    "pinned": "disematkan",
+    "byAccount": "dari akun ini",
+    "showMore": "Tampilkan lebih banyak"
+  },
+  "search": {
+    "title": "Cari preset",
+    "intro": "Ketik nama lagu atau kata kunci, lalu pilih video untuk mencari link presetnya.",
+    "placeholder": "Cari nama lagu atau kata kunci...",
+    "keywordLabel": "Kata kunci pencarian",
+    "clear": "Hapus",
+    "suggestionsLabel": "Saran pencarian",
+    "resultsLabel": "Hasil pencarian",
+    "gridView": "Tampilan grid",
+    "checkFrom": "Cek preset dari {name}",
+    "thisVideo": "video ini",
+    "videoFallback": "Video TikTok",
+    "noCaption": "Tanpa keterangan",
+    "showMore": "Tampilkan lebih banyak",
+    "backLabel": "Kembali ke daftar video",
+    "back": "Kembali",
+    "titleLabel": "Judul :",
+    "errNoVideos": "Video tidak ditemukan. Coba kata kunci lain.",
+    "errGeneric": "Terjadi kesalahan. Coba lagi.",
+    "errConnection": "Koneksi terputus. Coba lagi.",
+    "errSecurityShort": "Pemeriksaan keamanan gagal.",
+    "errUnreadable": "Respons tidak bisa dibaca.",
+    "errWrong": "Terjadi kesalahan.",
+    "errLost": "Koneksi terputus."
+  },
+  "toast": {
+    "found": "{count} preset ditemukan",
+    "foundOne": "1 preset ditemukan",
+    "view": "Lihat",
+    "waLabel": "Saluran WhatsApp AM Finder",
+    "waTitle": "Join saluran wa AM Finder",
+    "waBody": "Agar mendapatkan info update terbaru"
+  },
+  "support": {
+    "title": "❤️ Suka AM Finder?",
+    "desc": "Kalau AM Finder membantu kamu menemukan preset dengan cepat, kamu bisa ikut mendukung pengembangannya agar web ini tetap aktif dan terus bisa digunakan.",
+    "cta": "☕ Beri Dukungan",
+    "later": "Nanti aja"
+  }
+}

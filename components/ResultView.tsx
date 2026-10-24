@@ -5,11 +5,12 @@ import type { FindResult, PresetLink } from "@/lib/types";
 import { soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
 import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
-import { ui } from "@/lib/ui";
+import { useUi } from "@/components/LocaleProvider";
+import type { UiTexts } from "@/lib/ui";
 
 type ShareLink = NonNullable<FindResult["shareLinks"]>[number];
 
-function shareLabel(share: ShareLink): string {
+function shareLabel(share: ShareLink, ui: UiTexts): string {
   if (share.kind === "chat") return ui.states.shareChat;
   if (share.kind === "telegram") {
     return share.username
@@ -73,7 +74,7 @@ function filenameFromDisposition(value: string | null): string | null {
   return plain ? plain[1].trim() : null;
 }
 
-async function audioErrorMessage(res: Response): Promise<string> {
+async function audioErrorMessage(res: Response, ui: UiTexts): Promise<string> {
   try {
     const body: unknown = await res.json();
     if (
@@ -88,9 +89,9 @@ async function audioErrorMessage(res: Response): Promise<string> {
   } catch {
     /* respons bukan JSON */
   }
-  if (res.status === 429) return "Terlalu banyak unduhan, coba lagi sebentar.";
-  if (res.status === 413) return "File audio terlalu besar.";
-  return "Gagal mengunduh audio.";
+  if (res.status === 429) return ui.result.audioTooMany;
+  if (res.status === 413) return ui.result.audioTooLarge;
+  return ui.result.audioFailed;
 }
 
 function ratioBox(ratio?: string) {
@@ -103,9 +104,9 @@ function ratioBox(ratio?: string) {
   return { w: Math.max(16, Math.round((max * rw) / rh)), h: max };
 }
 
-function presetLabel(preset: PresetLink): string {
+function presetLabel(preset: PresetLink, ui: UiTexts): string {
   if (preset.title) return preset.title;
-  return preset.type === "5mb" ? "5MB preset" : "XML file";
+  return preset.type === "5mb" ? ui.result.preset5mb : ui.result.fileXml;
 }
 
 function presetTypeLabel(preset: PresetLink): string {
@@ -192,6 +193,7 @@ function CheckIcon() {
 }
 
 function CopyButton({ url }: { url: string }) {
+  const ui = useUi();
   const [done, setDone] = useState(false);
 
   async function copy() {
@@ -247,6 +249,7 @@ function VideoPreview({
   height?: number;
   allowMotion: boolean;
 }) {
+  const ui = useUi();
   const boxRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
@@ -361,7 +364,7 @@ function VideoPreview({
         style={{ aspectRatio: ratio }}
       >
       {expanded ? (
-        <button type="button" className="video-close" onClick={requestClose} aria-label="Close">
+        <button type="button" className="video-close" onClick={requestClose} aria-label={ui.result.close}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
@@ -378,7 +381,7 @@ function VideoPreview({
           playsInline
           disableRemotePlayback
           preload="metadata"
-          aria-label={expanded ? (playing ? "Pause video" : "Play video") : "Open preview"}
+          aria-label={expanded ? (playing ? ui.result.pause : ui.result.play) : ui.result.openPreview}
           tabIndex={0}
           onClick={handleVideoClick}
           onKeyDown={(event) => {
@@ -397,7 +400,7 @@ function VideoPreview({
           }}
         />
       ) : (
-        <img src={poster} alt="" loading="lazy" title="Open preview" onClick={openPreview} />
+        <img src={poster} alt="" loading="lazy" title={ui.result.openPreview} onClick={openPreview} />
       )}
       {src ? (
         <>
@@ -412,7 +415,7 @@ function VideoPreview({
             </div>
           ) : null}
           {!expanded ? (
-            <button type="button" className="video-expand" onClick={openPreview} aria-label="Expand">
+            <button type="button" className="video-expand" onClick={openPreview} aria-label={ui.result.expand}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 3h6v6" />
                 <path d="M9 21H3v-6" />
@@ -457,6 +460,7 @@ function RatioFrame({ ratio }: { ratio?: string }) {
 }
 
 export function ResultView({ result }: { result: FindResult }) {
+  const ui = useUi();
   const [allowMotion, setAllowMotion] = useState(true);
   const [presetLimit, setPresetLimit] = useState(3);
   const [audioBusy, setAudioBusy] = useState(false);
@@ -520,13 +524,13 @@ export function ResultView({ result }: { result: FindResult }) {
       });
       if (downloadSeq.current !== requestId) return;
       if (!res.ok) {
-        setAudioError(await audioErrorMessage(res));
+        setAudioError(await audioErrorMessage(res, ui));
         return;
       }
       const blob = await res.blob();
       if (downloadSeq.current !== requestId) return;
       if (!blob.size) {
-        setAudioError("File audio kosong.");
+        setAudioError(ui.result.audioEmpty);
         return;
       }
       const type = res.headers.get("content-type") || blob.type || "audio/mpeg";
@@ -545,7 +549,7 @@ export function ResultView({ result }: { result: FindResult }) {
     } catch (error) {
       if (downloadSeq.current !== requestId) return;
       if (!(error instanceof DOMException && error.name === "AbortError")) {
-        setAudioError("Gagal mengunduh audio.");
+        setAudioError(ui.result.audioFailed);
       }
     } finally {
       if (downloadSeq.current === requestId) setAudioBusy(false);
@@ -568,7 +572,7 @@ export function ResultView({ result }: { result: FindResult }) {
   return (
     <>
       {result.video ? (
-      <section className="video-meta" aria-label="Content info">
+      <section className="video-meta" aria-label={ui.result.contentInfo}>
         <div className="content-head">
         <VideoPreview
           src={playUrl}
@@ -581,27 +585,27 @@ export function ResultView({ result }: { result: FindResult }) {
         {description ? <p className="meta-desc">{description}</p> : null}
         <dl className="meta-grid">
             <div className="meta-item">
-              <dt>Account</dt>
+              <dt>{ui.result.account}</dt>
               <dd className="meta-account">
                 {avatar ? <img className="meta-avatar" src={avatar} alt="" loading="lazy" /> : null}
-                <span>{result.author || "no account"}</span>
+                <span>{result.author || ui.result.noAccount}</span>
               </dd>
             </div>
           {comments ? (
             <div className="meta-item">
-              <dt>Comments</dt>
+              <dt>{ui.result.comments}</dt>
               <dd>{comments}</dd>
             </div>
           ) : null}
           {views ? (
             <div className="meta-item">
-              <dt>Views</dt>
+              <dt>{ui.result.views}</dt>
               <dd>{views}</dd>
             </div>
           ) : null}
           {likes ? (
             <div className="meta-item">
-              <dt>Likes</dt>
+              <dt>{ui.result.likes}</dt>
               <dd>{likes}</dd>
             </div>
           ) : null}
@@ -631,9 +635,9 @@ export function ResultView({ result }: { result: FindResult }) {
                 </span>
               </span>
               <span className="sound-text">
-                <span className="sound-title">{soundTitle || "Sound TikTok"}</span>
+                <span className="sound-title">{soundTitle || ui.result.soundFallback}</span>
                 <span className="sound-sub">
-                  {soundAuthor && !soundTitle?.includes(soundAuthor) ? soundAuthor : "Sound video ini"}
+                  {soundAuthor && !soundTitle?.includes(soundAuthor) ? soundAuthor : ui.result.soundOfVideo}
                 </span>
               </span>
               {soundLink ? (
@@ -642,8 +646,8 @@ export function ResultView({ result }: { result: FindResult }) {
                   href={soundLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Buka sound di TikTok"
-                  title="Buka sound di TikTok"
+                  aria-label={ui.result.openSound}
+                  title={ui.result.openSound}
                 >
                   <OpenIcon />
                 </a>
@@ -655,8 +659,8 @@ export function ResultView({ result }: { result: FindResult }) {
                   onClick={handleDownload}
                   disabled={audioBusy}
                   aria-busy={audioBusy}
-                  aria-label={audioBusy ? "Mengunduh audio" : "Unduh audio dari video"}
-                  title={audioBusy ? "Mengunduh audio" : "Unduh audio"}
+                  aria-label={audioBusy ? ui.result.downloadingAudio : ui.result.downloadAudioLong}
+                  title={audioBusy ? ui.result.downloadingAudio : ui.result.downloadAudio}
                 >
                   {audioBusy ? <span className="spinner" aria-hidden="true" /> : <DownloadIcon />}
                 </button>
@@ -669,7 +673,7 @@ export function ResultView({ result }: { result: FindResult }) {
                   <>
                     {" "}
                     <a href={soundAudio} target="_blank" rel="noopener noreferrer">
-                      Buka audio
+                      {ui.result.openAudio}
                     </a>
                   </>
                 ) : null}
@@ -698,7 +702,7 @@ export function ResultView({ result }: { result: FindResult }) {
                     <span className="share-icon">
                       <ShareIcon share={share} />
                     </span>
-                    <span className="share-label">{shareLabel(share)}</span>
+                    <span className="share-label">{shareLabel(share, ui)}</span>
                   </a>
                 ))}
               </div>
@@ -706,13 +710,13 @@ export function ResultView({ result }: { result: FindResult }) {
           ) : null}
         </div>
       ) : (
-      <section className="preset-section" aria-label="Preset links">
+      <section className="preset-section" aria-label={ui.result.presetLinks}>
           <div className="section-head">
             <h2 className="section-title">
               <span className="section-ornament" aria-hidden="true">
                 <SectionOrnament />
               </span>
-              Preset links
+              {ui.result.presetLinks}
               <span className="badge badge-type section-count">{presets.length}</span>
             </h2>
           </div>
@@ -724,12 +728,12 @@ export function ResultView({ result }: { result: FindResult }) {
                   <PresetThumb preset={preset} />
 
                   <div className="preset-body">
-                    <h3 className="preset-title">{presetLabel(preset)}</h3>
+                    <h3 className="preset-title">{presetLabel(preset, ui)}</h3>
                     <div className="preset-badges">
                       <span className="badge badge-type">{presetTypeLabel(preset)}</span>
                       {preset.size ? <span className="badge">{preset.size}</span> : null}
-                      {preset.pinned ? <span className="badge">pinned</span> : null}
-                      {preset.byAuthor ? <span className="badge">by this account</span> : null}
+                      {preset.pinned ? <span className="badge">{ui.result.pinned}</span> : null}
+                      {preset.byAuthor ? <span className="badge">{ui.result.byAccount}</span> : null}
                     </div>
                     {preset.detail ? <p className="preset-detail">{preset.detail}</p> : null}
                     <p className="preset-url">{preset.url}</p>
@@ -764,7 +768,7 @@ export function ResultView({ result }: { result: FindResult }) {
                 cursor: "pointer",
               }}
             >
-              Tampilkan lebih banyak
+              {ui.result.showMore}
             </button>
           )}
       </section>

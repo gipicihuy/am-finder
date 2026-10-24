@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "title": "AM Preset Finder",
+    "description": "Paste a TikTok or YouTube video link and get the Alight Motion preset links from its description, bio, comments and link in bio."
+  },
+  "lang": {
+    "label": "Language",
+    "en": "English",
+    "id": "Bahasa Indonesia"
+  },
+  "common": {
+    "close": "Close"
+  },
+  "home": {
+    "title": "Find preset links"
+  },
+  "buttons": {
+    "search": "Search",
+    "searching": "Searching",
+    "paste": "Paste link",
+    "copy": "Copy",
+    "copied": "Copied",
+    "openPreset": "Open",
+    "openFile": "Get file"
+  },
+  "states": {
+    "loading": "Searching",
+    "notFound": "This video has no preset!",
+    "commentsDisabled": "Comments are disabled by the creator. Preset links can't be checked.",
+    "noLink": "No preset link found!",
+    "shareSources": "Other sources",
+    "shareChat": "WA Chat",
+    "shareChannel": "WA Channel",
+    "shareGroup": "WA Group",
+    "shareTelegram": "Telegram",
+    "howTitle": "Step by step",
+    "howSteps": [
+      "Paste a TikTok or YouTube link",
+      "AM Preset Finder scans the video, bio and comments",
+      "Preset links are extracted automatically",
+      "Copy the preset you need"
+    ],
+    "searchHowSteps": [
+      "Type a song name or keyword",
+      "Pick a video from the results",
+      "AM Preset Finder scans the video, bio and comments",
+      "Copy the preset you need"
+    ]
+  },
+  "scan": {
+    "presets": "Finding preset links",
+    "videos": "Finding videos"
+  },
+  "header": {
+    "brand": "AM Preset Finder",
+    "tagline": "Find Alight Motion presets from any TikTok or YouTube link",
+    "homeLabel": "AM Preset Finder, home"
+  },
+  "footer": {
+    "brand": "AM Preset Finder",
+    "note": "Paste a TikTok or YouTube link and get the Alight Motion preset links hidden in its description, bio, comments and replies. No account, no ads, no tracking.",
+    "columns": [
+      {
+        "title": "Support",
+        "items": [
+          {
+            "label": "Sociabuzz",
+            "href": "https://sociabuzz.com/givyo/tribe"
+          },
+          {
+            "label": "WhatsApp Channel",
+            "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r"
+          }
+        ]
+      },
+      {
+        "title": "Legal",
+        "items": [
+          {
+            "label": "Terms of Service",
+            "href": "/terms"
+          },
+          {
+            "label": "Privacy Policy",
+            "href": "/privacy"
+          }
+        ]
+      }
+    ],
+    "copyright": "© 2026 Givy. All rights reserved.",
+    "disclaimer": "Not affiliated with TikTok, YouTube or Alight Motion."
+  },
+  "finder": {
+    "tabsLabel": "Search mode",
+    "tabUrl": "Video URL",
+    "tabSearch": "Find Presets",
+    "subUrl": "Enter a TikTok or YouTube video link to find preset links in its description, bio, comments and replies.",
+    "subSearch": "Search by song name or keyword, then pick a video to find preset links in its description, bio, comments and replies.",
+    "linkLabel": "TikTok or YouTube video link",
+    "placeholder": "https://vt.tiktok.com/xxx or youtu.be/xxx",
+    "clearLink": "Clear link",
+    "searchStopped": "Search stopped.",
+    "errNotVideo": "That link is not from TikTok or YouTube. Paste a video link first.",
+    "errSecurity": "Security check failed. Refresh the page and try again.",
+    "errScraper": "the scraper could not process this link",
+    "errUnreadable": "unreadable response from server",
+    "errGeneric": "something went wrong, try again",
+    "errClosed": "connection closed before it finished, try again"
+  },
+  "result": {
+    "audioTooMany": "Too many downloads, try again in a moment.",
+    "audioTooLarge": "The audio file is too large.",
+    "audioFailed": "Failed to download audio.",
+    "audioEmpty": "The audio file is empty.",
+    "close": "Close",
+    "pause": "Pause video",
+    "play": "Play video",
+    "openPreview": "Open preview",
+    "expand": "Expand",
+    "contentInfo": "Content info",
+    "account": "Account",
+    "comments": "Comments",
+    "views": "Views",
+    "likes": "Likes",
+    "noAccount": "no account",
+    "soundFallback": "TikTok sound",
+    "soundOfVideo": "This video's sound",
+    "openSound": "Open sound on TikTok",
+    "downloadingAudio": "Downloading audio",
+    "downloadAudioLong": "Download audio from video",
+    "downloadAudio": "Download audio",
+    "openAudio": "Open audio",
+    "presetLinks": "Preset links",
+    "preset5mb": "5MB preset",
+    "fileXml": "XML file",
+    "pinned": "pinned",
+    "byAccount": "by this account",
+    "showMore": "Show more"
+  },
+  "search": {
+    "title": "Find presets",
+    "intro": "Type a song name or keyword, then pick a video to find its preset links.",
+    "placeholder": "Search a song name or keyword...",
+    "keywordLabel": "Search keyword",
+    "clear": "Clear",
+    "suggestionsLabel": "Search suggestions",
+    "resultsLabel": "Search results",
+    "gridView": "Grid view",
+    "checkFrom": "Check presets from {name}",
+    "thisVideo": "this video",
+    "videoFallback": "TikTok video",
+    "noCaption": "No caption",
+    "showMore": "Show more",
+    "backLabel": "Back to video list",
+    "back": "Back",
+    "titleLabel": "Title:",
+    "errNoVideos": "No videos found. Try different keywords.",
+    "errGeneric": "Something went wrong. Try again.",
+    "errConnection": "Connection lost. Try again.",
+    "errSecurityShort": "Security check failed.",
+    "errUnreadable": "Couldn't read the response.",
+    "errWrong": "Something went wrong.",
+    "errLost": "Connection lost."
+  },
+  "toast": {
+    "found": "{count} presets found",
+    "foundOne": "1 preset found",
+    "view": "View",
+    "waLabel": "AM Finder WhatsApp channel",
+    "waTitle": "Join the AM Finder WhatsApp channel",
+    "waBody": "Get the latest updates"
+  },
+  "support": {
+    "title": "❤️ Enjoying AM Finder?",
+    "desc": "If AM Finder helps you find presets quickly, you can support its development so the site stays online and keeps working.",
+    "cta": "☕ Support AM Finder",
+    "later": "Maybe later"
+  }
+}
