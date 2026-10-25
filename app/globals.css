@@ -3466,19 +3466,15 @@ a.drawer-item:hover {
   cursor: pointer;
 }
 
-.lang-trigger:hover,
-.lang-trigger[aria-expanded="true"] {
-  color: var(--accent);
+@media (hover: hover) {
+  .lang-trigger:hover {
+    color: var(--accent);
+  }
 }
 
 .lang-trigger svg {
   width: 14px;
   height: 14px;
-  transition: transform 0.18s ease;
-}
-
-.lang-trigger[aria-expanded="true"] svg {
-  transform: rotate(180deg);
 }
 
 .lang-panel {

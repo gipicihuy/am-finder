@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "title": "AM Preset Finder",
+    "description": "Tampal pautan video TikTok atau YouTube dan dapatkan pautan preset Alight Motion daripada penerangan, bio, komen dan pautan dalam bio."
+  },
+  "lang": {
+    "label": "Bahasa",
+    "id": "Indonesia",
+    "en": "English",
+    "ms": "Melayu",
+    "es": "Español",
+    "pt": "Português"
+  },
+  "common": {
+    "close": "Tutup"
+  },
+  "menu": {
+    "title": "Menu",
+    "open": "Buka menu",
+    "close": "Tutup menu",
+    "comingSoon": "Akan datang",
+    "groups": {
+      "presets": "Preset",
+      "app": "Aplikasi",
+      "support": "Sokongan"
+    },
+    "items": {
+      "find": "Cari Preset",
+      "history": "Sejarah",
+      "apk": "Muat Turun Apl Android",
+      "whatsapp": "Saluran WhatsApp",
+      "donate": "Derma"
+    }
+  },
+  "home": {
+    "tagline": "Cari preset Alight Motion daripada mana-mana pautan TikTok atau YouTube",
+    "title": "Cari pautan preset"
+  },
+  "buttons": {
+    "search": "Cari",
+    "searching": "Mencari",
+    "paste": "Tampal pautan",
+    "copy": "Salin",
+    "copied": "Disalin",
+    "openPreset": "Buka",
+    "openFile": "Dapatkan fail"
+  },
+  "states": {
+    "loading": "Mencari",
+    "notFound": "Video ini tiada preset!",
+    "commentsDisabled": "Komen dimatikan oleh pencipta. Pautan preset tidak dapat disemak.",
+    "noLink": "Pautan preset tidak ditemui!",
+    "shareSources": "Sumber lain",
+    "shareChat": "Sembang WA",
+    "shareChannel": "Saluran WA",
+    "shareGroup": "Kumpulan WA",
+    "shareTelegram": "Telegram",
+    "howTitle": "Langkah demi langkah",
+    "howSteps": [
+      "Tampal pautan TikTok atau YouTube",
+      "AM Preset Finder mengimbas video, bio dan komen",
+      "Pautan preset diambil secara automatik",
+      "Salin preset yang anda perlukan"
+    ],
+    "searchHowSteps": [
+      "Taip nama lagu atau kata kunci",
+      "Pilih video daripada hasil carian",
+      "AM Preset Finder mengimbas video, bio dan komen",
+      "Salin preset yang anda perlukan"
+    ]
+  },
+  "scan": {
+    "presets": "Mencari pautan preset",
+    "videos": "Mencari video"
+  },
+  "header": {
+    "brand": "AM Preset Finder",
+    "homeLabel": "AM Preset Finder, laman utama"
+  },
+  "footer": {
+    "brand": "AM Preset Finder",
+    "note": "Tampal pautan TikTok atau YouTube dan dapatkan pautan preset Alight Motion yang tersembunyi dalam penerangan, bio, komen dan balasannya. Tiada akaun, tiada iklan, tiada penjejakan.",
+    "columns": [
+      {
+        "title": "Sokongan",
+        "items": [
+          {
+            "label": "Sociabuzz",
+            "href": "https://sociabuzz.com/givyo/tribe"
+          },
+          {
+            "label": "Saluran WhatsApp",
+            "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r"
+          }
+        ]
+      },
+      {
+        "title": "Undang-undang",
+        "items": [
+          {
+            "label": "Terma Perkhidmatan",
+            "href": "/terms"
+          },
+          {
+            "label": "Dasar Privasi",
+            "href": "/privacy"
+          }
+        ]
+      }
+    ],
+    "copyright": "© 2026 Givy. Hak cipta terpelihara.",
+    "disclaimer": "Tidak berkaitan dengan TikTok, YouTube atau Alight Motion."
+  },
+  "finder": {
+    "tabsLabel": "Mod carian",
+    "tabUrl": "URL Video",
+    "tabSearch": "Cari Preset",
+    "subUrl": "Masukkan pautan video TikTok atau YouTube untuk mencari pautan preset dalam penerangan, bio, komen dan balasannya.",
+    "subSearch": "Cari mengikut nama lagu atau kata kunci, kemudian pilih video untuk mencari pautan preset dalam penerangan, bio, komen dan balasannya.",
+    "linkLabel": "Pautan video TikTok atau YouTube",
+    "placeholder": "https://vt.tiktok.com/xxx atau youtu.be/xxx",
+    "clearLink": "Padam pautan",
+    "searchStopped": "Carian dihentikan.",
+    "errNotVideo": "Pautan itu bukan daripada TikTok atau YouTube. Tampal pautan video dahulu.",
+    "errSecurity": "Semakan keselamatan gagal. Muat semula halaman dan cuba lagi.",
+    "errScraper": "pencari tidak dapat memproses pautan ini",
+    "errUnreadable": "respons pelayan tidak dapat dibaca",
+    "errGeneric": "sesuatu tidak kena, cuba lagi",
+    "errClosed": "sambungan terputus sebelum selesai, cuba lagi"
+  },
+  "result": {
+    "audioTooMany": "Terlalu banyak muat turun, cuba lagi sebentar lagi.",
+    "audioTooLarge": "Fail audio terlalu besar.",
+    "audioFailed": "Gagal memuat turun audio.",
+    "audioEmpty": "Fail audio kosong.",
+    "close": "Tutup",
+    "pause": "Jeda video",
+    "play": "Main video",
+    "openPreview": "Buka pratonton",
+    "expand": "Besarkan",
+    "contentInfo": "Maklumat kandungan",
+    "account": "Akaun",
+    "comments": "Komen",
+    "views": "Tontonan",
+    "likes": "Suka",
+    "noAccount": "tiada akaun",
+    "soundFallback": "Bunyi TikTok",
+    "soundOfVideo": "Bunyi video ini",
+    "openSound": "Buka bunyi di TikTok",
+    "downloadingAudio": "Memuat turun audio",
+    "downloadAudioLong": "Muat turun audio daripada video",
+    "downloadAudio": "Muat turun audio",
+    "openAudio": "Buka audio",
+    "presetLinks": "Pautan preset",
+    "preset5mb": "Preset 5MB",
+    "fileXml": "Fail XML",
+    "pinned": "disematkan",
+    "byAccount": "daripada akaun ini",
+    "showMore": "Tunjukkan lagi"
+  },
+  "search": {
+    "title": "Cari preset",
+    "intro": "Taip nama lagu atau kata kunci, kemudian pilih video untuk mencari pautan presetnya.",
+    "placeholder": "Cari nama lagu atau kata kunci...",
+    "keywordLabel": "Kata kunci carian",
+    "clear": "Padam",
+    "suggestionsLabel": "Cadangan carian",
+    "resultsLabel": "Hasil carian",
+    "gridView": "Paparan grid",
+    "checkFrom": "Semak preset daripada {name}",
+    "thisVideo": "video ini",
+    "videoFallback": "Video TikTok",
+    "noCaption": "Tiada kapsyen",
+    "showMore": "Tunjukkan lagi",
+    "backLabel": "Kembali ke senarai video",
+    "back": "Kembali",
+    "titleLabel": "Tajuk:",
+    "errNoVideos": "Tiada video ditemui. Cuba kata kunci lain.",
+    "errGeneric": "Sesuatu tidak kena. Cuba lagi.",
+    "errConnection": "Sambungan terputus. Cuba lagi.",
+    "errSecurityShort": "Semakan keselamatan gagal.",
+    "errUnreadable": "Respons tidak dapat dibaca.",
+    "errWrong": "Sesuatu tidak kena.",
+    "errLost": "Sambungan terputus."
+  },
+  "toast": {
+    "found": "{count} preset ditemui",
+    "foundOne": "1 preset ditemui",
+    "view": "Lihat",
+    "waLabel": "Saluran WhatsApp AM Finder",
+    "waTitle": "Sertai saluran WhatsApp AM Finder",
+    "waBody": "Dapatkan kemas kini terkini"
+  },
+  "support": {
+    "title": "❤️ Suka AM Finder?",
+    "desc": "Jika AM Finder membantu anda mencari preset dengan cepat, anda boleh menyokong pembangunannya supaya laman ini kekal dalam talian dan terus berfungsi.",
+    "cta": "☕ Sokong AM Finder",
+    "later": "Mungkin nanti"
+  }
+}

@@ -5,8 +5,11 @@
   },
   "lang": {
     "label": "Bahasa",
+    "id": "Indonesia",
     "en": "English",
-    "id": "Indonesia"
+    "ms": "Melayu",
+    "es": "Español",
+    "pt": "Português"
   },
   "common": {
     "close": "Tutup"

@@ -7,7 +7,7 @@ import { AntiScrapeGuard } from "@/components/AntiScrapeGuard";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import { getLocale } from "@/lib/locale-server";
 import { getUi } from "@/lib/ui";
-import type { Locale } from "@/lib/i18n";
+import { OG_LOCALES, type Locale } from "@/lib/i18n";
 import "./globals.css";
 
 // Domain utama. amfinder.cc.cd dan www.amfinder.web.id juga mengarah ke situs ini.
@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: "AM Preset Finder",
-      locale: locale === "id" ? "id_ID" : "en_US",
+      locale: OG_LOCALES[locale],
       title: siteTitle,
       description: siteDescription,
       images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "AM Preset Finder" }],
