@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "AM Preset Finder",
+    "description": "粘贴 TikTok 或 YouTube 视频链接，即可从其描述、简介、评论和主页链接中获取 Alight Motion 预设链接。"
+  },
+  "lang": {
+    "label": "语言",
+    "id": "Indonesia",
+    "en": "English",
+    "zh": "中文"
+  },
+  "common": {
+    "close": "关闭"
+  },
+  "menu": {
+    "title": "菜单",
+    "open": "打开菜单",
+    "close": "关闭菜单",
+    "comingSoon": "即将推出",
+    "groups": {
+      "presets": "预设",
+      "app": "应用",
+      "support": "支持"
+    },
+    "items": {
+      "find": "查找预设",
+      "history": "历史记录",
+      "apk": "下载安卓应用",
+      "whatsapp": "WhatsApp 频道",
+      "donate": "捐赠"
+    }
+  },
+  "home": {
+    "tagline": "从任意 TikTok 或 YouTube 链接查找 Alight Motion 预设",
+    "title": "查找预设链接"
+  },
+  "buttons": {
+    "search": "搜索",
+    "searching": "搜索中",
+    "paste": "粘贴链接",
+    "copy": "复制",
+    "copied": "已复制",
+    "openPreset": "打开",
+    "openFile": "获取文件"
+  },
+  "states": {
+    "loading": "搜索中",
+    "notFound": "此视频没有预设！",
+    "commentsDisabled": "创作者已关闭评论，无法检查预设链接。",
+    "noLink": "未找到预设链接！",
+    "shareSources": "其他来源",
+    "shareChat": "WA 私聊",
+    "shareChannel": "WA 频道",
+    "shareGroup": "WA 群组",
+    "shareTelegram": "Telegram",
+    "howTitle": "操作步骤",
+    "howSteps": [
+      "粘贴 TikTok 或 YouTube 链接",
+      "AM Preset Finder 会扫描视频、简介和评论",
+      "自动提取预设链接",
+      "复制你需要的预设"
+    ],
+    "searchHowSteps": [
+      "输入歌曲名称或关键词",
+      "从结果中选择一个视频",
+      "AM Preset Finder 会扫描视频、简介和评论",
+      "复制你需要的预设"
+    ]
+  },
+  "scan": {
+    "presets": "正在查找预设链接",
+    "videos": "正在查找视频"
+  },
+  "header": {
+    "brand": "AM Preset Finder",
+    "homeLabel": "AM Preset Finder，首页"
+  },
+  "footer": {
+    "brand": "AM Preset Finder",
+    "note": "粘贴 TikTok 或 YouTube 链接，即可获取隐藏在其描述、简介、评论和回复中的 Alight Motion 预设链接。无需账号，无广告，无追踪。",
+    "columns": [
+      {
+        "title": "支持",
+        "items": [
+          {
+            "label": "Sociabuzz",
+            "href": "https://sociabuzz.com/givyo/tribe"
+          },
+          {
+            "label": "WhatsApp 频道",
+            "href": "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r"
+          }
+        ]
+      },
+      {
+        "title": "法律信息",
+        "items": [
+          {
+            "label": "服务条款",
+            "href": "/terms"
+          },
+          {
+            "label": "隐私政策",
+            "href": "/privacy"
+          }
+        ]
+      }
+    ],
+    "copyright": "© 2026 Givy。保留所有权利。",
+    "disclaimer": "与 TikTok、YouTube 或 Alight Motion 无任何关联。"
+  },
+  "finder": {
+    "tabsLabel": "搜索模式",
+    "tabUrl": "视频链接",
+    "tabSearch": "查找预设",
+    "subUrl": "输入 TikTok 或 YouTube 视频链接，在其描述、简介、评论和回复中查找预设链接。",
+    "subSearch": "按歌曲名称或关键词搜索，然后选择一个视频，在其描述、简介、评论和回复中查找预设链接。",
+    "linkLabel": "TikTok 或 YouTube 视频链接",
+    "placeholder": "https://vt.tiktok.com/xxx 或 youtu.be/xxx",
+    "clearLink": "清除链接",
+    "searchStopped": "搜索已停止。",
+    "errNotVideo": "该链接不是 TikTok 或 YouTube 链接，请先粘贴视频链接。",
+    "errSecurity": "安全验证失败，请刷新页面后重试。",
+    "errScraper": "无法处理此链接",
+    "errUnreadable": "服务器响应无法读取",
+    "errGeneric": "出了点问题，请重试",
+    "errClosed": "连接在完成前已断开，请重试"
+  },
+  "result": {
+    "audioTooMany": "下载次数过多，请稍后再试。",
+    "audioTooLarge": "音频文件过大。",
+    "audioFailed": "音频下载失败。",
+    "audioEmpty": "音频文件为空。",
+    "close": "关闭",
+    "pause": "暂停视频",
+    "play": "播放视频",
+    "openPreview": "打开预览",
+    "expand": "展开",
+    "contentInfo": "内容信息",
+    "account": "账号",
+    "comments": "评论",
+    "views": "播放量",
+    "likes": "点赞",
+    "noAccount": "无账号",
+    "soundFallback": "TikTok 音乐",
+    "soundOfVideo": "此视频的音乐",
+    "openSound": "在 TikTok 中打开音乐",
+    "downloadingAudio": "正在下载音频",
+    "downloadAudioLong": "从视频下载音频",
+    "downloadAudio": "下载音频",
+    "openAudio": "打开音频",
+    "presetLinks": "预设链接",
+    "preset5mb": "5MB 预设",
+    "fileXml": "XML 文件",
+    "pinned": "已置顶",
+    "byAccount": "来自此账号",
+    "showMore": "显示更多"
+  },
+  "search": {
+    "title": "查找预设",
+    "intro": "输入歌曲名称或关键词，然后选择一个视频来查找其预设链接。",
+    "placeholder": "搜索歌曲名称或关键词...",
+    "keywordLabel": "搜索关键词",
+    "clear": "清除",
+    "suggestionsLabel": "搜索建议",
+    "resultsLabel": "搜索结果",
+    "gridView": "网格视图",
+    "checkFrom": "查看 {name} 的预设",
+    "thisVideo": "此视频",
+    "videoFallback": "TikTok 视频",
+    "noCaption": "无描述",
+    "showMore": "显示更多",
+    "backLabel": "返回视频列表",
+    "back": "返回",
+    "titleLabel": "标题：",
+    "errNoVideos": "未找到视频，请尝试其他关键词。",
+    "errGeneric": "出了点问题，请重试。",
+    "errConnection": "连接已断开，请重试。",
+    "errSecurityShort": "安全验证失败。",
+    "errUnreadable": "无法读取响应。",
+    "errWrong": "出了点问题。",
+    "errLost": "连接已断开。"
+  },
+  "toast": {
+    "found": "找到 {count} 个预设",
+    "foundOne": "找到 1 个预设",
+    "view": "查看",
+    "waLabel": "AM Finder WhatsApp 频道",
+    "waTitle": "加入 AM Finder WhatsApp 频道",
+    "waBody": "获取最新动态"
+  },
+  "support": {
+    "title": "❤️ 喜欢 AM Finder 吗？",
+    "desc": "如果 AM Finder 帮你快速找到了预设，欢迎支持它的开发，让网站持续在线并正常运行。",
+    "cta": "☕ 支持 AM Finder",
+    "later": "以后再说"
+  }
+}

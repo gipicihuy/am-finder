@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LOCALES } from "@/lib/i18n";
+import { LOCALES, LOCALE_CODES } from "@/lib/i18n";
 import { useLocale, useUi } from "@/components/LocaleProvider";
 
 export function LanguageDropdown() {
@@ -63,7 +63,7 @@ export function LanguageDropdown() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span>{locale.toUpperCase()}</span>
+        <span>{LOCALE_CODES[locale]}</span>
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           <path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -86,7 +86,7 @@ export function LanguageDropdown() {
             >
               <span>{ui.lang[code]}</span>
               <span className="lang-code" aria-hidden="true">
-                {code.toUpperCase()}
+                {LOCALE_CODES[code]}
               </span>
             </button>
           ))}

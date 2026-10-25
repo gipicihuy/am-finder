@@ -7,9 +7,7 @@
     "label": "Bahasa",
     "id": "Indonesia",
     "en": "English",
-    "ms": "Melayu",
-    "es": "Español",
-    "pt": "Português"
+    "zh": "中文"
   },
   "common": {
     "close": "Tutup"
