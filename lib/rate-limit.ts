@@ -167,9 +167,9 @@ export function limitHeaders(headers: Headers, scope: Scope): LimitResult {
   return checkLimit(`${scope}:${clientIp(headers)}`, SCOPES[scope]);
 }
 
-export function tooManyRequests(retryAfterSec: number): Response {
+export function tooManyRequests(retryAfterSec: number, message = "kebanyakan permintaan, coba lagi sebentar lagi"): Response {
   return Response.json(
-    { ok: false, error: "kebanyakan permintaan, coba lagi sebentar lagi" },
+    { ok: false, error: message },
     {
       status: 429,
       headers: {

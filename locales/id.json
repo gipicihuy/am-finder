@@ -139,8 +139,8 @@
     "contentInfo": "Info konten",
     "account": "Akun",
     "comments": "Komentar",
-    "views": "Views",
-    "likes": "Likes",
+    "views": "Ditonton",
+    "likes": "Suka",
     "noAccount": "tanpa akun",
     "soundFallback": "Sound TikTok",
     "soundOfVideo": "Sound video ini",
@@ -194,5 +194,24 @@
     "desc": "Kalau AM Finder membantu kamu menemukan preset dengan cepat, kamu bisa ikut mendukung pengembangannya agar web ini tetap aktif dan terus bisa digunakan.",
     "cta": "☕ Beri Dukungan",
     "later": "Nanti aja"
+  },
+  "api": {
+    "badLink": "Link video tidak valid.",
+    "queryShort": "Kata kunci minimal 3 karakter.",
+    "busy": "Server lagi penuh, coba lagi beberapa saat lagi.",
+    "tooMany": "Kebanyakan permintaan, coba lagi sebentar lagi.",
+    "scraperExit": "Scraper berhenti tiba-tiba.",
+    "scraperUnreadable": "Keluaran scraper tidak terbaca.",
+    "searchFailed": "Terjadi kesalahan saat mencari. Silakan coba lagi nanti.",
+    "audioBadId": "ID video tidak valid.",
+    "audioGone": "Audio tidak tersedia atau link sudah kedaluwarsa.",
+    "audioActive": "Masih ada unduhan berjalan, coba lagi.",
+    "audioAborted": "Permintaan dibatalkan.",
+    "audioBusy": "Server sedang sibuk, coba lagi sebentar.",
+    "audioFetch": "Gagal mengambil audio dari sumber, coba lagi.",
+    "audioRefused": "Sumber audio menolak permintaan, coba lagi.",
+    "audioTooBig": "File audio terlalu besar.",
+    "audioNotAudio": "Sumber bukan file audio.",
+    "audioRead": "Gagal membaca audio dari sumber, coba lagi."
   }
 }

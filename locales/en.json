@@ -194,5 +194,24 @@
     "desc": "If AM Finder helps you find presets quickly, you can support its development so the site stays online and keeps working.",
     "cta": "☕ Support AM Finder",
     "later": "Maybe later"
+  },
+  "api": {
+    "badLink": "Invalid video link.",
+    "queryShort": "Query must be at least 3 characters.",
+    "busy": "The server is full, try again in a moment.",
+    "tooMany": "Too many requests, try again shortly.",
+    "scraperExit": "The scraper stopped unexpectedly.",
+    "scraperUnreadable": "Couldn't read the scraper output.",
+    "searchFailed": "Something went wrong while searching. Please try again later.",
+    "audioBadId": "Invalid video ID.",
+    "audioGone": "Audio unavailable or the link has expired.",
+    "audioActive": "A download is already running, try again.",
+    "audioAborted": "Request cancelled.",
+    "audioBusy": "The server is busy, try again shortly.",
+    "audioFetch": "Couldn't fetch the audio from the source, try again.",
+    "audioRefused": "The audio source refused the request, try again.",
+    "audioTooBig": "The audio file is too large.",
+    "audioNotAudio": "The source is not an audio file.",
+    "audioRead": "Couldn't read the audio from the source, try again."
   }
 }

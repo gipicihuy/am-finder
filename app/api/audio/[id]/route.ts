@@ -7,6 +7,8 @@ import {
   soundFileName,
   soundUrl,
 } from "@/lib/audio";
+import { getLocale } from "@/lib/locale-server";
+import { apiText } from "@/lib/api-text";
 import { clientIp } from "@/lib/ip";
 import { limitByIp, tooManyRequests } from "@/lib/rate-limit";
 
@@ -358,16 +360,17 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
+  const locale = await getLocale();
   if (!/^\d{15,20}$/.test(id)) {
-    return audioError(400, "ID video tidak valid");
+    return audioError(400, apiText(locale, "audioBadId"));
   }
 
   const limit = limitByIp(request, "audio");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
 
   const sound = await cachedSoundForVideo(id);
   if (!sound) {
-    return audioError(404, "Audio tidak tersedia atau link sudah kedaluwarsa");
+    return audioError(404, apiText(locale, "audioGone"));
   }
 
   const ip = clientIp(request.headers) || "-";
@@ -376,10 +379,10 @@ export async function GET(
   } catch (error) {
     const reason = error instanceof Error ? error.message : "";
     if (reason === "busy-ip") {
-      return audioError(429, "Masih ada unduhan berjalan, coba lagi", 5);
+      return audioError(429, apiText(locale, "audioActive"), 5);
     }
-    if (reason === "aborted") return audioError(408, "Permintaan dibatalkan");
-    return audioError(503, "Server sedang sibuk, coba lagi sebentar", 10);
+    if (reason === "aborted") return audioError(408, apiText(locale, "audioAborted"));
+    return audioError(503, apiText(locale, "audioBusy"), 10);
   }
 
   let finished = false;
@@ -406,7 +409,7 @@ export async function GET(
   const initial = parseSoundUrl(sound.playUrl);
   if (!initial) {
     cleanup();
-    return audioError(404, "Audio tidak tersedia atau link sudah kedaluwarsa");
+    return audioError(404, apiText(locale, "audioGone"));
   }
 
   const videoInitial = sound.videoPlayUrl ? parseSoundUrl(sound.videoPlayUrl) : null;
@@ -433,7 +436,7 @@ export async function GET(
   }
   if (abortCtrl.signal.aborted) {
     cleanup();
-    return audioError(408, "Permintaan dibatalkan");
+    return audioError(408, apiText(locale, "audioAborted"));
   }
 
   armHeaderTimer();
@@ -442,7 +445,7 @@ export async function GET(
     upstream = await fetchUpstream(initial, abortCtrl.signal);
   } catch {
     cleanup();
-    return audioError(502, "Gagal mengambil audio dari sumber, coba lagi");
+    return audioError(502, apiText(locale, "audioFetch"));
   }
   if (headerTimer) {
     clearTimeout(headerTimer);
@@ -452,7 +455,7 @@ export async function GET(
   if (!upstream.ok || !upstream.body) {
     await upstream.body?.cancel().catch(() => {});
     cleanup();
-    return audioError(502, "Sumber audio menolak permintaan, coba lagi");
+    return audioError(502, apiText(locale, "audioRefused"));
   }
 
   const typeHeader = upstream.headers.get("content-type") || "";
@@ -462,7 +465,7 @@ export async function GET(
   if (length !== null && Number.isFinite(length) && length > MAX_BYTES) {
     await upstream.body.cancel().catch(() => {});
     cleanup();
-    return audioError(413, "File audio terlalu besar");
+    return audioError(413, apiText(locale, "audioTooBig"));
   }
 
   const reader = upstream.body.getReader();
@@ -471,20 +474,20 @@ export async function GET(
     const first = await reader.read();
     if (first.done) {
       cleanup();
-      return audioError(415, "Sumber bukan file audio");
+      return audioError(415, apiText(locale, "audioNotAudio"));
     }
     firstChunk = first.value;
   } catch {
     await reader.cancel().catch(() => {});
     cleanup();
-    return audioError(502, "Gagal membaca audio dari sumber, coba lagi");
+    return audioError(502, apiText(locale, "audioRead"));
   }
 
   const type = resolveAudioMime(typeHeader, firstChunk);
   if (!type) {
     await reader.cancel().catch(() => {});
     cleanup();
-    return audioError(415, "Sumber bukan file audio");
+    return audioError(415, apiText(locale, "audioNotAudio"));
   }
 
   const fileName = soundFileName(sound.title, id, type);

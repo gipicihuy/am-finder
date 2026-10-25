@@ -5,6 +5,8 @@ import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordCari, recordVisit } from "../../../lib/monitor";
 import { rememberQuery } from "../../../lib/suggest";
+import { getLocale } from "../../../lib/locale-server";
+import { apiText } from "../../../lib/api-text";
 import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
 
 export const runtime = "nodejs";
@@ -24,7 +26,6 @@ const TOP_MAX = 5;
 const CANDIDATE_LIMIT = 30;
 // Pesan yang dilihat user kalau semua engine gagal. Detail teknisnya tetap
 // dikirim lewat event "log" biar gampang didebug, tapi jangan nyasar ke user.
-const SEARCH_ERROR_MESSAGE = "Terjadi kesalahan saat mencari. Silakan Coba lagi nanti.";
 
 // Gate lokal sendiri (terpisah dari /api/find) biar halaman test
 // gak menyentuh route lama sama sekali.
@@ -257,6 +258,7 @@ function runVideo(
 }
 
 export async function GET(request: Request) {
+  const locale = await getLocale();
   const guard = guardRequest(request);
   if (!guard.ok) {
     return Response.json(
@@ -269,14 +271,14 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const query = normalizeQuery(params.get("q"));
   if (!query) {
-    return Response.json({ ok: false, error: "query minimal 3 karakter" }, { status: 400 });
+    return Response.json({ ok: false, error: apiText(locale, "queryShort") }, { status: 400 });
   }
 
   // Simpan kata kunci buat autocomplete (murah, tidak menunggu hasil).
   rememberQuery(query);
 
   const limit = limitByIp(request, "search");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
 
   recordVisit(request.headers);
 
@@ -296,9 +298,9 @@ export async function GET(request: Request) {
 
   try {
     await acquire();
-  } catch (error) {
+  } catch {
     return Response.json(
-      { ok: false, error: (error as Error).message },
+      { ok: false, error: apiText(locale, "busy") },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -368,7 +370,7 @@ export async function GET(request: Request) {
           });
         } catch (error) {
           push("log", `[gagal] ${(error as Error).message}`);
-          push("error", { message: SEARCH_ERROR_MESSAGE });
+          push("error", { message: apiText(locale, "searchFailed") });
           finish();
           return;
         }

@@ -194,5 +194,24 @@
     "desc": "如果 AM Finder 帮你快速找到了预设，欢迎支持它的开发，让网站持续在线并正常运行。",
     "cta": "☕ 支持 AM Finder",
     "later": "以后再说"
+  },
+  "api": {
+    "badLink": "视频链接无效。",
+    "queryShort": "关键词至少需要 3 个字符。",
+    "busy": "服务器已满，请稍后再试。",
+    "tooMany": "请求过多，请稍后再试。",
+    "scraperExit": "抓取程序意外停止。",
+    "scraperUnreadable": "无法读取抓取程序的输出。",
+    "searchFailed": "搜索时出错，请稍后再试。",
+    "audioBadId": "视频 ID 无效。",
+    "audioGone": "音频不可用或链接已过期。",
+    "audioActive": "已有下载正在进行，请再试一次。",
+    "audioAborted": "请求已取消。",
+    "audioBusy": "服务器繁忙，请稍后再试。",
+    "audioFetch": "无法从来源获取音频，请再试一次。",
+    "audioRefused": "音频来源拒绝了请求，请再试一次。",
+    "audioTooBig": "音频文件过大。",
+    "audioNotAudio": "来源不是音频文件。",
+    "audioRead": "无法读取来源的音频，请再试一次。"
   }
 }

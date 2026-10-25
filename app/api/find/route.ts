@@ -4,6 +4,8 @@ import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordUrl, recordVisit } from "../../../lib/monitor";
 import { isBareVideoId, videoIdOf } from "../../../lib/tiktok-link";
+import { getLocale } from "../../../lib/locale-server";
+import { apiText } from "../../../lib/api-text";
 import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
 
 export const runtime = "nodejs";
@@ -148,6 +150,7 @@ function encode(event: string, data: unknown) {
 }
 
 export async function GET(request: Request) {
+  const locale = await getLocale();
   const guard = guardRequest(request);
   if (!guard.ok) {
     return Response.json(
@@ -160,11 +163,11 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const target = normalizeTarget(params.get("url"));
   if (!target) {
-    return Response.json({ ok: false, error: "link video tidak valid" }, { status: 400 });
+    return Response.json({ ok: false, error: apiText(locale, "badLink") }, { status: 400 });
   }
 
   const limit = limitByIp(request, "find");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
+  if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
 
   const t0 = Date.now();
   recordVisit(request.headers);
@@ -189,9 +192,9 @@ export async function GET(request: Request) {
 
   try {
     await acquire();
-  } catch (error) {
+  } catch {
     return Response.json(
-      { ok: false, error: (error as Error).message },
+      { ok: false, error: apiText(locale, "busy") },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -261,7 +264,7 @@ export async function GET(request: Request) {
       });
 
       proc.on("error", (error) => {
-        push("error", { message: error.message });
+        push("error", { message: apiText(locale, "scraperExit") });
         finish();
       });
 
@@ -281,12 +284,12 @@ export async function GET(request: Request) {
           parsed = null;
         }
         if (code !== 0) {
-          push("error", { message: parsed?.error || `scraper berhenti dengan kode ${code}` });
+          push("error", { message: apiText(locale, "scraperExit") });
           finish();
           return;
         }
         if (!parsed || typeof parsed !== "object") {
-          push("error", { message: "keluaran scraper tidak terbaca" });
+          push("error", { message: apiText(locale, "scraperUnreadable") });
           finish();
           return;
         }
