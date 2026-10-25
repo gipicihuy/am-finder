@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AmLogo } from "@/components/AmLogo";
-import { LOCALES, type Locale } from "@/lib/i18n";
 import { APK_URL } from "@/lib/app-links";
 import { isInAndroidApp, isIos } from "@/lib/in-app";
 import { clearBrandFlight, flyBrand, prefersReducedMotion } from "@/lib/brand-flight";
-import { useLocale, useUi } from "@/components/LocaleProvider";
+import { useUi } from "@/components/LocaleProvider";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -79,38 +78,8 @@ function HeartIcon() {
   );
 }
 
-function FlagIcon({ code }: { code: Locale }) {
-  const uid = useId().replace(/:/g, "");
-  if (code === "id") {
-    return (
-      <svg viewBox="0 0 3 2" aria-hidden="true" focusable="false">
-        <rect width="3" height="1" fill="#CE1126" />
-        <rect y="1" width="3" height="1" fill="#FFFFFF" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 60 30" aria-hidden="true" focusable="false">
-      <clipPath id={`${uid}-s`}>
-        <path d="M0,0 v30 h60 v-30 z" />
-      </clipPath>
-      <clipPath id={`${uid}-t`}>
-        <path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z" />
-      </clipPath>
-      <g clipPath={`url(#${uid}-s)`}>
-        <path d="M0,0 v30 h60 v-30 z" fill="#012169" />
-        <path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" strokeWidth="6" />
-        <path d="M0,0 L60,30 M60,0 L0,30" clipPath={`url(#${uid}-t)`} stroke="#C8102E" strokeWidth="4" />
-        <path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" strokeWidth="10" />
-        <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" strokeWidth="6" />
-      </g>
-    </svg>
-  );
-}
-
 export function SideMenu() {
   const ui = useUi();
-  const { locale, setLocale } = useLocale();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -266,29 +235,6 @@ export function SideMenu() {
                 {item.label}
               </Link>
             ))}
-          </div>
-          <div className="drawer-card">
-            <span className="drawer-card-icon">
-              <FlagIcon code={locale} />
-            </span>
-            <span className="drawer-card-text">
-              <b>{ui.lang.label}</b>
-              <span>{ui.lang[locale]}</span>
-            </span>
-            <div className="drawer-switch" role="group" aria-label={ui.lang.label}>
-              {LOCALES.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  lang={code}
-                  aria-pressed={locale === code}
-                  aria-label={ui.lang[code]}
-                  onClick={() => setLocale(code)}
-                >
-                  {code.toUpperCase()}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

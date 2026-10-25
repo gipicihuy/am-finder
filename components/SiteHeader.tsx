@@ -1,6 +1,7 @@
 import { AmLogo } from "@/components/AmLogo";
 import { getUi } from "@/lib/ui";
 import { getLocale } from "@/lib/locale-server";
+import { LanguageDropdown } from "@/components/LanguageDropdown";
 import { SideMenu } from "@/components/SideMenu";
 
 export async function SiteHeader() {
@@ -15,6 +16,8 @@ export async function SiteHeader() {
         <div className="nav-title">
           <span className="nav-name">{ui.header.brand}</span>
         </div>
+
+        <LanguageDropdown />
 
         <SideMenu />
       </div>
