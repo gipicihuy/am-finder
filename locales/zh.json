@@ -34,6 +34,25 @@
     "tagline": "从任意 TikTok 或 YouTube 链接查找 Alight Motion 预设",
     "title": "查找预设链接"
   },
+  "history": {
+    "title": "历史记录",
+    "tagline": "你查看过的视频，保存在此设备上。",
+    "count": "{count} 个视频",
+    "filtersLabel": "筛选历史记录",
+    "all": "全部",
+    "found": "已找到",
+    "notFound": "未找到",
+    "unknown": "已保存",
+    "presetCount": "{count} 个预设",
+    "emptyTitle": "还没有历史记录",
+    "emptyText": "你查看过的视频会显示在这里。",
+    "emptyAction": "查找预设",
+    "earlier": "更早",
+    "today": "今天",
+    "yesterday": "昨天",
+    "daysAgo": "{count} 天前",
+    "openLabel": "打开历史记录 {title}"
+  },
   "buttons": {
     "search": "搜索",
     "searching": "搜索中",

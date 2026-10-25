@@ -34,6 +34,25 @@
     "tagline": "Temukan preset Alight Motion dari link TikTok atau YouTube mana pun",
     "title": "Cari link preset"
   },
+  "history": {
+    "title": "Histori",
+    "tagline": "Video yang pernah kamu cek, tersimpan di perangkat ini.",
+    "count": "{count} video",
+    "filtersLabel": "Filter histori",
+    "all": "Semua",
+    "found": "Ketemu",
+    "notFound": "Tidak ketemu",
+    "unknown": "Tersimpan",
+    "presetCount": "{count} preset",
+    "emptyTitle": "Belum ada histori",
+    "emptyText": "Video yang kamu cek bakal muncul di sini.",
+    "emptyAction": "Cari preset",
+    "earlier": "Sebelumnya",
+    "today": "Hari ini",
+    "yesterday": "Kemarin",
+    "daysAgo": "{count} hari lalu",
+    "openLabel": "Buka histori {title}"
+  },
   "buttons": {
     "search": "Cari",
     "searching": "Mencari",

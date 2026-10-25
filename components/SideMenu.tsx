@@ -16,6 +16,10 @@ function isFinderPath(pathname: string): boolean {
   return pathname === "/" || pathname === "/search" || pathname.startsWith("/preset");
 }
 
+function isHistoryPath(pathname: string): boolean {
+  return pathname === "/history" || pathname.startsWith("/history/");
+}
+
 function MenuIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 256 256" aria-hidden="true" focusable="false">
@@ -168,6 +172,7 @@ export function SideMenu() {
   const [donate, whatsapp] = ui.footer.columns[0].items;
   const legal = ui.footer.columns[1].items;
   const finderActive = isFinderPath(pathname);
+  const historyActive = isHistoryPath(pathname);
   const dismiss = () => closeMenu(false);
 
   const drawer = (
@@ -196,13 +201,15 @@ export function SideMenu() {
               <SearchIcon />
               <span>{ui.menu.items.find}</span>
             </Link>
-            <div className="drawer-item is-disabled" aria-disabled="true">
+            <Link
+              className="drawer-item"
+              href="/history"
+              aria-current={historyActive ? "page" : undefined}
+              onClick={dismiss}
+            >
               <ClockIcon />
-              <span className="drawer-item-text">
-                {ui.menu.items.history}
-                <span className="drawer-badge">{ui.menu.comingSoon}</span>
-              </span>
-            </div>
+              <span>{ui.menu.items.history}</span>
+            </Link>
           </div>
 
           {showApk && (

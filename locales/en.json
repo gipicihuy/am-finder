@@ -34,6 +34,25 @@
     "tagline": "Find Alight Motion presets from any TikTok or YouTube link",
     "title": "Find preset links"
   },
+  "history": {
+    "title": "History",
+    "tagline": "Videos you've checked, saved on this device.",
+    "count": "{count} videos",
+    "filtersLabel": "History filters",
+    "all": "All",
+    "found": "Found",
+    "notFound": "Not found",
+    "unknown": "Saved",
+    "presetCount": "{count} presets",
+    "emptyTitle": "No history yet",
+    "emptyText": "Videos you check will show up here.",
+    "emptyAction": "Find presets",
+    "earlier": "Earlier",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{count} days ago",
+    "openLabel": "Open history {title}"
+  },
   "buttons": {
     "search": "Search",
     "searching": "Searching",

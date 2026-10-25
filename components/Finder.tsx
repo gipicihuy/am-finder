@@ -12,6 +12,13 @@ import BrandScan from "./BrandScan";
 import SearchTest from "./SearchTest";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
+import {
+  HISTORY_CHIP_LIMIT,
+  readHistoryEntries,
+  rememberHistoryLink,
+  rememberHistoryResult,
+  type HistoryEntry,
+} from "@/lib/history";
 
 type Phase = "idle" | "running" | "done" | "error";
 
@@ -30,7 +37,6 @@ async function readBattery(): Promise<Battery | null> {
   }
 }
 
-const HISTORY_KEY = "amfinder:history";
 // Kolom link disimpan di sini supaya masih terisi waktu tombol Kembali dari
 // alamat detail (/preset/...) atau waktu pindah tab — komponennya memang ikut
 // di-unmount, jadi state React-nya hilang.
@@ -80,7 +86,7 @@ export function Finder({
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<FindResult | null>(null);
   const [error, setError] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const ui = useUi();
   const [mode, setMode] = useState<Mode>(initialMode ?? "url");
   const pathname = usePathname();
@@ -107,12 +113,7 @@ export function Finder({
       /* cookie bukan kebutuhan utama */
     }
 
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      if (raw) setHistory(JSON.parse(raw));
-    } catch {
-      setHistory([]);
-    }
+    setHistory(readHistoryEntries().slice(0, HISTORY_CHIP_LIMIT));
     let cancelled = false;
     void readBattery().then(battery => {
       if (cancelled) return;
@@ -138,21 +139,7 @@ export function Finder({
     // halaman preset bisa memanggil search() di tick yang sama waktu riwayat
     // belum sempat masuk state — state-nya masih [], dan riwayat lama ikut
     // tertimpa kalau cuma mengandalkan state.
-    let prev: string[] = [];
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      const parsed: unknown = raw ? JSON.parse(raw) : null;
-      if (Array.isArray(parsed)) prev = parsed.filter((x): x is string => typeof x === "string");
-    } catch {
-      /* riwayat lokal bukan kebutuhan utama */
-    }
-    const next = [link, ...prev.filter((item) => item !== link)].slice(0, 6);
-    setHistory(next);
-    try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-    } catch {
-      /* riwayat lokal bukan kebutuhan utama */
-    }
+    setHistory(rememberHistoryLink(link).slice(0, HISTORY_CHIP_LIMIT));
   }
 
   async function search(link: string) {
@@ -216,7 +203,10 @@ export function Finder({
         }
         setResult(data);
         setPhase("done");
-        openDetailAddress(target, data);
+        const detailPath = openDetailAddress(target, data);
+        setHistory(
+          rememberHistoryResult(target, data, detailPath).slice(0, HISTORY_CHIP_LIMIT),
+        );
       } catch {
         setPhase("error");
         setError(ui.finder.errUnreadable);
@@ -331,14 +321,14 @@ export function Finder({
   // Alamat berubah ke /preset/<sumber>/<id> begitu pengecekan selesai, jadi
   // satu video selalu punya satu alamat yang bisa dibagiin. Nggak dipanggil
   // lewat router — biar panel hasilnya tidak hilang.
-  function openDetailAddress(target: string, data: FindResult) {
+  function openDetailAddress(target: string, data: FindResult): string | null {
     const short = shortCodeOf(target);
     const fromInput = videoIdOf(target);
     const source =
       fromInput?.source ??
       (/youtube|youtu\.be/i.test(data.videoUrl ?? "") ? "youtube" : "tiktok");
     const id = fromInput?.id ?? (typeof data.videoId === "string" ? data.videoId : null);
-    if (!id) return;
+    if (!id) return null;
     // Link pendek (vt.tiktok.com/xxx) dipertahankan bentuk pendeknya di alamat —
     // jauh lebih enak dilihat daripada ID numerik panjang. Halaman preset memang
     // menerima kode pendek, jadi tautannya tetap bisa dibuka lagi.
@@ -348,7 +338,7 @@ export function Finder({
         : `/preset/${source}/${id}`;
     // Sudah berdiri di alamat yang benar (misalnya halaman preset yang ke-mount
     // dengan link ini): jangan tambah entri riwayat yang isinya sama.
-    if (window.location.pathname === next) return;
+    if (window.location.pathname === next) return next;
     try {
       localStorage.setItem(DRAFT_KEY, target);
     } catch {
@@ -356,6 +346,7 @@ export function Finder({
     }
     window.history.pushState({ amfDetail: true }, "", next);
     detailRef.current = true;
+    return next;
   }
 
   function onSubmit(event: FormEvent) {
@@ -539,14 +530,14 @@ export function Finder({
         <div className="chips">
           {history.map((item) => (
             <button
-              key={item}
+              key={item.url}
               type="button"
               className="chip"
-              title={item}
+              title={item.url}
               disabled={phase === "running"}
-              onClick={() => search(item)}
+              onClick={() => search(item.url)}
             >
-              {item}
+              {item.url}
             </button>
           ))}
         </div>

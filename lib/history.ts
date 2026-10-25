@@ -1,0 +1,140 @@
+import type { FindResult } from "@/lib/types";
+
+export const HISTORY_KEY = "amfinder:history";
+export const HISTORY_UPDATED_EVENT = "amfinder:history-updated";
+export const HISTORY_LIMIT = 60;
+export const HISTORY_CHIP_LIMIT = 6;
+
+export type HistoryEntry = {
+  url: string;
+  at: number;
+  found: boolean | null;
+  presetCount: number;
+  title: string;
+  author?: string;
+  thumb?: string;
+  detailPath?: string;
+  videoId?: string;
+  source?: "tiktok" | "youtube";
+};
+
+function legacyEntry(url: string): HistoryEntry {
+  return { url, at: 0, found: null, presetCount: 0, title: url };
+}
+
+function isEntry(value: unknown): value is HistoryEntry {
+  if (!value || typeof value !== "object") return false;
+  const entry = value as Record<string, unknown>;
+  return (
+    typeof entry.url === "string" &&
+    entry.url.trim().length > 0 &&
+    typeof entry.at === "number" &&
+    (entry.found === true || entry.found === false || entry.found === null) &&
+    typeof entry.presetCount === "number" &&
+    typeof entry.title === "string"
+  );
+}
+
+export function readHistoryEntries(): HistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .flatMap((item) => {
+        if (typeof item === "string" && item.trim()) return [legacyEntry(item)];
+        return isEntry(item) ? [item] : [];
+      })
+      .sort((a, b) => b.at - a.at)
+      .slice(0, HISTORY_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function writeHistoryEntries(entries: HistoryEntry[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_LIMIT)));
+    window.dispatchEvent(new Event(HISTORY_UPDATED_EVENT));
+  } catch {
+    /* riwayat lokal bukan kebutuhan utama */
+  }
+}
+
+export function rememberHistoryLink(link: string): HistoryEntry[] {
+  const url = link.trim();
+  if (!url) return readHistoryEntries();
+  const previous = readHistoryEntries();
+  const existing = previous.find((entry) => entry.url === url);
+  const entry: HistoryEntry = {
+    ...(existing ?? { url, found: null, presetCount: 0, title: url }),
+    url,
+    at: Date.now(),
+  };
+  const next = [entry, ...previous.filter((item) => item.url !== url)].slice(0, HISTORY_LIMIT);
+  writeHistoryEntries(next);
+  return next;
+}
+
+function cleanTitle(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/#[^\s#]+/g, " ")
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}
+
+export function rememberHistoryResult(
+  link: string,
+  result: FindResult,
+  detailPath?: string | null,
+): HistoryEntry[] {
+  const url = link.trim();
+  if (!url) return readHistoryEntries();
+  const previous = readHistoryEntries();
+  const existing = previous.find((entry) => entry.url === url);
+  const presets = result.presetLinks ?? [];
+  const presetCount = presets.length;
+  const source = /youtube|youtu\.be/i.test(result.videoUrl ?? "")
+    ? "youtube"
+    : "tiktok";
+  const title =
+    cleanTitle(result.video?.description) ||
+    (result.author ? `@${result.author.replace(/^@/, "")}` : "") ||
+    url;
+  const thumb = result.video?.cover || presets.find((preset) => preset.thumb)?.thumb;
+  const entry: HistoryEntry = {
+    ...(existing ?? {}),
+    url,
+    at: existing?.at || Date.now(),
+    found: Boolean(result.found) || presetCount > 0,
+    presetCount,
+    title,
+    author: result.author || result.authorDetail?.uniqueId || existing?.author,
+    thumb: thumb || existing?.thumb,
+    detailPath:
+      detailPath ||
+      existing?.detailPath ||
+      (result.videoId ? `/preset/${source}/${result.videoId}` : undefined),
+    videoId: result.videoId || existing?.videoId,
+    source,
+  };
+  const next = [entry, ...previous.filter((item) => item.url !== url)].slice(0, HISTORY_LIMIT);
+  writeHistoryEntries(next);
+  return next;
+}
+
+export function clearHistoryEntries() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+    window.dispatchEvent(new Event(HISTORY_UPDATED_EVENT));
+  } catch {
+    /* riwayat lokal bukan kebutuhan utama */
+  }
+}
