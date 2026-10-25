@@ -1,4 +1,5 @@
 import type { FindResult } from "@/lib/types";
+import { tiktokId, youtubeId } from "@/lib/tiktok-link";
 
 export const HISTORY_KEY = "amfinder:history";
 export const HISTORY_UPDATED_EVENT = "amfinder:history-updated";
@@ -18,8 +19,21 @@ export type HistoryEntry = {
   source?: "tiktok" | "youtube";
 };
 
-function legacyEntry(url: string): HistoryEntry {
-  return { url, at: 0, found: null, presetCount: 0, title: url };
+function legacyEntry(url: string, index = 0): HistoryEntry {
+  const ytId = youtubeId(url);
+  const ttId = tiktokId(url);
+  const source = ytId ? "youtube" : ttId ? "tiktok" : undefined;
+  const thumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined;
+  return {
+    url,
+    at: Date.now() - (index + 1) * 60_000,
+    found: null,
+    presetCount: 0,
+    title: url,
+    source,
+    thumb,
+    videoId: ytId || ttId || undefined,
+  };
 }
 
 function isEntry(value: unknown): value is HistoryEntry {
@@ -42,9 +56,24 @@ export function readHistoryEntries(): HistoryEntry[] {
     const parsed: unknown = raw ? JSON.parse(raw) : null;
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .flatMap((item) => {
-        if (typeof item === "string" && item.trim()) return [legacyEntry(item)];
-        return isEntry(item) ? [item] : [];
+      .flatMap((item, index) => {
+        if (typeof item === "string" && item.trim()) return [legacyEntry(item, index)];
+        if (isEntry(item)) {
+          // Pulihkan entri lama yang belum memiliki timestamp valid
+          if (!item.at || item.at <= 0) {
+            item.at = Date.now() - (index + 1) * 60_000;
+          }
+          // Backfill thumbnail YouTube bila belum terisi
+          if (!item.thumb) {
+            const ytId = item.videoId && item.source === "youtube" ? item.videoId : youtubeId(item.url);
+            if (ytId) {
+              item.thumb = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
+              item.source = "youtube";
+            }
+          }
+          return [item];
+        }
+        return [];
       })
       .sort((a, b) => b.at - a.at)
       .slice(0, HISTORY_LIMIT);
@@ -68,10 +97,18 @@ export function rememberHistoryLink(link: string): HistoryEntry[] {
   if (!url) return readHistoryEntries();
   const previous = readHistoryEntries();
   const existing = previous.find((entry) => entry.url === url);
+  const ytId = youtubeId(url);
+  const ttId = tiktokId(url);
+  const source = ytId ? "youtube" : ttId ? "tiktok" : undefined;
+  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : existing?.thumb;
+
   const entry: HistoryEntry = {
     ...(existing ?? { url, found: null, presetCount: 0, title: url }),
     url,
     at: Date.now(),
+    source: existing?.source ?? source,
+    videoId: existing?.videoId ?? (ytId || ttId || undefined),
+    thumb: existing?.thumb ?? fallbackThumb,
   };
   const next = [entry, ...previous.filter((item) => item.url !== url)].slice(0, HISTORY_LIMIT);
   writeHistoryEntries(next);
@@ -107,21 +144,28 @@ export function rememberHistoryResult(
     cleanTitle(result.video?.description) ||
     (result.author ? `@${result.author.replace(/^@/, "")}` : "") ||
     url;
-  const thumb = result.video?.cover || presets.find((preset) => preset.thumb)?.thumb;
+  const ytId = result.videoId && source === "youtube" ? result.videoId : youtubeId(url);
+  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined;
+  const thumb =
+    result.video?.cover ||
+    presets.find((preset) => preset.thumb)?.thumb ||
+    fallbackThumb ||
+    existing?.thumb;
+
   const entry: HistoryEntry = {
     ...(existing ?? {}),
     url,
-    at: existing?.at || Date.now(),
+    at: Date.now(),
     found: Boolean(result.found) || presetCount > 0,
     presetCount,
     title,
     author: result.author || result.authorDetail?.uniqueId || existing?.author,
-    thumb: thumb || existing?.thumb,
+    thumb,
     detailPath:
       detailPath ||
       existing?.detailPath ||
       (result.videoId ? `/preset/${source}/${result.videoId}` : undefined),
-    videoId: result.videoId || existing?.videoId,
+    videoId: result.videoId || existing?.videoId || ytId || undefined,
     source,
   };
   const next = [entry, ...previous.filter((item) => item.url !== url)].slice(0, HISTORY_LIMIT);

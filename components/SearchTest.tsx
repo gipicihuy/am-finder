@@ -15,6 +15,7 @@ import { useUi } from "@/components/LocaleProvider";
 import { format } from "@/lib/i18n";
 import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
+import { rememberHistoryLink, rememberHistoryResult } from "@/lib/history";
 
 const BG = "#0F0F10";
 const SURFACE = "#17171A";
@@ -646,6 +647,7 @@ export default function SearchTest({
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
+    rememberHistoryLink(url);
     // Alamat detail yang bisa dibagiin (/preset/tiktok/<id>). ID-nya diambil dari
     // URL kandidat yang memang selalu berbentuk tiktok.com/@user/video/<id>, jadi
     // tidak perlu nunggu pengecekan selesai. Kalau ID-nya tidak terbaca, alamat
@@ -655,7 +657,11 @@ export default function SearchTest({
       window.history.pushState({ amfDetail: true }, "", detailPath ?? "");
     }
     window.scrollTo({ top: 0 });
-    if (details[url]?.state === "done") return;
+    if (details[url]?.state === "done") {
+      const cached = details[url].result;
+      if (cached) rememberHistoryResult(url, cached, detailPath);
+      return;
+    }
 
     checkRef.current?.close();
     const runId = ++checkRunRef.current;
@@ -685,7 +691,9 @@ export default function SearchTest({
 
     source.addEventListener("result", (event) => {
       try {
-        finish({ state: "done", result: JSON.parse((event as MessageEvent).data) as FindResult });
+        const res = JSON.parse((event as MessageEvent).data) as FindResult;
+        finish({ state: "done", result: res });
+        rememberHistoryResult(url, res, detailPath);
       } catch {
         finish({ state: "error", message: ui.search.errUnreadable });
       }

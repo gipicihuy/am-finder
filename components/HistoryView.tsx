@@ -10,6 +10,7 @@ import {
   readHistoryEntries,
   type HistoryEntry,
 } from "@/lib/history";
+import { youtubeId } from "@/lib/tiktok-link";
 
 type Filter = "all" | "found" | "missing";
 type Status = "found" | "missing" | "unknown";
@@ -38,18 +39,21 @@ function historyTime(entry: HistoryEntry, locale: Locale, ui: ReturnType<typeof 
   const clock = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   }).format(date);
 
   if (days === 0) return `${ui.history.today} · ${clock}`;
   if (days === 1) return `${ui.history.yesterday} · ${clock}`;
-  if (days > 1 && days < 7) return format(ui.history.daysAgo, { count: days });
+  if (days > 1 && days < 7) return `${format(ui.history.daysAgo, { count: days })} · ${clock}`;
 
   const sameYear = date.getFullYear() === now.getFullYear();
-  return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+  const dateStr = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     day: "numeric",
     month: "short",
     ...(sameYear ? {} : { year: "numeric" }),
   }).format(date);
+
+  return `${dateStr} · ${clock}`;
 }
 
 function ClockIcon() {
@@ -76,29 +80,55 @@ function statusLabel(entry: HistoryEntry, ui: ReturnType<typeof useUi>): string 
   return ui.history.unknown;
 }
 
+function CardThumb({
+  entry,
+  status,
+  ui,
+  locale,
+}: {
+  entry: HistoryEntry;
+  status: Status;
+  ui: ReturnType<typeof useUi>;
+  locale: Locale;
+}) {
+  const ytId = entry.videoId && entry.source === "youtube" ? entry.videoId : youtubeId(entry.url);
+  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined;
+  const resolvedThumb = entry.thumb || fallbackThumb;
+
+  const [imgFailed, setImgFailed] = useState(false);
+
+  return (
+    <span className={`history-thumb is-${status}`}>
+      {resolvedThumb && !imgFailed ? (
+        <img
+          src={resolvedThumb}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <span className="history-thumb-fallback" aria-hidden="true">
+          <PlayIcon />
+        </span>
+      )}
+      <span className="history-thumb-shade" aria-hidden="true" />
+      <span className={`history-badge is-${status}`}>{statusLabel(entry, ui)}</span>
+      <span className="history-time">
+        <ClockIcon />
+        <span>{historyTime(entry, locale, ui)}</span>
+      </span>
+    </span>
+  );
+}
+
 function CardBody({ entry, locale, ui }: { entry: HistoryEntry; locale: Locale; ui: ReturnType<typeof useUi> }) {
   const status = statusOf(entry);
   const author = entry.author?.replace(/^@/, "");
   return (
     <>
-      <span className={`history-thumb is-${status}`}>
-        {entry.thumb ? (
-          <img
-            src={entry.thumb}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="history-thumb-fallback" aria-hidden="true">
-            <PlayIcon />
-          </span>
-        )}
-        <span className="history-thumb-shade" aria-hidden="true" />
-        <span className={`history-badge is-${status}`}>{statusLabel(entry, ui)}</span>
-        <span className="history-time">{historyTime(entry, locale, ui)}</span>
-      </span>
+      <CardThumb entry={entry} status={status} ui={ui} locale={locale} />
       <span className="history-card-title">{entry.title || entry.url}</span>
       {author ? <span className="history-card-sub">@{author}</span> : null}
     </>
