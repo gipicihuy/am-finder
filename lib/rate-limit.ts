@@ -48,6 +48,10 @@ const SCOPES = {
   // Handshake anti-scrape: mahal di client (HMAC chain), jadi jangan sampai
   // satu IP bisa mengambil challenge tanpa henti.
   handshake: { burst: 12, burstMs: 10_000, sustained: 60, sustainedMs: 60_000, penaltyAt: 80, penaltyMs: 60_000 },
+  // Penukaran bukti PoW → token. Tiap token dipakai untuk satu pencarian, jadi
+  // plafonnya mengikuti batas wajar pengguna asli: 1 pengguna jarang lebih dari
+  // sekitar 40 pencarian per jam.
+  token: { burst: 4, burstMs: 10_000, sustained: 24, sustainedMs: 60_000, penaltyAt: 40, penaltyMs: 60_000 },
   // Laporan dari client (honeypot / runtime watcher).
   security: { burst: 6, burstMs: 10_000, sustained: 20, sustainedMs: 60_000, penaltyAt: 35, penaltyMs: 60_000 },
 } as const satisfies Record<string, ScopeConfig>;

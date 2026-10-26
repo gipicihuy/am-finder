@@ -64,7 +64,9 @@ async function hmacChain(salt: string, message: string, rounds: number): Promise
   );
 
   let value = new TextEncoder().encode(message);
-  const total = Math.max(1, Math.min(10_000, Math.floor(rounds)));
+  // Server yang menentukan biaya (rounds bisa diadaptasi terhadap IP yang
+  // haus). Setelan client tinggal mengikuti, bukan membatasi di bawah server.
+  const total = Math.max(1, Math.min(100_000, Math.floor(rounds)));
   for (let i = 0; i < total; i += 1) {
     value = new Uint8Array(await crypto.subtle.sign("HMAC", key, value as BufferSource));
   }

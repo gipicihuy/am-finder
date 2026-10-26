@@ -15,10 +15,18 @@ const TICKET_TTL_MS = 120_000;
 const NONCE_TTL_MS = 5 * 60_000;
 const FLAG_TTL_MS = 10 * 60_000;
 const MAX_CLOCK_SKEW_MS = 45_000;
-const HMAC_ROUNDS = 4096;
 const MAX_STORE = 20_000;
 const MAX_ALERTS = 4_000;
 const FLAG_MIN_SCORE = 8;
+// Nilai ini menandai tiket "hasil racun": skornya di atas ambang racun, jadi
+// /api/find & /api/search balikin hasil bohong tanpa menolak koneksi.
+const ORIGINLESS_SCORE = 12;
+// Bukti datang lebih cepat dari wajar: tetap di bawah ambang racun supaya
+// pengguna browser asli yang koneksinya ngebut tidak ikut diracuni.
+const FAST_PROOF_SCORE = 6;
+// Gap challenge → bukti di bawah ini dipandang terlalu cepat (bukan dasar
+// flag — lihat FAST_PROOF_SCORE).
+const MIN_PROOF_GAP_MS = 600;
 
 const GOOD_BOT =
   /googlebot|bingbot|duckduckbot|slurp|yandexbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|applebot|petalbot|semrushbot|ahrefsbot/i;
@@ -32,8 +40,27 @@ type Challenge = {
   rounds: number;
   iph: string;
   uah: string;
+  originOk: boolean;
   used: boolean;
 };
+
+// Biaya PoW mengikuti tingkat "haus" satu IP: semakin sering minta challenge
+// dalam jendela 10 menit, makin banyak iterasi HMAC yang harus diselesaikan.
+// Browser nyaman sampai ~100 ribu iterasi (1-2 detik di hp kentang), tapi yang
+// membongkar data massal per request dibikin makin mahal dan gagal lolos rate
+// limit yang sama-sama minta token segar tiap pencarian.
+const ISSUE_WINDOW_MS = 10 * 60_000;
+const ROUND_BASE = 4_096;
+
+type IssueCount = { count: number; resetAt: number; rounds: number };
+
+function roundsForCount(count: number): number {
+  let rounds = ROUND_BASE;
+  for (const step of [12, 24, 48, 96]) {
+    if (count >= step) rounds *= 2;
+  }
+  return rounds;
+}
 
 export type Ticket = {
   sid: string;
@@ -52,6 +79,7 @@ type Store = {
   nonces: Map<string, number>;
   flags: Map<string, Flag>;
   alerts: Map<string, number>;
+  issues: Map<string, IssueCount>;
   lastPrune: number;
 };
 
@@ -95,6 +123,7 @@ function store(): Store {
       nonces: new Map(),
       flags: new Map(),
       alerts: new Map(),
+      issues: new Map(),
       lastPrune: 0,
     };
   }
@@ -115,10 +144,14 @@ function prune(now: number, s = store()): void {
   for (const [key, until] of s.alerts) {
     if (until <= now) s.alerts.delete(key);
   }
+  for (const [key, issue] of s.issues) {
+    if (now > issue.resetAt) s.issues.delete(key);
+  }
 
   if (s.challenges.size > MAX_STORE) s.challenges.clear();
   if (s.nonces.size > MAX_STORE) s.nonces.clear();
   if (s.flags.size > MAX_STORE) s.flags.clear();
+  if (s.issues.size > MAX_STORE) s.issues.clear();
   if (s.alerts.size > MAX_ALERTS) s.alerts.clear();
 }
 
@@ -154,7 +187,10 @@ function fromB64(value: string): Buffer {
   return Buffer.from(value, "base64url");
 }
 
-export function issueChallenge(headers: Headers): {
+export function issueChallenge(
+  headers: Headers,
+  originOk: boolean,
+): {
   cid: string;
   salt: string;
   ts: number;
@@ -164,23 +200,38 @@ export function issueChallenge(headers: Headers): {
   const now = Date.now();
   if (s.challenges.size > MAX_STORE || now - s.lastPrune > 60_000) prune(now, s);
 
+  const ip = ipHash(headers);
+
+  // Naikkan biaya PoW untuk IP yang lagi menghisap data: hitung berapa banyak
+  // challenge yang sudah diambil dalam jendela berjalan. User biasa (beberapa
+  // pencarian) tetap di level dasar selamanya.
+  let issue = s.issues.get(ip);
+  if (!issue || now > issue.resetAt) {
+    issue = { count: 0, resetAt: now + ISSUE_WINDOW_MS, rounds: ROUND_BASE };
+  }
+  issue.count += 1;
+  issue.rounds = roundsForCount(issue.count);
+  s.issues.set(ip, issue);
+
   const cid = randomBytes(12).toString("hex");
   const salt = randomBytes(16).toString("hex");
   const challenge: Challenge = {
     salt,
     ts: now,
-    rounds: HMAC_ROUNDS,
-    iph: ipHash(headers),
+    rounds: issue.rounds,
+    iph: ip,
     uah: uaHash(headers),
+    originOk,
     used: false,
   };
   s.challenges.set(cid, challenge);
-  return { cid, salt, ts: now, rounds: HMAC_ROUNDS };
+  return { cid, salt, ts: now, rounds: challenge.rounds };
 }
 
 export function verifyHandshake(
   input: { cid?: unknown; did?: unknown; ts?: unknown; proof?: unknown; score?: unknown },
   headers: Headers,
+  originOk: boolean,
 ): { ok: true; token: string; exp: number } | { ok: false } {
   const cid = typeof input.cid === "string" ? input.cid : "";
   const did = typeof input.did === "string" ? input.did.trim() : "";
@@ -197,17 +248,43 @@ export function verifyHandshake(
   if (Math.abs(ts - challenge.ts) > 5_000) return { ok: false };
   if (challenge.iph !== ipHash(headers) || challenge.uah !== uaHash(headers)) return { ok: false };
 
+  // Tanda skrip tanpa browser: POST fetch dari browser selalu menyertakan
+  // Origin. Jangan langsung ditolak — cuma diturunkan jadi "hasil racun"
+  // (rickroll) di /api/find, biar skripnya tetap berkembang sambil mak bodoh.
+  const scripted = !originOk || !challenge.originOk;
+  // Gap terlalu cepat memang tak manusiawi, tapi bisa juga menimpa pengguna
+  // browser beneran yang koneksinya ngebut — jadi bukan dasar flag, cuma
+  // menaikkan skor tiket sedikit.
+  const tooFast = Date.now() - challenge.ts < MIN_PROOF_GAP_MS;
+
   const expected = hmacChain(challenge.salt, `${cid}|${did}|${ts}`, challenge.rounds);
   if (!safeEqual(Buffer.from(proof, "hex"), Buffer.from(expected, "hex"))) return { ok: false };
 
   challenge.used = true;
   s.challenges.delete(cid);
 
+  if (scripted) {
+    // Selesaikan flag selama 10 menit supaya request berikutnya dari IP/did
+    // ini juga diracuni, bukan cuma yang bawa token dari handshake ini.
+    const flag = { at: Date.now(), score: FLAG_MIN_SCORE, reasons: ["script handshake"] };
+    s.flags.set(`ip:${clientIp(headers)}`, flag);
+    s.flags.set(`did:${did}`, flag);
+    console.warn("[security] scripted handshake", {
+      ip: clientIp(headers),
+      did,
+      roundMs: Date.now() - challenge.ts,
+    });
+  }
+
   const ticket = issueTicket({
     did,
     iph: challenge.iph,
     uah: challenge.uah,
-    sc: Math.max(0, Math.min(100, Math.round(clientScore))),
+    sc: scripted
+      ? ORIGINLESS_SCORE
+      : tooFast
+        ? FAST_PROOF_SCORE
+        : Math.max(0, Math.min(100, Math.round(clientScore))),
   });
   return ticket;
 }
@@ -294,6 +371,11 @@ export function scoreHeaders(headers: Headers): number {
   let score = 0;
   if (!ua) score += 3;
   if (BAD_UA.test(ua)) score += 10;
+  // UA "setengah browser" (AppleWebKit ada tapi Chrome/Safari/Firefox tidak) —
+  // pola khas HTTP library yang ngaku-ngaku pakai UA Windows.
+  if (/AppleWebKit/i.test(ua) && !/Chrome\/[\d.]+|Safari\/[\d.]+|Firefox\/[\d.]+/i.test(ua)) {
+    score += 6;
+  }
   if (BAD_HEADER.test(headers.get("x-requested-with") || "")) score += 5;
 
   const accept = headers.get("accept") || "";
