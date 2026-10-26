@@ -3408,6 +3408,11 @@ body::before {
   stroke-linejoin: round;
 }
 
+.drawer-item .drawer-icon-fill {
+  fill: currentColor;
+  stroke: none;
+}
+
 .drawer-item .drawer-end {
   width: 18px;
   height: 18px;
