@@ -51,7 +51,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "daysAgo": "{count} days ago",
-    "openLabel": "Open history {title}"
+    "openLabel": "Open history {title}",
+    "showMore": "Show more"
   },
   "buttons": {
     "search": "Search",

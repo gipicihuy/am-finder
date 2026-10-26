@@ -51,7 +51,8 @@
     "today": "Hari ini",
     "yesterday": "Kemarin",
     "daysAgo": "{count} hari lalu",
-    "openLabel": "Buka histori {title}"
+    "openLabel": "Buka histori {title}",
+    "showMore": "Tampilkan lebih banyak"
   },
   "buttons": {
     "search": "Cari",

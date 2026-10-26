@@ -51,7 +51,8 @@
     "today": "今天",
     "yesterday": "昨天",
     "daysAgo": "{count} 天前",
-    "openLabel": "打开历史记录 {title}"
+    "openLabel": "打开历史记录 {title}",
+    "showMore": "显示更多"
   },
   "buttons": {
     "search": "搜索",

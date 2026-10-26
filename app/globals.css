@@ -3901,3 +3901,9 @@ a.history-card:hover {
 .history-card.is-disabled:hover .history-card-title {
   color: var(--foreground);
 }
+
+.history-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}

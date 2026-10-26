@@ -23,7 +23,7 @@ function legacyEntry(url: string, index = 0): HistoryEntry {
   const ytId = youtubeId(url);
   const ttId = tiktokId(url);
   const source = ytId ? "youtube" : ttId ? "tiktok" : undefined;
-  const thumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined;
+  const thumb = ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : undefined;
   return {
     url,
     at: Date.now() - (index + 1) * 60_000,
@@ -71,7 +71,7 @@ export function readHistoryEntries(): HistoryEntry[] {
           if (!item.thumb) {
             const ytId = item.videoId && item.source === "youtube" ? item.videoId : youtubeId(item.url);
             if (ytId) {
-              item.thumb = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
+              item.thumb = `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg`;
               item.source = "youtube";
             }
           }
@@ -104,7 +104,7 @@ export function rememberHistoryLink(link: string): HistoryEntry[] {
   const ytId = youtubeId(url);
   const ttId = tiktokId(url);
   const source = ytId ? "youtube" : ttId ? "tiktok" : undefined;
-  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : existing?.thumb;
+  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : existing?.thumb;
 
   const entry: HistoryEntry = {
     ...(existing ?? { url, found: null, presetCount: 0, title: url }),
@@ -149,7 +149,7 @@ export function rememberHistoryResult(
     (result.author ? `@${result.author.replace(/^@/, "")}` : "") ||
     url;
   const ytId = result.videoId && source === "youtube" ? result.videoId : youtubeId(url);
-  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined;
+  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : undefined;
   const thumb =
     result.video?.cover ||
     presets.find((preset) => preset.thumb)?.thumb ||

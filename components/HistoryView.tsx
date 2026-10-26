@@ -21,6 +21,28 @@ const INTL_LOCALE: Record<Locale, string> = {
   zh: "zh-CN",
 };
 
+const HISTORY_PAGE_SIZE = 12;
+
+// Intl.DateTimeFormat mahal kalau dibuat ulang untuk tiap kartu. Bikin sekali
+// per locale, lalu pakai ulang di semua render.
+const CLOCK_FORMAT: Record<Locale, Intl.DateTimeFormat> = {
+  id: new Intl.DateTimeFormat(INTL_LOCALE.id, { hour: "2-digit", minute: "2-digit", hour12: false }),
+  en: new Intl.DateTimeFormat(INTL_LOCALE.en, { hour: "2-digit", minute: "2-digit", hour12: false }),
+  zh: new Intl.DateTimeFormat(INTL_LOCALE.zh, { hour: "2-digit", minute: "2-digit", hour12: false }),
+};
+
+const DATE_FORMAT: Record<Locale, Intl.DateTimeFormat> = {
+  id: new Intl.DateTimeFormat(INTL_LOCALE.id, { day: "numeric", month: "short" }),
+  en: new Intl.DateTimeFormat(INTL_LOCALE.en, { day: "numeric", month: "short" }),
+  zh: new Intl.DateTimeFormat(INTL_LOCALE.zh, { day: "numeric", month: "short" }),
+};
+
+const DATE_YEAR_FORMAT: Record<Locale, Intl.DateTimeFormat> = {
+  id: new Intl.DateTimeFormat(INTL_LOCALE.id, { day: "numeric", month: "short", year: "numeric" }),
+  en: new Intl.DateTimeFormat(INTL_LOCALE.en, { day: "numeric", month: "short", year: "numeric" }),
+  zh: new Intl.DateTimeFormat(INTL_LOCALE.zh, { day: "numeric", month: "short", year: "numeric" }),
+};
+
 function statusOf(entry: HistoryEntry): Status {
   if (entry.found === true) return "found";
   if (entry.found === false) return "missing";
@@ -36,22 +58,14 @@ function historyTime(entry: HistoryEntry, locale: Locale, ui: ReturnType<typeof 
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const days = Math.round((today - day) / 86_400_000);
-  const clock = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
+  const clock = CLOCK_FORMAT[locale].format(date);
 
   if (days === 0) return `${ui.history.today} · ${clock}`;
   if (days === 1) return `${ui.history.yesterday} · ${clock}`;
   if (days > 1 && days < 7) return `${format(ui.history.daysAgo, { count: days })} · ${clock}`;
 
   const sameYear = date.getFullYear() === now.getFullYear();
-  const dateStr = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-    day: "numeric",
-    month: "short",
-    ...(sameYear ? {} : { year: "numeric" }),
-  }).format(date);
+  const dateStr = (sameYear ? DATE_FORMAT : DATE_YEAR_FORMAT)[locale].format(date);
 
   return `${dateStr} · ${clock}`;
 }
@@ -92,7 +106,7 @@ function CardThumb({
   locale: Locale;
 }) {
   const ytId = entry.videoId && entry.source === "youtube" ? entry.videoId : youtubeId(entry.url);
-  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined;
+  const fallbackThumb = ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : undefined;
   const resolvedThumb = entry.thumb || fallbackThumb;
 
   const [imgFailed, setImgFailed] = useState(false);
@@ -180,6 +194,7 @@ export function HistoryView() {
   const { locale } = useLocale();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
+  const [visible, setVisible] = useState(HISTORY_PAGE_SIZE);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -199,6 +214,11 @@ export function HistoryView() {
     if (filter === "missing") return entries.filter((entry) => entry.found === false);
     return entries;
   }, [entries, filter]);
+  const shown = filtered.slice(0, visible);
+
+  useEffect(() => {
+    setVisible(HISTORY_PAGE_SIZE);
+  }, [filter]);
 
   return (
     <section className="history-page" aria-labelledby="history-title">
@@ -250,9 +270,21 @@ export function HistoryView() {
 
       {loaded && filtered.length > 0 ? (
         <div className="history-grid">
-          {filtered.map((entry) => (
+          {shown.map((entry) => (
             <HistoryCard key={entry.url} entry={entry} locale={locale} ui={ui} />
           ))}
+        </div>
+      ) : null}
+
+      {loaded && filtered.length > visible ? (
+        <div className="history-more">
+          <button
+            type="button"
+            className="text-btn"
+            onClick={() => setVisible((current) => current + HISTORY_PAGE_SIZE)}
+          >
+            {ui.history.showMore}
+          </button>
         </div>
       ) : null}
     </section>
