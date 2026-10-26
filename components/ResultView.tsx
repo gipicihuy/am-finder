@@ -755,20 +755,8 @@ export function ResultView({ result }: { result: FindResult }) {
           {presets.length > presetLimit && (
             <button
               type="button"
+              className="btn-show-more"
               onClick={() => setPresetLimit((limit) => limit + 3)}
-              style={{
-                width: "100%",
-                height: 48,
-                marginTop: 4,
-                borderRadius: 14,
-                background: "#17171A",
-                border: "1px solid #2C2C33",
-                color: "#05FAA8",
-                font: "inherit",
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
             >
               {ui.result.showMore}
             </button>

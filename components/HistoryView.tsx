@@ -280,7 +280,7 @@ export function HistoryView() {
         <div className="history-more">
           <button
             type="button"
-            className="text-btn"
+            className="btn-show-more"
             onClick={() => setVisible((current) => current + HISTORY_PAGE_SIZE)}
           >
             {ui.history.showMore}

@@ -1089,20 +1089,8 @@ export default function SearchTest({
               {cands.length > candLimit && (
                 <button
                   type="button"
+                  className="btn-show-more"
                   onClick={() => setCandLimit((limit) => limit + (view === "grid" ? 4 : 3))}
-                  style={{
-                    width: "100%",
-                    height: 48,
-                    marginTop: 4,
-                    borderRadius: 14,
-                    background: SURFACE,
-                    border: `1px solid ${BORDER}`,
-                    color: ACCENT,
-                    font: "inherit",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
                 >
                   {ui.search.showMore}
                 </button>
