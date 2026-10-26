@@ -1236,25 +1236,41 @@ body::before {
 }
 
 .view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border, var(--surface-3));
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.view-toggle-btn {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  margin: -10px -10px -10px auto;
+  width: 40px;
+  height: 32px;
   padding: 0;
   border: none;
+  border-radius: 999px;
   background: none;
   color: var(--muted);
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-.view-toggle:hover {
+.view-toggle-btn:hover {
   color: var(--foreground);
 }
 
-.view-toggle[aria-pressed="true"] {
+.view-toggle-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
   color: var(--accent);
+}
+
+.view-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* Ganti tampilan list <-> grid: halaman tidak ikut cross-fade, cukup kartunya morph. */

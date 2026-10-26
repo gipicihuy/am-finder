@@ -184,6 +184,8 @@
     "suggestionsLabel": "Search suggestions",
     "resultsLabel": "Search results",
     "gridView": "Grid view",
+    "listView": "List view",
+    "viewMode": "View mode",
     "checkFrom": "Check presets from {name}",
     "thisVideo": "this video",
     "videoFallback": "TikTok video",

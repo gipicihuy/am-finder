@@ -184,6 +184,8 @@
     "suggestionsLabel": "搜索建议",
     "resultsLabel": "搜索结果",
     "gridView": "网格视图",
+    "listView": "列表视图",
+    "viewMode": "视图模式",
     "checkFrom": "查看 {name} 的预设",
     "thisVideo": "此视频",
     "videoFallback": "TikTok 视频",

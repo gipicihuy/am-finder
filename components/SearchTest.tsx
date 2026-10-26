@@ -6,7 +6,7 @@ import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { FoundToast } from "@/components/FoundToast";
-import { ArrowRuleOrnament, GridIcon } from "@/components/Ornament";
+import { ArrowRuleOrnament, GridIcon, ListIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
 const STATE_KEY = "amfinder:search-state";
@@ -430,8 +430,8 @@ export default function SearchTest({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openUrl]);
 
-  function toggleView() {
-    const next = view === "grid" ? "list" : "grid";
+  function toggleView(next: "list" | "grid") {
+    if (next === view) return;
     const apply = () => {
       setView(next);
       // grid tampil per 4 kartu: bulatkan jumlah yang sedang tampil ke atas
@@ -925,15 +925,26 @@ export default function SearchTest({
                   </span>
                   {cands.length} video
                 </h2>
-                <button
-                  type="button"
-                  className="view-toggle"
-                  aria-label={ui.search.gridView}
-                  aria-pressed={view === "grid"}
-                  onClick={toggleView}
-                >
-                  <GridIcon />
-                </button>
+                <div className="view-toggle" role="group" aria-label={ui.search.viewMode}>
+                  <button
+                    type="button"
+                    className="view-toggle-btn"
+                    aria-label={ui.search.listView}
+                    aria-pressed={view === "list"}
+                    onClick={() => toggleView("list")}
+                  >
+                    <ListIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className="view-toggle-btn"
+                    aria-label={ui.search.gridView}
+                    aria-pressed={view === "grid"}
+                    onClick={() => toggleView("grid")}
+                  >
+                    <GridIcon />
+                  </button>
+                </div>
               </div>
               <div
                 ref={deckRef}

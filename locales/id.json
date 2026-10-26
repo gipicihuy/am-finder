@@ -184,6 +184,8 @@
     "suggestionsLabel": "Saran pencarian",
     "resultsLabel": "Hasil pencarian",
     "gridView": "Tampilan grid",
+    "listView": "Tampilan list",
+    "viewMode": "Mode tampilan",
     "checkFrom": "Cek preset dari {name}",
     "thisVideo": "video ini",
     "videoFallback": "Video TikTok",
