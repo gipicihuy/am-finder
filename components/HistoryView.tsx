@@ -136,9 +136,16 @@ function CardBody({ entry, locale, ui }: { entry: HistoryEntry; locale: Locale; 
 }
 
 function HistoryCard({ entry, locale, ui }: { entry: HistoryEntry; locale: Locale; ui: ReturnType<typeof useUi> }) {
-  const href = entry.detailPath || entry.url;
+  const isMissing = entry.found === false;
+  const href = isMissing ? null : entry.detailPath || entry.url;
   const label = format(ui.history.openLabel, { title: entry.title || entry.url });
   const body = <CardBody entry={entry} locale={locale} ui={ui} />;
+
+  // Video yang presetnya tidak ketemu tetap disimpan di histori, tapi jangan
+  // bisa diklik ke halaman detail. Tidak ada yang perlu dibuka di sana.
+  if (!href) {
+    return <div className="history-card is-disabled">{body}</div>;
+  }
 
   if (href.startsWith("/")) {
     return (

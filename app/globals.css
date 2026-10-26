@@ -3869,3 +3869,19 @@ a.history-card:hover {
     animation: none;
   }
 }
+
+.history-card.is-disabled {
+  cursor: default;
+}
+
+.history-card.is-disabled:hover .history-thumb {
+  border-color: var(--border);
+}
+
+.history-card.is-disabled:hover .history-thumb img {
+  transform: none;
+}
+
+.history-card.is-disabled:hover .history-card-title {
+  color: var(--foreground);
+}

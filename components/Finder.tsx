@@ -322,6 +322,11 @@ export function Finder({
   // satu video selalu punya satu alamat yang bisa dibagiin. Nggak dipanggil
   // lewat router — biar panel hasilnya tidak hilang.
   function openDetailAddress(target: string, data: FindResult): string | null {
+    // Video tanpa preset tidak perlu dibuatkan alamat detail. Hasilnya tetap
+    // tampil di halaman pencarian, tapi jangan sampai kartu "Tidak ketemu"
+    // membuka /preset/... yang isinya cuma detail video.
+    if (!data.found && (data.presetLinks?.length ?? 0) === 0) return null;
+
     const short = shortCodeOf(target);
     const fromInput = videoIdOf(target);
     const source =

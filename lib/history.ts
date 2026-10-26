@@ -63,6 +63,10 @@ export function readHistoryEntries(): HistoryEntry[] {
           if (!item.at || item.at <= 0) {
             item.at = Date.now() - (index + 1) * 60_000;
           }
+          // Entri lama dari versi sebelum ini bisa menyimpan detailPath untuk
+          // video yang presetnya tidak ketemu. Jangan biarkan itu membuka
+          // halaman detail lagi.
+          if (item.found === false) item.detailPath = undefined;
           // Backfill thumbnail YouTube bila belum terisi
           if (!item.thumb) {
             const ytId = item.videoId && item.source === "youtube" ? item.videoId : youtubeId(item.url);
@@ -152,19 +156,21 @@ export function rememberHistoryResult(
     fallbackThumb ||
     existing?.thumb;
 
+  const found = Boolean(result.found) || presetCount > 0;
   const entry: HistoryEntry = {
     ...(existing ?? {}),
     url,
     at: Date.now(),
-    found: Boolean(result.found) || presetCount > 0,
+    found,
     presetCount,
     title,
     author: result.author || result.authorDetail?.uniqueId || existing?.author,
     thumb,
-    detailPath:
-      detailPath ||
-      existing?.detailPath ||
-      (result.videoId ? `/preset/${source}/${result.videoId}` : undefined),
+    detailPath: found
+      ? detailPath ||
+        existing?.detailPath ||
+        (result.videoId ? `/preset/${source}/${result.videoId}` : undefined)
+      : undefined,
     videoId: result.videoId || existing?.videoId || ytId || undefined,
     source,
   };
