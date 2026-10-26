@@ -9,6 +9,7 @@ type CacheEntry = {
   ttl?: unknown;
   v?: {
     video?: {
+      description?: unknown;
       playUrl?: unknown;
       playUrlNoWm?: unknown;
       music?: {
@@ -49,35 +50,91 @@ export type CachedSound = {
 };
 
 /**
- * Ambil sound dari cache hasil /api/find. Tidak pernah scraping dan tidak
- * menerima URL dari klien. Null kalau video belum pernah dicek, cache sudah
- * kedaluwarsa, atau URL audionya tidak lolos allowlist.
+ * Ambil sound dari cache hasil /api/find atau live fallback jika belum ada/kedaluwarsa.
+ * Prioritas selalu mengembalikan `videoPlayUrl` agar audio bisa diekstrak langsung
+ * dari video aktual TikTok.
  */
 export async function cachedSoundForVideo(videoId: string): Promise<CachedSound | null> {
   const data = await loadCache();
-  if (!data) return null;
+  if (data) {
+    const entry =
+      data[`video:v10:${videoId}:all`] ??
+      data[`video:v10:${videoId}`] ??
+      Object.entries(data).find(([key]) => key.endsWith(`:${videoId}:all`))?.[1];
 
-  const entry =
-    data[`video:v10:${videoId}:all`] ??
-    data[`video:v10:${videoId}`] ??
-    Object.entries(data).find(([key]) => key.endsWith(`:${videoId}:all`))?.[1];
-  if (!entry || typeof entry.t !== "number") return null;
+    if (entry && typeof entry.t === "number") {
+      const ttl = typeof entry.ttl === "number" ? entry.ttl : 3600;
+      if (Date.now() - entry.t < ttl * 1000) {
+        const video = entry.v?.video;
+        const music = video?.music;
+        const videoPlayUrl =
+          soundUrl(video?.playUrlNoWm) || soundUrl(video?.playUrl) || null;
+        const musicPlayUrl =
+          typeof music?.playUrl === "string" ? soundUrl(music.playUrl) : null;
 
-  const ttl = typeof entry.ttl === "number" ? entry.ttl : 3600;
-  if (Date.now() - entry.t >= ttl * 1000) return null;
+        if (videoPlayUrl || musicPlayUrl) {
+          const rawTitle =
+            (typeof music?.title === "string" && music.title) ||
+            (typeof video?.description === "string" && video.description) ||
+            `sound-${videoId}`;
 
-  const video = entry.v?.video;
-  const music = video?.music;
-  if (!music || typeof music.playUrl !== "string") return null;
+          return {
+            title: cleanSoundTitle(rawTitle, 80),
+            playUrl: musicPlayUrl || videoPlayUrl || "",
+            original: music?.original === true,
+            videoPlayUrl,
+          };
+        }
+      }
+    }
+  }
 
-  const playUrl = soundUrl(music.playUrl);
-  if (!playUrl) return null;
+  // Fallback on-demand via TikWM jika cache belum ada atau URL CDN di cache kedaluwarsa
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(`https://tikwm.com/api/?url=https://www.tiktok.com/@/video/${videoId}`, {
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        Referer: "https://tikwm.com/",
+      },
+    });
+    clearTimeout(timer);
 
-  return {
-    title: cleanSoundTitle(music.title, 80),
-    playUrl,
-    original: music.original === true,
-    videoPlayUrl:
-      soundUrl(video?.playUrlNoWm) || soundUrl(video?.playUrl) || null,
-  };
+    if (res.ok) {
+      const json = (await res.json().catch(() => null)) as
+        | {
+            code?: number;
+            data?: {
+              play?: string;
+              title?: string;
+              music_info?: { title?: string; play?: string; original?: boolean };
+            };
+          }
+        | null;
+
+      if (json?.code === 0 && json.data) {
+        const d = json.data;
+        const videoPlayUrl = soundUrl(d.play);
+        const musicPlayUrl = soundUrl(d.music_info?.play);
+
+        if (videoPlayUrl || musicPlayUrl) {
+          const rawTitle = d.music_info?.title || d.title || `sound-${videoId}`;
+          return {
+            title: cleanSoundTitle(rawTitle, 80),
+            playUrl: musicPlayUrl || videoPlayUrl || "",
+            original: d.music_info?.original === true,
+            videoPlayUrl,
+          };
+        }
+      }
+    }
+  } catch {
+    // Abaikan kegagalan fallback on-demand
+  }
+
+  return null;
 }

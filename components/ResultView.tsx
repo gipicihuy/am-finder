@@ -490,20 +490,22 @@ export function ResultView({ result }: { result: FindResult }) {
   const comments = formatCount(stats?.comments);
   const description = result.video?.description?.trim();
   const music = result.video?.music;
-  const soundTitle = clipText(music?.title, 80);
+  const videoId = result.videoId;
+  const soundTitle = clipText(music?.title || description || "Sound", 80);
   const soundAuthor = clipText(music?.author, 60);
   const soundLink = soundPageHref(music?.id);
   const soundAudio = soundUrl(music?.playUrl);
+  const videoAudio = soundUrl(playUrl);
+  const canDownloadAudio = Boolean(videoId && (soundAudio || videoAudio));
   const soundCover = soundCoverUrl(music?.cover);
-  const videoId = result.videoId;
-  const hasSound = Boolean(soundTitle || soundAuthor || soundLink || soundAudio);
+  const hasSound = Boolean(soundTitle || soundAuthor || soundLink || canDownloadAudio);
 
   async function handleDownload() {
-    if (!soundAudio || !videoId || audioBusy) return;
+    if (!canDownloadAudio || !videoId || audioBusy) return;
 
     // WebView APK v1.5 belum punya DownloadListener. Buka link CDN di browser
     // (perilaku lama) sampai APK v1.6 membawa handler unduhan native.
-    if (isAndroidApp()) {
+    if (isAndroidApp() && soundAudio) {
       const link = document.createElement("a");
       link.href = soundAudio;
       link.target = "_blank";
@@ -652,7 +654,7 @@ export function ResultView({ result }: { result: FindResult }) {
                   <OpenIcon />
                 </a>
               ) : null}
-              {soundAudio && videoId ? (
+              {canDownloadAudio ? (
                 <button
                   type="button"
                   className="sound-btn is-primary"

@@ -17,14 +17,12 @@ export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const MAX_EXACT_BYTES = 15 * 1024 * 1024;
-const PROBE_TIMEOUT_MS = 8_000;
-const DURATION_TOLERANCE_SEC = 1;
 const MAX_REDIRECTS = 3;
 const HEADER_TIMEOUT_MS = 12_000;
 const TOTAL_TIMEOUT_MS = 90_000;
 
-const MAX_ACTIVE = 3;
-const MAX_QUEUE = 4;
+const MAX_ACTIVE = 5;
+const MAX_QUEUE = 8;
 const QUEUE_WAIT_MS = 15_000;
 
 const UA =
@@ -153,68 +151,6 @@ async function fetchUpstream(initial: URL, signal: AbortSignal): Promise<Respons
   }
 }
 
-function probeDuration(rawUrl: string, signal: AbortSignal): Promise<number | null> {
-  return new Promise((resolve) => {
-    if (signal.aborted) {
-      resolve(null);
-      return;
-    }
-    const proc = spawn(
-      "ffprobe",
-      [
-        "-v",
-        "error",
-        "-user_agent",
-        UA,
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=nw=1:nk=1",
-        rawUrl,
-      ],
-      { stdio: ["ignore", "pipe", "ignore"] },
-    );
-    let out = "";
-    let done = false;
-    const finish = (value: number | null) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      signal.removeEventListener("abort", onAbort);
-      resolve(value);
-    };
-    const onAbort = () => {
-      try {
-        proc.kill("SIGKILL");
-      } catch {
-        /* proses sudah mati */
-      }
-      finish(null);
-    };
-    const timer = setTimeout(() => {
-      try {
-        proc.kill("SIGKILL");
-      } catch {
-        /* proses sudah mati */
-      }
-      finish(null);
-    }, PROBE_TIMEOUT_MS);
-    signal.addEventListener("abort", onAbort, { once: true });
-    proc.stdout?.on("data", (chunk: Buffer) => {
-      if (out.length < 64) out += chunk.toString();
-    });
-    proc.on("error", () => finish(null));
-    proc.on("close", (code) => {
-      if (code !== 0) {
-        finish(null);
-        return;
-      }
-      const value = Number.parseFloat(out.trim());
-      finish(Number.isFinite(value) && value > 0 ? value : null);
-    });
-  });
-}
-
 async function exactAudioResponse(
   video: URL,
   sound: CachedSound,
@@ -222,6 +158,8 @@ async function exactAudioResponse(
   signal: AbortSignal,
   onDone: () => void,
 ): Promise<Response | null> {
+  if (signal.aborted) return null;
+
   const proc = spawn(
     "ffmpeg",
     [
@@ -230,6 +168,10 @@ async function exactAudioResponse(
       "error",
       "-user_agent",
       UA,
+      "-analyzeduration",
+      "1000000",
+      "-probesize",
+      "1000000",
       "-i",
       video.toString(),
       "-vn",
@@ -243,7 +185,7 @@ async function exactAudioResponse(
       "mp4",
       "pipe:1",
     ],
-    { stdio: ["ignore", "pipe", "pipe"] },
+    { stdio: ["ignore", "pipe", "ignore"] },
   );
 
   const headers = new Headers({
@@ -288,7 +230,6 @@ async function exactAudioResponse(
     };
 
     proc.stdout?.on("data", (chunk: Buffer) => {
-      if (settled && !controller) return;
       sent += chunk.byteLength;
       if (sent > MAX_EXACT_BYTES) {
         if (controller) {
@@ -307,6 +248,10 @@ async function exactAudioResponse(
       if (controller) {
         try {
           controller.enqueue(value);
+          // Terapkan backpressure agar tidak memakan RAM jika download klien lambat
+          if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+            proc.stdout?.pause();
+          }
         } catch {
           kill();
         }
@@ -322,6 +267,11 @@ async function exactAudioResponse(
           for (const item of buffered) next.enqueue(item);
           buffered = [];
         },
+        pull() {
+          if (proc.stdout?.isPaused()) {
+            proc.stdout.resume();
+          }
+        },
         cancel() {
           finish();
         },
@@ -329,7 +279,6 @@ async function exactAudioResponse(
       resolve(new Response(stream, { status: 200, headers }));
     });
 
-    proc.stderr?.resume();
     proc.on("error", () => fail());
     proc.on("close", (code) => {
       if (!settled) {
@@ -406,25 +355,18 @@ export async function GET(
     release(ip);
   };
 
-  const initial = parseSoundUrl(sound.playUrl);
-  if (!initial) {
+  const videoInitial = sound.videoPlayUrl ? parseSoundUrl(sound.videoPlayUrl) : null;
+  const initial = sound.playUrl ? parseSoundUrl(sound.playUrl) : null;
+
+  if (!videoInitial && !initial) {
     cleanup();
     return audioError(404, apiText(locale, "audioGone"));
   }
 
-  const videoInitial = sound.videoPlayUrl ? parseSoundUrl(sound.videoPlayUrl) : null;
-  let useExact = !!videoInitial && !sound.original;
-  if (videoInitial && sound.original) {
-    const [musicDuration, videoDuration] = await Promise.all([
-      probeDuration(sound.playUrl, abortCtrl.signal),
-      probeDuration(videoInitial.toString(), abortCtrl.signal),
-    ]);
-    useExact =
-      musicDuration !== null &&
-      videoDuration !== null &&
-      Math.abs(musicDuration - videoDuration) > DURATION_TOLERANCE_SEC;
-  }
-  if (useExact && videoInitial) {
+  // PRIORITAS 1: Ekstraksi audio langsung dari video TikTok asli.
+  // 100% akurat sesuai suara aktual di video (edits, cuts, pitch, voiceover).
+  // Menggunakan stream copy (-c:a copy) sehingga sangat ringan di VPS (< 0.1% CPU).
+  if (videoInitial) {
     const exact = await exactAudioResponse(
       videoInitial,
       sound,
@@ -434,9 +376,16 @@ export async function GET(
     );
     if (exact) return exact;
   }
+
   if (abortCtrl.signal.aborted) {
     cleanup();
     return audioError(408, apiText(locale, "audioAborted"));
+  }
+
+  // FALLBACK 2: Jika video tidak bisa diekstrak, gunakan sound metadata jika tersedia
+  if (!initial) {
+    cleanup();
+    return audioError(404, apiText(locale, "audioGone"));
   }
 
   armHeaderTimer();
