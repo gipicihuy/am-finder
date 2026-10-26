@@ -1,40 +1,21 @@
-import { issueChallenge, verifyHandshake } from "../../../../lib/anti-scrape";
-import { limitByIp, tooManyRequests } from "../../../../lib/rate-limit";
+import { randomBytes } from "node:crypto";
+import { issuePoisonTicket } from "../../../../lib/anti-scrape";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Host yang boleh mengirim handshake. Browser selalu menyertakan Origin pada
-// POST fetch; skrip server biasanya tidak. Origin nyasar langsung 403, Origin
-// tidak ada tetap dilayani tapi tiketnya diracuni (lihat verifyHandshake).
-const ALLOWED_ORIGINS = [
-  "https://amfinder.web.id",
-  "https://www.amfinder.web.id",
-  "https://amfinder.cc.cd",
-  "http://127.0.0.1:3000",
-  "http://localhost:3000",
-];
+// HONEYPOT TRAP ROUTE:
+// Rute lama /api/v/2b51359f yang sengaja dibiarkan hidup sebagai perangkap
+// bagi skrip scraper (Axios/Node/Python). Pengguna browser asli sudah beralih
+// ke handshake route yang baru. Setiap request yang memanggil rute ini akan
+// otomatis ditandai (flagged), diracuni (score: 99), dan disuguhkan Rickroll
+// pada /api/find tanpa memakan CPU server sama sekali.
 
 function noStore(data: unknown, status = 200): Response {
   return Response.json(data, {
     status,
     headers: { "Cache-Control": "no-store" },
   });
-}
-
-function sameSiteOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    if (ALLOWED_ORIGINS.includes(origin)) return true;
-    try {
-      return new URL(origin).host === new URL(request.url).host;
-    } catch {
-      return false;
-    }
-  }
-  // Browser fetch POST tanpa Origin itu tidak wajar; pelampungnya adalah
-  // sec-fetch-site dari proxy/extension.
-  return request.headers.get("sec-fetch-site") === "same-origin";
 }
 
 export async function POST(request: Request) {
@@ -44,27 +25,30 @@ export async function POST(request: Request) {
   } catch {
     body = {};
   }
+
   const proofMode = Boolean(body.proof);
 
-  // Dua ambang berbeda: minta challenge murah, tukar bukti lebih dikunci
-  // karena tiap tiket valid dipakai tepat satu pencarian (nonce sekali pakai).
-  const limit = limitByIp(request, proofMode ? "token" : "handshake");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
-
-  const originOk = sameSiteOrigin(request);
-
-  if (request.headers.get("origin") && !originOk) {
-    return noStore({ ok: false, error: "origin tidak dikenal" }, 403);
-  }
-
+  // Tahap 1: Scraper meminta challenge
   if (!proofMode) {
-    return noStore({ ok: true, ...issueChallenge(request.headers, originOk) });
+    const dummyCid = "2b51" + randomBytes(10).toString("hex");
+    const dummySalt = randomBytes(16).toString("hex");
+    return noStore({
+      ok: true,
+      cid: dummyCid,
+      salt: dummySalt,
+      ts: Date.now(),
+      rounds: 4096,
+    });
   }
 
-  const verified = verifyHandshake(body, request.headers, originOk);
-  if (!verified.ok) {
-    return noStore({ ok: false, error: "handshake gagal" }, 403);
-  }
+  // Tahap 2: Scraper menukar PoW proof
+  // Langsung terbitkan tiket racun (score 99) dan pasang flag IP/DID selama 24 jam.
+  const did = typeof body.did === "string" ? body.did : "";
+  const poisonTicket = issuePoisonTicket(request.headers, did);
 
-  return noStore({ ok: true, token: verified.token, exp: verified.exp });
+  return noStore({
+    ok: true,
+    token: poisonTicket.token,
+    exp: poisonTicket.exp,
+  });
 }

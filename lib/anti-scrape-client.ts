@@ -73,8 +73,99 @@ async function hmacChain(salt: string, message: string, rounds: number): Promise
   return bytesToHex(value);
 }
 
+type BrowserEnv = {
+  c: number;
+  sw: number;
+  sh: number;
+  cd: number;
+  dpr: number;
+  tz: string;
+  tzo: number;
+  hc: number;
+  mtp: number;
+  w: boolean;
+  d: boolean;
+};
+
+function computeCanvasChecksum(salt: string): number {
+  if (typeof document === "undefined") return 0;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 48;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return 0;
+
+    const color1 = "#" + (salt.slice(0, 6) || "3b82f6");
+    const color2 = "#" + (salt.slice(6, 12) || "10b981");
+    const grad = ctx.createLinearGradient(0, 0, 128, 48);
+    grad.addColorStop(0, color1);
+    grad.addColorStop(1, color2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 48);
+
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.font = "14px sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("AM:" + salt.slice(0, 8), 10, 28);
+
+    ctx.beginPath();
+    ctx.arc(100, 24, 12, 0, Math.PI * 2);
+    ctx.strokeStyle = "#fbbf24";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const imgData = ctx.getImageData(0, 0, 128, 48).data;
+    let checksum = 0;
+    for (let i = 0; i < imgData.length; i += 4) {
+      checksum = ((checksum << 5) - checksum + imgData[i] + imgData[i + 1] + imgData[i + 2]) | 0;
+    }
+    return checksum === 0 ? 1 : checksum;
+  } catch {
+    return 0;
+  }
+}
+
+function collectBrowserEnv(salt: string): BrowserEnv {
+  const c = computeCanvasChecksum(salt);
+  const sw = typeof screen !== "undefined" && screen.width ? screen.width : 1024;
+  const sh = typeof screen !== "undefined" && screen.height ? screen.height : 768;
+  const cd = typeof screen !== "undefined" && screen.colorDepth ? screen.colorDepth : 24;
+  const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+  let tz = "Asia/Jakarta";
+  try {
+    tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Jakarta";
+  } catch {}
+  const tzo = new Date().getTimezoneOffset();
+  const hc = typeof navigator !== "undefined" && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4;
+  const mtp = typeof navigator !== "undefined" && typeof navigator.maxTouchPoints === "number" ? navigator.maxTouchPoints : 0;
+
+  return {
+    c,
+    sw,
+    sh,
+    cd,
+    dpr,
+    tz,
+    tzo,
+    hc,
+    mtp,
+    w: typeof window !== "undefined",
+    d: typeof document !== "undefined",
+  };
+}
+
+async function computeClientBsig(cid: string, salt: string, env: BrowserEnv): Promise<string> {
+  const str = `${cid}|${salt}|${env.c}|${env.sw}x${env.sh}|${env.cd}|${env.tz}|${env.tzo}|${env.hc}`;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return bytesToHex(new Uint8Array(buf));
+}
+
 async function postJson<T>(body: Record<string, unknown>): Promise<T> {
-  const response = await fetch("/api/v/2b51359f", {
+  const response = await fetch("/api/v/7f91a2e4", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -120,9 +211,12 @@ async function handshakeOnce(): Promise<string> {
     rounds: number;
   }>({ did });
 
+  const env = collectBrowserEnv(challenge.salt);
+  const bsig = await computeClientBsig(challenge.cid, challenge.salt, env);
+
   const proof = await hmacChain(
     challenge.salt,
-    `${challenge.cid}|${did}|${challenge.ts}`,
+    `${challenge.cid}|${did}|${challenge.ts}|${bsig}`,
     challenge.rounds,
   );
 
@@ -131,6 +225,8 @@ async function handshakeOnce(): Promise<string> {
     did,
     ts: challenge.ts,
     proof,
+    bsig,
+    env,
     score: risk.score,
     reasons: risk.reasons,
   });

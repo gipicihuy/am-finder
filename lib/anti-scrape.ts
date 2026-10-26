@@ -13,20 +13,39 @@ import { clientIp } from "./ip";
 const CHALLENGE_TTL_MS = 90_000;
 const TICKET_TTL_MS = 120_000;
 const NONCE_TTL_MS = 5 * 60_000;
-const FLAG_TTL_MS = 10 * 60_000;
+const FLAG_TTL_MS = 24 * 60 * 60_000; // 24 jam untuk client/ip yang kena flag racun
 const MAX_CLOCK_SKEW_MS = 45_000;
 const MAX_STORE = 20_000;
 const MAX_ALERTS = 4_000;
 const FLAG_MIN_SCORE = 8;
 // Nilai ini menandai tiket "hasil racun": skornya di atas ambang racun, jadi
 // /api/find & /api/search balikin hasil bohong tanpa menolak koneksi.
-const ORIGINLESS_SCORE = 12;
+const ORIGINLESS_SCORE = 99;
 // Bukti datang lebih cepat dari wajar: tetap di bawah ambang racun supaya
 // pengguna browser asli yang koneksinya ngebut tidak ikut diracuni.
 const FAST_PROOF_SCORE = 6;
 // Gap challenge → bukti di bawah ini dipandang terlalu cepat (bukan dasar
 // flag — lihat FAST_PROOF_SCORE).
 const MIN_PROOF_GAP_MS = 600;
+
+export type BrowserEnv = {
+  c: number;
+  sw: number;
+  sh: number;
+  cd: number;
+  dpr: number;
+  tz: string;
+  tzo: number;
+  hc: number;
+  mtp: number;
+  w: boolean;
+  d: boolean;
+};
+
+export function computeBsig(cid: string, salt: string, env: BrowserEnv): string {
+  const payload = `${cid}|${salt}|${env.c}|${env.sw}x${env.sh}|${env.cd}|${env.tz}|${env.tzo}|${env.hc}`;
+  return createHash("sha256").update(payload).digest("hex");
+}
 
 const GOOD_BOT =
   /googlebot|bingbot|duckduckbot|slurp|yandexbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|applebot|petalbot|semrushbot|ahrefsbot/i;
@@ -229,18 +248,29 @@ export function issueChallenge(
 }
 
 export function verifyHandshake(
-  input: { cid?: unknown; did?: unknown; ts?: unknown; proof?: unknown; score?: unknown },
+  input: {
+    cid?: unknown;
+    did?: unknown;
+    ts?: unknown;
+    proof?: unknown;
+    bsig?: unknown;
+    env?: unknown;
+    score?: unknown;
+    reasons?: unknown;
+  },
   headers: Headers,
   originOk: boolean,
-): { ok: true; token: string; exp: number } | { ok: false } {
+): { ok: true; token: string; exp: number } | { ok: false; error?: string } {
   const cid = typeof input.cid === "string" ? input.cid : "";
   const did = typeof input.did === "string" ? input.did.trim() : "";
   const ts = typeof input.ts === "number" ? input.ts : 0;
   const proof = typeof input.proof === "string" ? input.proof.toLowerCase() : "";
+  const bsig = typeof input.bsig === "string" ? input.bsig.toLowerCase() : "";
   const clientScore = typeof input.score === "number" ? input.score : 0;
 
   if (!/^[a-f0-9]{24}$/i.test(cid) || did.length < 8 || did.length > 160) return { ok: false };
   if (!/^[a-f0-9]{64}$/i.test(proof)) return { ok: false };
+  if (!/^[a-f0-9]{64}$/i.test(bsig)) return { ok: false };
 
   const s = store();
   const challenge = s.challenges.get(cid);
@@ -248,31 +278,68 @@ export function verifyHandshake(
   if (Math.abs(ts - challenge.ts) > 5_000) return { ok: false };
   if (challenge.iph !== ipHash(headers) || challenge.uah !== uaHash(headers)) return { ok: false };
 
-  // Tanda skrip tanpa browser: POST fetch dari browser selalu menyertakan
-  // Origin. Jangan langsung ditolak — cuma diturunkan jadi "hasil racun"
-  // (rickroll) di /api/find, biar skripnya tetap berkembang sambil mak bodoh.
-  const scripted = !originOk || !challenge.originOk;
-  // Gap terlalu cepat memang tak manusiawi, tapi bisa juga menimpa pengguna
-  // browser beneran yang koneksinya ngebut — jadi bukan dasar flag, cuma
-  // menaikkan skor tiket sedikit.
-  const tooFast = Date.now() - challenge.ts < MIN_PROOF_GAP_MS;
+  // Validasi lingkungan browser asli (canvas, screen, Intl)
+  const rawEnv = input.env;
+  if (!rawEnv || typeof rawEnv !== "object") return { ok: false };
+  const env = rawEnv as Partial<BrowserEnv>;
+  if (
+    env.w !== true ||
+    env.d !== true ||
+    typeof env.c !== "number" ||
+    env.c === 0 ||
+    typeof env.sw !== "number" ||
+    env.sw < 200 ||
+    typeof env.sh !== "number" ||
+    env.sh < 200 ||
+    typeof env.cd !== "number" ||
+    env.cd < 16 ||
+    typeof env.tz !== "string" ||
+    env.tz.length < 2
+  ) {
+    return { ok: false };
+  }
 
-  const expected = hmacChain(challenge.salt, `${cid}|${did}|${ts}`, challenge.rounds);
+  // Hitung ulang bsig di server untuk memastikan keaslian signature browser
+  const expectedBsig = computeBsig(cid, challenge.salt, env as BrowserEnv);
+  if (bsig !== expectedBsig) return { ok: false };
+
+  // Verifikasi HMAC PoW atas gabungan challenge & signature browser
+  const expected = hmacChain(challenge.salt, `${cid}|${did}|${ts}|${bsig}`, challenge.rounds);
   if (!safeEqual(Buffer.from(proof, "hex"), Buffer.from(expected, "hex"))) return { ok: false };
 
   challenge.used = true;
   s.challenges.delete(cid);
 
-  if (scripted) {
-    // Selesaikan flag selama 10 menit supaya request berikutnya dari IP/did
-    // ini juga diracuni, bukan cuma yang bawa token dari handshake ini.
-    const flag = { at: Date.now(), score: FLAG_MIN_SCORE, reasons: ["script handshake"] };
+  const headerScore = scoreHeaders(headers);
+  const scripted = !originOk || !challenge.originOk || headerScore >= FLAG_MIN_SCORE;
+  const tooFast = Date.now() - challenge.ts < MIN_PROOF_GAP_MS;
+  const totalScore = Math.max(headerScore, Math.round(clientScore));
+
+  if (scripted || totalScore >= FLAG_MIN_SCORE) {
+    const flag = {
+      at: Date.now(),
+      score: Math.max(99, totalScore),
+      reasons: [
+        !originOk ? "bad origin" : "",
+        headerScore >= FLAG_MIN_SCORE ? "suspicious headers" : "",
+        "anti-scrape tripwire",
+      ].filter(Boolean),
+    };
     s.flags.set(`ip:${clientIp(headers)}`, flag);
     s.flags.set(`did:${did}`, flag);
-    console.warn("[security] scripted handshake", {
+    console.warn("[security] scripted or suspicious handshake", {
       ip: clientIp(headers),
       did,
+      headerScore,
+      clientScore,
+      totalScore,
       roundMs: Date.now() - challenge.ts,
+    });
+    void sendSecurityAlert(headers, {
+      score: flag.score,
+      reasons: flag.reasons,
+      did,
+      path: "/api/v/handshake",
     });
   }
 
@@ -284,9 +351,57 @@ export function verifyHandshake(
       ? ORIGINLESS_SCORE
       : tooFast
         ? FAST_PROOF_SCORE
-        : Math.max(0, Math.min(100, Math.round(clientScore))),
+        : Math.max(0, Math.min(100, totalScore)),
   });
   return ticket;
+}
+
+export function issuePoisonTicket(
+  headers: Headers,
+  did = "",
+): { ok: true; token: string; exp: number } {
+  const s = store();
+  const now = Date.now();
+  const safeDid = did || `trap-${randomBytes(8).toString("hex")}`;
+  const flag = {
+    at: now,
+    score: 99,
+    reasons: ["honeypot route /api/v/2b51359f hit by scraper"],
+  };
+  s.flags.set(`ip:${clientIp(headers)}`, flag);
+  s.flags.set(`did:${safeDid}`, flag);
+
+  console.warn("[security] honeypot trap triggered", {
+    ip: clientIp(headers),
+    did: safeDid,
+    ua: headers.get("user-agent") || "-",
+  });
+
+  void sendSecurityAlert(headers, {
+    score: 99,
+    reasons: flag.reasons,
+    did: safeDid,
+    path: "/api/v/2b51359f",
+  });
+
+  return issueTicket({
+    did: safeDid,
+    iph: ipHash(headers),
+    uah: uaHash(headers),
+    sc: 99,
+  });
+}
+
+export function flagClient(
+  headers: Headers,
+  did: string,
+  score: number,
+  reasons: string[],
+): void {
+  const s = store();
+  const flag = { at: Date.now(), score, reasons };
+  s.flags.set(`ip:${clientIp(headers)}`, flag);
+  if (did) s.flags.set(`did:${did}`, flag);
 }
 
 function issueTicket(input: { did: string; iph: string; uah: string; sc: number }): {
@@ -369,20 +484,43 @@ export function scoreHeaders(headers: Headers): number {
   if (GOOD_BOT.test(ua)) return 0;
 
   let score = 0;
-  if (!ua) score += 3;
-  if (BAD_UA.test(ua)) score += 10;
-  // UA "setengah browser" (AppleWebKit ada tapi Chrome/Safari/Firefox tidak) —
-  // pola khas HTTP library yang ngaku-ngaku pakai UA Windows.
+  if (!ua) score += 30;
+  if (BAD_UA.test(ua)) score += 50;
+
+  // UA palsu / setengah browser: ngaku AppleWebKit tapi versi Chrome, Safari, atau Firefox tidak ada
+  // (persis seperti yang dipakai skrip axios penyerang)
   if (/AppleWebKit/i.test(ua) && !/Chrome\/[\d.]+|Safari\/[\d.]+|Firefox\/[\d.]+/i.test(ua)) {
-    score += 6;
+    score += 35;
   }
-  if (BAD_HEADER.test(headers.get("x-requested-with") || "")) score += 5;
+  if (BAD_HEADER.test(headers.get("x-requested-with") || "")) score += 25;
+
+  // Browser Chrome/Edge di desktop & mobile WAJIB mengirim sec-ch-ua
+  if (/Chrome\//i.test(ua) && !headers.get("sec-ch-ua")) {
+    score += 25;
+  }
+
+  // Semua browser normal mengirim Accept-Language
+  if (!headers.get("accept-language")) {
+    score += 20;
+  }
+
+  // Browser modern selalu mengirim sec-fetch-site pada fetch dan navigasi
+  const fetchSite = headers.get("sec-fetch-site");
+  if (!fetchSite) {
+    score += 20;
+  } else if (fetchSite !== "same-origin" && fetchSite !== "same-site") {
+    score += 30;
+  }
+
+  // Pemeriksaan referer & origin
+  const origin = headers.get("origin");
+  const referer = headers.get("referer");
+  if (origin && referer && !referer.startsWith(origin)) {
+    score += 25;
+  }
 
   const accept = headers.get("accept") || "";
-  if (accept && !/text\/event-stream|text\/html|application\/json|\*\/\*/i.test(accept)) score += 2;
-  if (!headers.get("accept-language")) score += 1;
-  if (!headers.get("sec-fetch-site")) score += 1;
-  if (/Chrome\//i.test(ua) && !headers.get("sec-ch-ua")) score += 2;
+  if (accept && !/text\/event-stream|text\/html|application\/json|\*\/\*/i.test(accept)) score += 5;
 
   return Math.min(score, 100);
 }
