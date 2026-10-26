@@ -20,14 +20,16 @@
     "groups": {
       "presets": "预设",
       "app": "应用",
-      "support": "支持"
+      "support": "支持",
+      "info": "信息"
     },
     "items": {
       "find": "查找预设",
       "history": "历史记录",
       "apk": "下载安卓应用",
       "whatsapp": "WhatsApp 频道",
-      "donate": "捐赠"
+      "donate": "捐赠",
+      "legal": "法律条款"
     }
   },
   "home": {

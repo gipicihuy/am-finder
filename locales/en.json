@@ -20,14 +20,16 @@
     "groups": {
       "presets": "Presets",
       "app": "App",
-      "support": "Support"
+      "support": "Support",
+      "info": "Information"
     },
     "items": {
       "find": "Find Presets",
       "history": "History",
       "apk": "Download Android App",
       "whatsapp": "WhatsApp Channel",
-      "donate": "Donate"
+      "donate": "Donate",
+      "legal": "Legal"
     }
   },
   "home": {

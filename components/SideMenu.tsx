@@ -82,12 +82,46 @@ function HeartIcon() {
   );
 }
 
+function DocIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v4h4M10 12h5M10 16h5" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg className="drawer-end" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg className="drawer-end drawer-end-toggle" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function ArrowOutIcon() {
+  return (
+    <svg className="drawer-end" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 17L17 7M8 7h9v9" />
+    </svg>
+  );
+}
+
 export function SideMenu() {
   const ui = useUi();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showApk, setShowApk] = useState(false);
+  const [legalOpen, setLegalOpen] = useState(true);
   const openerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -199,7 +233,8 @@ export function SideMenu() {
               onClick={dismiss}
             >
               <SearchIcon />
-              <span>{ui.menu.items.find}</span>
+              <span className="drawer-item-label">{ui.menu.items.find}</span>
+              <ChevronIcon />
             </Link>
             <Link
               className="drawer-item"
@@ -208,42 +243,75 @@ export function SideMenu() {
               onClick={dismiss}
             >
               <ClockIcon />
-              <span>{ui.menu.items.history}</span>
+              <span className="drawer-item-label">{ui.menu.items.history}</span>
+              <ChevronIcon />
             </Link>
           </div>
 
           {showApk && (
             <div className="drawer-group">
               <p className="drawer-label">{ui.menu.groups.app}</p>
-              <a className="drawer-item" href={APK_URL} target="_blank" rel="noopener noreferrer">
+              <a
+                className="drawer-item"
+                href={APK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <DownloadIcon />
-                <span>{ui.menu.items.apk}</span>
+                <span className="drawer-item-label">{ui.menu.items.apk}</span>
+                <ArrowOutIcon />
               </a>
             </div>
           )}
 
           <div className="drawer-group">
             <p className="drawer-label">{ui.menu.groups.support}</p>
-            <a className="drawer-item" href={whatsapp.href} target="_blank" rel="noopener noreferrer">
+            <a
+              className="drawer-item"
+              href={whatsapp.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <ChatIcon />
-              <span>{ui.menu.items.whatsapp}</span>
+              <span className="drawer-item-label">{ui.menu.items.whatsapp}</span>
+              <ArrowOutIcon />
             </a>
-            <a className="drawer-item" href={donate.href} target="_blank" rel="noopener noreferrer">
+            <a
+              className="drawer-item"
+              href={donate.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <HeartIcon />
-              <span>{ui.menu.items.donate}</span>
+              <span className="drawer-item-label">{ui.menu.items.donate}</span>
+              <ArrowOutIcon />
             </a>
+          </div>
+
+          <div className="drawer-group">
+            <p className="drawer-label">{ui.menu.groups.info}</p>
+            <button
+              type="button"
+              className="drawer-item"
+              aria-expanded={legalOpen}
+              aria-controls="drawer-legal"
+              onClick={() => setLegalOpen((value) => !value)}
+            >
+              <DocIcon />
+              <span className="drawer-item-label">{ui.menu.items.legal}</span>
+              <ChevronDownIcon />
+            </button>
+            {legalOpen && (
+              <div className="drawer-sub" id="drawer-legal">
+                {legal.map((item) => (
+                  <Link key={item.href} className="drawer-sub-link" href={item.href} onClick={dismiss}>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </nav>
-
-        <div className="drawer-foot">
-          <div className="drawer-legal">
-            {legal.map((item) => (
-              <Link key={item.href} href={item.href} onClick={dismiss}>
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

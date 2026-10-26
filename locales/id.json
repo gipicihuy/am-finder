@@ -20,14 +20,16 @@
     "groups": {
       "presets": "Preset",
       "app": "Aplikasi",
-      "support": "Dukungan"
+      "support": "Dukungan",
+      "info": "Informasi"
     },
     "items": {
       "find": "Cari Preset",
       "history": "Histori",
       "apk": "Unduh Aplikasi Android",
       "whatsapp": "Saluran WhatsApp",
-      "donate": "Donasi"
+      "donate": "Donasi",
+      "legal": "Legal"
     }
   },
   "home": {
