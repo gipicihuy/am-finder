@@ -564,12 +564,36 @@ export function ResultView({ result }: { result: FindResult }) {
   // konteks preset tidak terdeteksi sama sekali, berarti video memang tidak
   // mengandung preset — walaupun ada sumber lain seperti Chat WA.
   const missText = result.checked?.context !== "none" ? ui.states.noLink : ui.states.notFound;
-
-  // Bagian video selalu dirender, termasuk waktu link preset tidak ditemukan.
-  // Kalau tidak, orang yang membuka /preset/<sumber>/<id> langsung cuma melihat
-  // pesan "tidak ditemukan" tanpa tahu video apa yang baru saja dicek — halaman
-  // terasa buntu dan tidak ada gunanya.
   const shares = result.shareLinks ?? [];
+
+  if (presets.length === 0) {
+    return (
+      <div className="state state-miss" role="status">
+        <strong>❌ {commentsDisabled ? ui.states.commentsDisabled : missText}</strong>
+        {shares.length ? (
+          <div className="miss-sources">
+            <p className="miss-sources-title">{ui.states.shareSources}</p>
+            <div className="miss-sources-list">
+              {shares.map((share) => (
+                <a
+                  key={share.url}
+                  className="share-row"
+                  href={share.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="share-icon">
+                    <ShareIcon share={share} />
+                  </span>
+                  <span className="share-label">{shareLabel(share, ui)}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -686,32 +710,6 @@ export function ResultView({ result }: { result: FindResult }) {
       </section>
       ) : null}
 
-      {presets.length === 0 ? (
-        <div className="state state-miss" role="status">
-          <strong>❌ {commentsDisabled ? ui.states.commentsDisabled : missText}</strong>
-          {shares.length ? (
-            <div className="miss-sources">
-              <p className="miss-sources-title">{ui.states.shareSources}</p>
-              <div className="miss-sources-list">
-                {shares.map((share) => (
-                  <a
-                    key={share.url}
-                    className="share-row"
-                    href={share.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <span className="share-icon">
-                      <ShareIcon share={share} />
-                    </span>
-                    <span className="share-label">{shareLabel(share, ui)}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : (
       <section className="preset-section" aria-label={ui.result.presetLinks}>
           <div className="section-head">
             <h2 className="section-title">
@@ -762,7 +760,6 @@ export function ResultView({ result }: { result: FindResult }) {
             </button>
           )}
       </section>
-      )}
     </>
   );
 }

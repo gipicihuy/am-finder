@@ -3,7 +3,7 @@ import path from "node:path";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordUrl, recordVisit } from "../../../lib/monitor";
-import { isBareVideoId, videoIdOf } from "../../../lib/tiktok-link";
+import { extractVideoUrl, isBareVideoId, videoIdOf } from "../../../lib/tiktok-link";
 import { getLocale } from "../../../lib/locale-server";
 import { apiText } from "../../../lib/api-text";
 import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
@@ -126,23 +126,9 @@ function release() {
 
 function normalizeTarget(raw: string | null): string | null {
   if (!raw) return null;
-  let value = raw.trim().slice(0, 2048);
+  const value = raw.trim().slice(0, 2048);
   if (!value) return null;
-  // ID video polos (TikTok 15-20 digit / YouTube 11 char) diteruskan apa adanya.
-  // Resolvernya memang nerima ID langsung tanpa mengikuti redirect, jadi nggak
-  // perlu dipaksa jadi URL — nambah URL palsu cuma buang request.
-  if (isBareVideoId(value)) return value;
-  if (!/^https?:\/\//i.test(value)) {
-    if (!/^[a-z0-9.-]+\.[a-z]{2,}([/?#]|$)/i.test(value)) return null;
-    value = "https://" + value;
-  }
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    return value;
-  } catch {
-    return null;
-  }
+  return extractVideoUrl(value);
 }
 
 function encode(event: string, data: unknown) {

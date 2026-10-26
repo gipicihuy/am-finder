@@ -1,6 +1,6 @@
 "use client";
 
-import { isVideoLink, shortCodeOf, videoIdOf } from "@/lib/tiktok-link";
+import { extractVideoUrl, isVideoLink, shortCodeOf, videoIdOf } from "@/lib/tiktok-link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { FindResult } from "@/lib/types";
@@ -143,18 +143,19 @@ export function Finder({
   }
 
   async function search(link: string) {
-    const target = link.trim();
-    if (!target) return;
+    const rawTarget = link.trim();
+    if (!rawTarget) return;
 
-    const runId = ++runRef.current;
-    const looksLikeVideo = isVideoLink(target);
-    if (!looksLikeVideo) {
+    const target = extractVideoUrl(rawTarget);
+    if (!target) {
       sourceRef.current?.close();
       finishedRef.current = true;
       setPhase("error");
       setError(ui.finder.errNotVideo);
       return;
     }
+
+    const runId = ++runRef.current;
 
     sourceRef.current?.close();
     finishedRef.current = false;

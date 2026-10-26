@@ -236,7 +236,7 @@ function runVideo(
       const jsonStart = stdout.indexOf("{");
       if (code !== 0 || jsonStart < 0) {
         const tail = stderrBuffer.trim().split("\n").pop();
-        done({ ...meta, found: false, error: (tail || `scraper berhenti dengan kode ${code}`).slice(0, 200) });
+        done({ ...meta, found: false, error: (tail || "gagal memproses video").slice(0, 200) });
         return;
       }
       try {
