@@ -152,8 +152,10 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, error: apiText(locale, "badLink") }, { status: 400 });
   }
 
-  const limit = limitByIp(request, "find");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
+  if (!guard.isInternal) {
+    const limit = limitByIp(request, "find");
+    if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
+  }
 
   const t0 = Date.now();
   recordVisit(request.headers);

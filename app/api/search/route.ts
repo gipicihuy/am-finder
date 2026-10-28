@@ -277,8 +277,10 @@ export async function GET(request: Request) {
   // Simpan kata kunci buat autocomplete (murah, tidak menunggu hasil).
   rememberQuery(query);
 
-  const limit = limitByIp(request, "search");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
+  if (!guard.isInternal) {
+    const limit = limitByIp(request, "search");
+    if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
+  }
 
   recordVisit(request.headers);
 
