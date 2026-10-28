@@ -52,7 +52,7 @@ export function LegalPage({ bundle, doc }: { bundle: LegalBundle; doc: LegalDoc 
         <section className="legal-section" key={s.h}>
           <h2>{doc.numbered ? `${i + 1}. ${s.h}` : s.h}</h2>
           {s.p?.map((t) => (
-            <p key={t}>
+            <p key={t} className={s.intro ? "legal-intro" : undefined}>
               {rich(t)}
             </p>
           ))}

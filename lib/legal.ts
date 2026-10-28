@@ -26,7 +26,7 @@ const id: LegalBundle = {
     crossText: "Kebijakan Privasi",
     sections: [
       { h: "Tentang Layanan", intro: true, p: ["{brand} adalah layanan pencarian gratis untuk menemukan tautan preset Alight Motion yang dibagikan kreator lewat video TikTok. Tersedia dua cara: tempel link video, atau cari dengan kata kunci. Tanpa daftar akun dan tanpa biaya."] },
-      { h: "Penggunaan Hasil Pencarian", p: ["Seluruh tautan preset pada hasil pencarian berasal dari kreator yang mengunggahnya. Tautan itu boleh dipakai untuk edit pribadi, dan kredit kreatornya wajib dicantumkan."] },
+      { h: "Penggunaan Hasil Pencarian", p: ["Seluruh tautan preset pada hasil pencarian berasal dari kreator yang mengunggahnya. Anda dipersilakan menggunakan tautan tersebut untuk keperluan penyuntingan pribadi dan wajib mencantumkan kredit kepada kreator pemiliknya."] },
       { h: "Batas Tanggung Jawab", ul: [
         "Hasil pencarian diambil dari data publik di TikTok. Apabila kreator menghapus video atau komentar aslinya, tautan terkait ikut tidak berlaku dan tidak lagi dapat ditemukan.",
         "Layanan ini tidak menyimpan berkas preset. Setiap tautan mengarah ke layanan pihak ketiga, termasuk TikTok, Alight Motion, dan penyedia hosting berkas, yang berada di luar kendali kami.",

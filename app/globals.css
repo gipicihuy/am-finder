@@ -2044,11 +2044,15 @@ body::before {
 .legal-section h2 {
   margin: 0 0 12px;
   font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: clamp(21px, 5.4vw, 25px);
+  font-size: clamp(24px, 6.6vw, 30px);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   line-height: 1.15;
   color: var(--foreground);
+}
+
+.legal-section p.legal-intro {
+  line-height: 1.8;
 }
 
 /* logo + nama brand di kalimat pembuka, tautan ke beranda */
@@ -2081,28 +2085,14 @@ body::before {
 
 .legal-section ul {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  padding-left: 18px;
 }
 
 .legal-section li {
-  position: relative;
-  padding-left: 18px;
   font-size: 14.5px;
   line-height: 1.65;
   color: var(--muted);
   margin-bottom: 6px;
-}
-
-.legal-section li::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 0.7em;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
 }
 
 .legal-section li:last-child {
