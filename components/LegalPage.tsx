@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
+import { AmLogo } from "@/components/AmLogo";
 import { SectionOrnament } from "@/components/Ornament";
 import type { LegalBundle, LegalDoc } from "@/lib/legal";
 
@@ -12,11 +13,12 @@ function ChevronLeftIcon() {
 }
 
 function rich(text: string): ReactNode {
-  return text.split(/(\{site\}|\{tiktok\})/).map((part, i) => {
-    if (part === "{site}") {
+  return text.split(/(\{brand\}|\{tiktok\})/).map((part, i) => {
+    if (part === "{brand}") {
       return (
-        <Link key={i} className="legal-site" href="/">
-          amfinder.web.id
+        <Link key={i} className="legal-brand" href="/">
+          <AmLogo size={22} />
+          AM Preset Finder
         </Link>
       );
     }
@@ -50,7 +52,7 @@ export function LegalPage({ bundle, doc }: { bundle: LegalBundle; doc: LegalDoc 
         <section className="legal-section" key={s.h}>
           <h2>{doc.numbered ? `${i + 1}. ${s.h}` : s.h}</h2>
           {s.p?.map((t) => (
-            <p key={t} className={s.intro ? "legal-intro" : undefined}>
+            <p key={t}>
               {rich(t)}
             </p>
           ))}

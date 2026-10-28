@@ -2044,27 +2044,28 @@ body::before {
 .legal-section h2 {
   margin: 0 0 12px;
   font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
-  font-size: clamp(24px, 6.6vw, 30px);
+  font-size: clamp(21px, 5.4vw, 25px);
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
   line-height: 1.15;
   color: var(--foreground);
 }
 
-.legal-section p.legal-intro,
-.legal-section .legal-site {
-  line-height: 1.8;
-}
-
-/* nama domain berwarna aksen, tautan ke beranda */
-.legal-site {
+/* logo + nama brand di kalimat pembuka, tautan ke beranda */
+.legal-section a.legal-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: bottom;
   color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
-.legal-section a.legal-site:hover {
-  text-decoration: underline;
+.legal-section a.legal-brand:hover {
+  color: var(--foreground);
 }
 
 .legal-section p {
@@ -2080,14 +2081,28 @@ body::before {
 
 .legal-section ul {
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
 }
 
 .legal-section li {
+  position: relative;
+  padding-left: 18px;
   font-size: 14.5px;
   line-height: 1.65;
   color: var(--muted);
   margin-bottom: 6px;
+}
+
+.legal-section li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.7em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .legal-section li:last-child {

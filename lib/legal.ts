@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 
-/** Token {site} = link ke beranda, {tiktok} = link TikTok @givydev. */
+/** Token {brand} = logo + nama AM Preset Finder (link ke beranda), {tiktok} = link TikTok @givydev. */
 export type LegalSection = { h: string; p?: string[]; ul?: string[]; intro?: boolean };
 export type LegalDoc = {
   metaTitle: string;
@@ -25,8 +25,8 @@ const id: LegalBundle = {
     crossHref: "/privacy",
     crossText: "Kebijakan Privasi",
     sections: [
-      { h: "Tentang Layanan", intro: true, p: ["AM Preset Finder di {site} adalah layanan pencarian gratis yang membantu Anda menemukan tautan preset Alight Motion yang dibagikan kreator melalui video TikTok. Tersedia dua metode pencarian: menempelkan tautan video dan mencari dengan kata kunci. Layanan ini tidak memerlukan pendaftaran akun dan tidak dipungut biaya."] },
-      { h: "Penggunaan Hasil Pencarian", p: ["Seluruh tautan preset pada hasil pencarian berasal dari kreator yang mengunggahnya. Anda dipersilakan menggunakan tautan tersebut untuk keperluan penyuntingan pribadi dan wajib mencantumkan kredit kepada kreator pemiliknya."] },
+      { h: "Tentang Layanan", intro: true, p: ["{brand} adalah layanan pencarian gratis untuk menemukan tautan preset Alight Motion yang dibagikan kreator lewat video TikTok. Tersedia dua cara: tempel link video, atau cari dengan kata kunci. Tanpa daftar akun dan tanpa biaya."] },
+      { h: "Penggunaan Hasil Pencarian", p: ["Seluruh tautan preset pada hasil pencarian berasal dari kreator yang mengunggahnya. Tautan itu boleh dipakai untuk edit pribadi, dan kredit kreatornya wajib dicantumkan."] },
       { h: "Batas Tanggung Jawab", ul: [
         "Hasil pencarian diambil dari data publik di TikTok. Apabila kreator menghapus video atau komentar aslinya, tautan terkait ikut tidak berlaku dan tidak lagi dapat ditemukan.",
         "Layanan ini tidak menyimpan berkas preset. Setiap tautan mengarah ke layanan pihak ketiga, termasuk TikTok, Alight Motion, dan penyedia hosting berkas, yang berada di luar kendali kami.",
@@ -66,7 +66,7 @@ const en: LegalBundle = {
     crossHref: "/privacy",
     crossText: "Privacy Policy",
     sections: [
-      { h: "About the Service", intro: true, p: ["AM Preset Finder at {site} is a free search service that helps you find Alight Motion preset links shared by creators in TikTok videos. There are two ways to search: paste a video link or search by keyword. The service requires no account and is free of charge."] },
+      { h: "About the Service", intro: true, p: ["{brand} is a free search service for finding Alight Motion preset links that creators share in TikTok videos. There are two ways to search: paste a video link, or search by keyword. No account and no fee."] },
       { h: "Use of Search Results", p: ["All preset links in the results come from the creators who posted them. You may use these links for personal editing and must credit the creator who owns them."] },
       { h: "Limitation of Liability", ul: [
         "Results are taken from public data on TikTok. If a creator deletes the original video or comment, the related link stops working and can no longer be found.",
@@ -107,7 +107,7 @@ const zh: LegalBundle = {
     crossHref: "/privacy",
     crossText: "隐私政策",
     sections: [
-      { h: "关于本服务", intro: true, p: ["{site} 上的 AM Preset Finder 是一项免费搜索服务，帮助您找到创作者通过 TikTok 视频分享的 Alight Motion 预设链接。提供两种搜索方式：粘贴视频链接或按关键词搜索。本服务无需注册账号，也不收取费用。"] },
+      { h: "关于本服务", intro: true, p: ["{brand} 是一项免费搜索服务，用于查找创作者在 TikTok 视频中分享的 Alight Motion 预设链接。有两种搜索方式：粘贴视频链接，或按关键词搜索。无需注册账号，也不收费。"] },
       { h: "搜索结果的使用", p: ["搜索结果中的所有预设链接均来自发布它们的创作者。您可以将这些链接用于个人剪辑，并须向其所有者创作者注明出处。"] },
       { h: "责任限制", ul: [
         "搜索结果取自 TikTok 上的公开数据。若创作者删除原视频或评论，相关链接将随之失效，也无法再被找到。",
