@@ -27,6 +27,14 @@ const URL_RE =
   /(?:https?:\/\/|www\.|wa\.me|t\.me|drive\.google|alight(?:creative)?|vt\.tiktok|tiktok\.com)/i;
 const DOMAIN_RE = /\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/i;
 
+// Kata/frasa yang menandakan pencarian umum non-preset (lirik, chord gitar, makna/tafsir lagu, dll.)
+const NON_PRESET_RE =
+  /\b(?:lirik(?: lagu| terjemahan)?|lyrics?|arti lirik|terjemahan lirik|teks lagu|makna(?: lagu|nya)?|menceritakan(?: tentang)?|artinya(?: apa)?|arti kata|arti lagu|maksud(?:nya)?(?: lagu| apa)?|sinopsis|kisah di balik|chords?|chordtela|chord gitar|chord ultimate|chord original|kunci (?:gitar|ukulele|nada)|not (?:angka|pianika|balok)|tablature|tab gitar|kord(?: gitar)?|ciptaan(?: siapa)?|pencipta(?: lagu)?|lagu siapa|siapa penyanyi|siapa pencipta|penyanyi asli|rilis tahun|mp3|download (?:lagu|mp3|video)|unduh (?:lagu|mp3|video)|full album|stafaband|planetlagu|karaoke(?: version)?|no vocal|vocal only|official (?:music )?video|official video|video klip|mv resmi|audio resmi|biodata|profil|agama|umur|resep|daun salam|khasiat|manfaat|gejala|obat|apakah boleh)\b/i;
+
+// Pengecualian: jika kueri mengandung kata penjelas preset / editing video, tetap diizinkan.
+const PRESET_CONTEXT_RE =
+  /\b(?:preset|am|alight motion|xml|5mb|dibawah 5mb|jj|jedag jedug|cc|coloring|typography|tipografi|template|shake|mograph|overlay|transisi|smooth|remix|dj|sound)\b/i;
+
 // Alasan sebuah teks tidak layak jadi saran. Null = layak.
 function rejectReason(text) {
   if (text.length < MIN_LENGTH) return "terlalu pendek";
@@ -36,6 +44,10 @@ function rejectReason(text) {
   if (URL_RE.test(text) || DOMAIN_RE.test(text)) return "url/domain";
   if (/\d{5,}/.test(text)) return "deret angka";
   if ((text.match(/\d/g) || []).length >= 8) return "terlalu banyak angka";
+
+  if (NON_PRESET_RE.test(text) && !PRESET_CONTEXT_RE.test(text)) {
+    return "tidak berhubungan dengan preset";
+  }
 
   const chars = [...text].filter((ch) => !/\s/.test(ch));
   const letters = chars.filter((ch) => /\p{L}/u.test(ch)).length;
