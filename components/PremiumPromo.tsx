@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const WA_URL =
-  "https://wa.me/6283182725011?text=" + encodeURIComponent("Halo, saya mau beli Alight Motion Premium");
+  "https://wa.me/6283182725011?text=" + encodeURIComponent("Halo, saya mau beli Alight Motion Premium (Rp4.900)");
 const SHOW_DELAY_MS = 2500; // jeda setelah halaman dimuat sebelum bar muncul
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
 
@@ -41,7 +41,12 @@ export function PremiumPromo() {
       </span>
       <span className="promo-text">
         <span className="promo-title">Alight Motion Premium</span>
-        <span className="promo-sub">Hanya Rp5.000🔥</span>
+        <span className="promo-sub">
+          <span className="promo-sr">Harga normal Rp10.000, sekarang Rp4.900, hemat 51%.</span>
+          <s className="promo-old" aria-hidden="true">Rp10.000</s>
+          <span className="promo-price" aria-hidden="true">Rp4.900🔥</span>
+          <span className="promo-badge" aria-hidden="true">-51%</span>
+        </span>
       </span>
       <a className="promo-cta" href={WA_URL} target="_blank" rel="noopener noreferrer">
         Beli
