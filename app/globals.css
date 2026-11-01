@@ -4056,11 +4056,6 @@ a.history-card:hover {
   color: var(--text-soft);
 }
 
-.promo-sub b {
-  font-weight: 800;
-  color: var(--accent);
-}
-
 .promo-cta {
   flex: none;
   display: inline-flex;
