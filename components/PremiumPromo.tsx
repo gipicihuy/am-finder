@@ -43,9 +43,9 @@ export function PremiumPromo() {
         <span className="promo-title">Alight Motion Premium</span>
         <span className="promo-sub">
           <span className="promo-sr">Harga normal Rp10.000, sekarang Rp4.900, hemat 51%.</span>
+          <span className="promo-badge" aria-hidden="true">HEMAT 51%</span>
           <span className="promo-price" aria-hidden="true">Rp4.900</span>
           <s className="promo-old" aria-hidden="true">Rp10.000</s>
-          <span className="promo-badge" aria-hidden="true">HEMAT 51%</span>
         </span>
       </span>
       <a className="promo-cta" href={WA_URL} target="_blank" rel="noopener noreferrer">
