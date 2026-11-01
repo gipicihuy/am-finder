@@ -53,7 +53,9 @@ export function PremiumPromo() {
       </span>
       <span className="promo-text">
         <span className="promo-title">Alight Motion Premium</span>
-        <span className="promo-sub">5k</span>
+        <span className="promo-sub">
+          <b>5k</b> » Hanya Rp5.000🔥
+        </span>
       </span>
       <a className="promo-cta" href={WA_URL} target="_blank" rel="noopener noreferrer">
         Beli
