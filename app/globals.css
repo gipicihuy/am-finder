@@ -4070,6 +4070,14 @@ a.history-card:hover {
   text-decoration: none;
 }
 
+/* a:hover global mewarnai teks jadi hijau; di tombol hijau itu bikin "Beli" hilang */
+.promo-cta:hover,
+.promo-cta:focus,
+.promo-cta:active,
+.promo-cta:visited {
+  color: var(--accent-ink);
+}
+
 .promo-cta:focus-visible,
 .promo-close:focus-visible {
   outline: 2px solid var(--accent);
