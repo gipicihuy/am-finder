@@ -4107,24 +4107,41 @@ a.history-card:hover {
 
 .promo-sub {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 13px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
   font-weight: 500;
   color: var(--text-soft);
 }
 
+.promo-price {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
 .promo-old {
+  font-size: 12px;
+  white-space: nowrap;
   color: var(--muted);
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
 }
 
-.promo-price {
+.promo-badge {
+  align-self: center;
+  padding: 2px 6px;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.14);
+  font-size: 10px;
   font-weight: 800;
-  color: var(--foreground);
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #34d399;
 }
 
 .promo-sr {
