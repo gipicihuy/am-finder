@@ -4105,27 +4105,23 @@ a.history-card:hover {
   letter-spacing: -0.01em;
 }
 
+.promo-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+
 .promo-sub {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-top: 12px; /* ruang buat badge yang menempel di atas harga coret */
   font-size: 13px;
   font-weight: 500;
   color: var(--text-soft);
 }
 
-.promo-was {
-  position: relative;
-  display: inline-block;
-}
-
-/* menempel di atas Rp10.000, sedikit bergeser ke kanan */
 .promo-badge {
-  position: absolute;
-  bottom: 100%;
-  left: 10px;
-  margin-bottom: -2px;
   padding: 1px 5px;
   border: 1px solid rgba(5, 250, 168, 0.4);
   background: var(--accent-soft);
