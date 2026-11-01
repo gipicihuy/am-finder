@@ -8,10 +8,14 @@ const WA_URL =
 const SHOW_DELAY_MS = 2500; // jeda setelah halaman dimuat sebelum bar muncul
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
 
-function CrownIcon() {
+/** Logo Alight Motion (empat lengkung spiral). */
+function AlightMotionIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5L3 8z" />
+    <svg width="30" height="30" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M43.5 28.33a19.5 19.5 0 0 0-39 0" />
+      <path d="M18.47 32.593a6.923 6.923 0 0 0 9.79-9.79" />
+      <path d="M23.25 39.17a11.227 11.227 0 1 0 0-22.454" />
+      <path d="M34.602 38.222a14.637 14.637 0 1 0-20.7-20.7" />
     </svg>
   );
 }
@@ -45,13 +49,11 @@ export function PremiumPromo() {
       aria-label="Promo Alight Motion Premium"
     >
       <span className="promo-icon" aria-hidden="true">
-        <CrownIcon />
+        <AlightMotionIcon />
       </span>
       <span className="promo-text">
         <span className="promo-title">Alight Motion Premium</span>
-        <span className="promo-sub">
-          <b className="promo-tag">PROMO</b> Beli lewat WhatsApp
-        </span>
+        <span className="promo-sub">5k</span>
       </span>
       <a className="promo-cta" href={WA_URL} target="_blank" rel="noopener noreferrer">
         Beli
