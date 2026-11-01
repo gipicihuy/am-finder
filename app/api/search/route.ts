@@ -85,6 +85,7 @@ type Candidate = {
   kind?: string;
   snippet?: string;
   thumb?: string;
+  thumbFallback?: string;
 };
 
 type SearchResult = {
@@ -186,6 +187,7 @@ function runVideo(
       kind: cand.kind ?? "video",
       snippet: cand.snippet ?? "",
       thumb: cand.thumb ?? "",
+      thumbFallback: cand.thumbFallback ?? "",
     };
     push("log", `[video ${index + 1}] ${cand.url}`);
     push("videoStart", meta);

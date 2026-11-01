@@ -31,6 +31,7 @@ type Candidate = {
   kind?: string;
   snippet?: string;
   thumb?: string;
+  thumbFallback?: string;
 };
 
 type Detail = {
@@ -81,6 +82,86 @@ function vtName(url: string): string {
 /** Thumbnail dimorph terpisah supaya gambarnya ikut meluncur, bukan cuma cross-fade. */
 function thumbName(url: string): string {
   return `${vtName(url)}-t`;
+}
+
+function PlayIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 6.5v11l8-5.5z" />
+    </svg>
+  );
+}
+
+function CandThumb({
+  url,
+  thumb,
+  fallback,
+  isGrid,
+}: {
+  url: string;
+  thumb?: string;
+  fallback?: string;
+  isGrid?: boolean;
+}) {
+  const [src, setSrc] = useState(thumb || fallback || "");
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setSrc(thumb || fallback || "");
+    setFailed(false);
+  }, [thumb, fallback]);
+
+  const handleError = () => {
+    if (fallback && src !== fallback) {
+      setSrc(fallback);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <span
+      style={{
+        viewTransitionName: thumbName(url),
+        position: "relative",
+        width: isGrid ? "100%" : 64,
+        height: isGrid ? undefined : 86,
+        aspectRatio: isGrid ? "9 / 16" : undefined,
+        flexShrink: isGrid ? undefined : 0,
+        borderRadius: 10,
+        background: BG,
+        border: `1px solid ${BORDER}`,
+        overflow: "hidden",
+      }}
+    >
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={handleError}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: MUTED,
+          }}
+          aria-hidden="true"
+        >
+          <PlayIcon />
+        </span>
+      )}
+    </span>
+  );
 }
 
 type SearchTestProps = {
@@ -976,28 +1057,7 @@ export default function SearchTest({
                     cursor: "pointer",
                   }}
                 >
-                  <span
-                    style={{
-                      viewTransitionName: thumbName(c.url),
-                      position: "relative",
-                      width: "100%",
-                      aspectRatio: "9 / 16",
-                      borderRadius: 10,
-                      background: BG,
-                      border: `1px solid ${BORDER}`,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {c.thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={c.thumb}
-                        alt=""
-                        loading="lazy"
-                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : null}
-                  </span>
+                  <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} isGrid />
                   <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.handle || ui.search.videoFallback}
                   </span>
@@ -1041,29 +1101,7 @@ export default function SearchTest({
                     cursor: "pointer",
                   }}
                 >
-                  <span
-                    style={{
-                      viewTransitionName: thumbName(c.url),
-                      position: "relative",
-                      width: 64,
-                      height: 86,
-                      flexShrink: 0,
-                      borderRadius: 10,
-                      background: BG,
-                      border: `1px solid ${BORDER}`,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {c.thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={c.thumb}
-                        alt=""
-                        loading="lazy"
-                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : null}
-                  </span>
+                  <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} />
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: "block", fontSize: 15, fontWeight: 700, marginBottom: 5 }}>
                       {c.handle || ui.search.videoFallback}
