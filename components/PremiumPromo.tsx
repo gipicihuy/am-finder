@@ -8,18 +8,6 @@ const WA_URL =
 const SHOW_DELAY_MS = 2500; // jeda setelah halaman dimuat sebelum bar muncul
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
 
-/** Logo Alight Motion (empat lengkung spiral). */
-function AlightMotionIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M43.5 28.33a19.5 19.5 0 0 0-39 0" />
-      <path d="M18.47 32.593a6.923 6.923 0 0 0 9.79-9.79" />
-      <path d="M23.25 39.17a11.227 11.227 0 1 0 0-22.454" />
-      <path d="M34.602 38.222a14.637 14.637 0 1 0-20.7-20.7" />
-    </svg>
-  );
-}
-
 /**
  * Bar promo Alight Motion Premium: melayang di dekat bawah layar (tetap terlihat
  * saat scroll), ada tombol tutup. Tampil lagi setiap halaman dimuat ulang
@@ -49,7 +37,7 @@ export function PremiumPromo() {
       aria-label="Promo Alight Motion Premium"
     >
       <span className="promo-icon" aria-hidden="true">
-        <AlightMotionIcon />
+        <img src="/alight-motion.webp" alt="" width={44} height={44} />
       </span>
       <span className="promo-text">
         <span className="promo-title">Alight Motion Premium</span>

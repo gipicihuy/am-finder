@@ -4026,8 +4026,15 @@ a.history-card:hover {
   height: 44px;
   border: 1px solid var(--border);
   border-radius: 10px;
+  overflow: hidden;
   background: var(--background);
-  color: var(--accent);
+}
+
+.promo-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .promo-text {
