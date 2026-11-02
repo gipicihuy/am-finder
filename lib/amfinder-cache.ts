@@ -9,6 +9,7 @@ type CacheEntry = {
   ttl?: unknown;
   v?: {
     video?: {
+      title?: unknown;
       description?: unknown;
       playUrl?: unknown;
       playUrlNoWm?: unknown;
@@ -60,7 +61,9 @@ export async function cachedSoundForVideo(videoId: string): Promise<CachedSound 
     const entry =
       data[`video:v10:${videoId}:all`] ??
       data[`video:v10:${videoId}`] ??
-      Object.entries(data).find(([key]) => key.endsWith(`:${videoId}:all`))?.[1];
+      data[`video:v10:yt:${videoId}:all`] ??
+      data[`video:v10:yt:${videoId}`] ??
+      Object.entries(data).find(([key]) => key.endsWith(`:${videoId}:all`) || key.endsWith(`:${videoId}`))?.[1];
 
     if (entry && typeof entry.t === "number") {
       const ttl = typeof entry.ttl === "number" ? entry.ttl : 3600;
@@ -72,17 +75,28 @@ export async function cachedSoundForVideo(videoId: string): Promise<CachedSound 
         const musicPlayUrl =
           typeof music?.playUrl === "string" ? soundUrl(music.playUrl) : null;
 
-        if (videoPlayUrl || musicPlayUrl) {
-          const rawTitle =
-            (typeof music?.title === "string" && music.title) ||
-            (typeof video?.description === "string" && video.description) ||
-            `sound-${videoId}`;
+        const rawTitle =
+          (typeof music?.title === "string" && music.title) ||
+          (typeof video?.title === "string" && video.title) ||
+          (typeof video?.description === "string" && video.description) ||
+          `sound-${videoId}`;
 
+        if (videoPlayUrl || musicPlayUrl) {
           return {
             title: cleanSoundTitle(rawTitle, 80),
             playUrl: musicPlayUrl || videoPlayUrl || "",
             original: music?.original === true,
             videoPlayUrl,
+          };
+        }
+
+        // Dukungan untuk YouTube video di cache
+        if (/^[\w-]{11}$/.test(videoId)) {
+          return {
+            title: cleanSoundTitle(rawTitle, 80),
+            playUrl: `https://www.youtube.com/watch?v=${videoId}`,
+            original: true,
+            videoPlayUrl: null,
           };
         }
       }

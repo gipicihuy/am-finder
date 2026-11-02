@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
+import { isYoutubeLink, youtubeId } from "@/lib/tiktok-link";
 import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { useUi } from "@/components/LocaleProvider";
@@ -242,12 +243,14 @@ function VideoPreview({
   width,
   height,
   allowMotion,
+  ytId,
 }: {
   src?: string;
   poster?: string;
   width?: number;
   height?: number;
   allowMotion: boolean;
+  ytId?: string | null;
 }) {
   const ui = useUi();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -259,6 +262,7 @@ function VideoPreview({
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [ytActive, setYtActive] = useState(false);
 
   const requestClose = useCallback(() => {
     if (closingRef.current) return;
@@ -371,7 +375,45 @@ function VideoPreview({
           </svg>
         </button>
       ) : null}
-      {src ? (
+      {ytId && (ytActive || expanded) ? (
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}
+          title={ui.result.openPreview}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+        />
+      ) : ytId ? (
+        <div
+          style={{ position: "relative", width: "100%", height: "100%", cursor: "pointer" }}
+          onClick={() => setYtActive(true)}
+        >
+          <img src={poster} alt="" loading="lazy" referrerPolicy="no-referrer" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div className="video-center-play" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 4.8 19 12 8 19.2z" />
+            </svg>
+          </div>
+          {!expanded ? (
+            <button
+              type="button"
+              className="video-expand"
+              onClick={(e) => {
+                e.stopPropagation();
+                openPreview();
+              }}
+              aria-label={ui.result.expand}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M9 21H3v-6" />
+                <path d="M21 3l-7 7" />
+                <path d="M3 21l7-7" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
+      ) : src ? (
         <video
           ref={videoRef}
           src={src}
@@ -402,7 +444,7 @@ function VideoPreview({
       ) : (
         <img src={poster} alt="" loading="lazy" title={ui.result.openPreview} onClick={openPreview} />
       )}
-      {src ? (
+      {src && !ytId ? (
         <>
           <div className="video-progress" aria-hidden="true">
             <span ref={fillRef} />
@@ -480,6 +522,15 @@ export function ResultView({ result }: { result: FindResult }) {
     setCoverFailed(false);
   }, [result]);
 
+  const isYt = Boolean(
+    isYoutubeLink(result.input || "") ||
+    isYoutubeLink(result.video?.url || "") ||
+    (result.videoId && result.videoId.length === 11)
+  );
+  const ytId = isYt
+    ? youtubeId(result.input || "") || youtubeId(result.video?.url || "") || result.videoId
+    : null;
+
   const presets = result.presetLinks ?? [];
   const avatar = result.authorDetail?.avatar;
   const cover = result.video?.cover;
@@ -490,14 +541,14 @@ export function ResultView({ result }: { result: FindResult }) {
   const comments = formatCount(stats?.comments);
   const description = result.video?.description?.trim();
   const music = result.video?.music;
-  const videoId = result.videoId;
-  const soundTitle = clipText(music?.title || description || "Sound", 80);
-  const soundAuthor = clipText(music?.author, 60);
-  const soundLink = soundPageHref(music?.id);
+  const videoId = result.videoId || ytId;
+  const soundTitle = clipText(music?.title || result.video?.title || description || "Sound", 80);
+  const soundAuthor = clipText(music?.author || result.author || result.authorDetail?.nickname || "", 60);
+  const soundLink = isYt && ytId ? `https://www.youtube.com/watch?v=${ytId}` : soundPageHref(music?.id);
   const soundAudio = soundUrl(music?.playUrl);
   const videoAudio = soundUrl(playUrl);
-  const canDownloadAudio = Boolean(videoId && (soundAudio || videoAudio));
-  const soundCover = soundCoverUrl(music?.cover);
+  const canDownloadAudio = Boolean(videoId && (soundAudio || videoAudio || isYt));
+  const soundCover = soundCoverUrl(music?.cover) || (isYt ? cover : null);
   const hasSound = Boolean(soundTitle || soundAuthor || soundLink || canDownloadAudio);
 
   async function handleDownload() {
@@ -606,6 +657,7 @@ export function ResultView({ result }: { result: FindResult }) {
           width={result.video?.width}
           height={result.video?.height}
           allowMotion={allowMotion}
+          ytId={ytId}
         />
         <div className="content-main">
         {description ? <p className="meta-desc">{description}</p> : null}

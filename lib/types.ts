@@ -25,6 +25,7 @@ export type VideoStats = {
 export type FindResult = {
   ok: boolean;
   found?: boolean;
+  input?: string;
   author?: string | null;
   videoUrl?: string;
   message?: string;
@@ -50,6 +51,9 @@ export type FindResult = {
   presetLinks?: PresetLink[];
   otherLinks?: { url: string; source?: string; detail?: string }[];
   video?: {
+    id?: string;
+    url?: string;
+    title?: string;
     description?: string;
     stats?: VideoStats;
     cover?: string;

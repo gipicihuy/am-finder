@@ -304,13 +304,173 @@ async function exactAudioResponse(
   });
 }
 
+async function youtubeAudioResponse(
+  id: string,
+  title: string,
+  signal: AbortSignal,
+  onDone: () => void,
+): Promise<Response | null> {
+  if (signal.aborted) return null;
+
+  const ytdlpBin = process.env.YTDLP_BIN || "/usr/local/bin/yt-dlp";
+  const ytdlp = spawn(
+    ytdlpBin,
+    [
+      "-f",
+      "bestaudio[ext=m4a]/bestaudio/best",
+      "-o",
+      "-",
+      "--no-playlist",
+      `https://www.youtube.com/watch?v=${id}`,
+    ],
+    { stdio: ["ignore", "pipe", "ignore"] },
+  );
+
+  const ffmpeg = spawn(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "pipe:0",
+      "-vn",
+      "-c:a",
+      "libmp3lame",
+      "-b:a",
+      "192k",
+      "-f",
+      "mp3",
+      "pipe:1",
+    ],
+    { stdio: ["pipe", "pipe", "ignore"] },
+  );
+
+  ytdlp.stdout.pipe(ffmpeg.stdin);
+
+  const headers = new Headers({
+    "Content-Type": "audio/mpeg",
+    "Content-Disposition": contentDisposition(
+      soundFileName(title, id, "audio/mpeg"),
+      soundFileName("", id, "audio/mpeg"),
+    ),
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Accept-Ranges": "none",
+  });
+
+  return new Promise((resolve) => {
+    let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let buffered: Uint8Array[] = [];
+    let sent = 0;
+    let settled = false;
+    let finished = false;
+
+    const kill = () => {
+      try {
+        ytdlp.kill("SIGKILL");
+      } catch {}
+      try {
+        ffmpeg.kill("SIGKILL");
+      } catch {}
+    };
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      signal.removeEventListener("abort", kill);
+      kill();
+      onDone();
+    };
+
+    signal.addEventListener("abort", kill, { once: true });
+
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      kill();
+      resolve(null);
+    };
+
+    ytdlp.on("error", () => fail());
+    ffmpeg.on("error", () => fail());
+
+    ffmpeg.stdout?.on("data", (chunk: Buffer) => {
+      sent += chunk.byteLength;
+      if (sent > MAX_EXACT_BYTES) {
+        if (controller) {
+          try {
+            controller.error(new Error("file audio terlalu besar"));
+          } catch {}
+          finish();
+        } else {
+          fail();
+        }
+        return;
+      }
+      const value = new Uint8Array(chunk);
+      if (controller) {
+        try {
+          controller.enqueue(value);
+          if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+            ffmpeg.stdout?.pause();
+          }
+        } catch {
+          kill();
+        }
+        return;
+      }
+      buffered.push(value);
+      if (settled) return;
+
+      settled = true;
+      const stream = new ReadableStream<Uint8Array>({
+        start(next) {
+          controller = next;
+          for (const item of buffered) next.enqueue(item);
+          buffered = [];
+        },
+        pull() {
+          if (ffmpeg.stdout?.isPaused()) {
+            ffmpeg.stdout.resume();
+          }
+        },
+        cancel() {
+          finish();
+        },
+      });
+      resolve(new Response(stream, { status: 200, headers }));
+    });
+
+    ffmpeg.on("close", (code) => {
+      if (!settled) {
+        fail();
+        return;
+      }
+      if (!controller) return;
+      if (code === 0) {
+        try {
+          controller.close();
+        } catch {}
+      } else {
+        try {
+          controller.error(new Error("gagal mengekstrak audio"));
+        } catch {}
+      }
+      finish();
+    });
+  });
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   const locale = await getLocale();
-  if (!/^\d{15,20}$/.test(id)) {
+  const isTiktokId = /^\d{15,20}$/.test(id);
+  const isYtId = /^[\w-]{11}$/.test(id);
+  if (!isTiktokId && !isYtId) {
     return audioError(400, apiText(locale, "audioBadId"));
   }
 
@@ -318,7 +478,7 @@ export async function GET(
   if (!limit.ok) return tooManyRequests(limit.retryAfterSec, apiText(locale, "tooMany"));
 
   const sound = await cachedSoundForVideo(id);
-  if (!sound) {
+  if (!sound && !isYtId) {
     return audioError(404, apiText(locale, "audioGone"));
   }
 
@@ -354,6 +514,19 @@ export async function GET(
     request.signal.removeEventListener("abort", onRequestAbort);
     release(ip);
   };
+
+  if (isYtId) {
+    const title = sound?.title || `youtube-audio-${id}`;
+    const ytRes = await youtubeAudioResponse(id, title, abortCtrl.signal, cleanup);
+    if (ytRes) return ytRes;
+    cleanup();
+    return audioError(500, "Gagal mengunduh audio YouTube");
+  }
+
+  if (!sound) {
+    cleanup();
+    return audioError(404, apiText(locale, "audioGone"));
+  }
 
   const videoInitial = sound.videoPlayUrl ? parseSoundUrl(sound.videoPlayUrl) : null;
   const initial = sound.playUrl ? parseSoundUrl(sound.playUrl) : null;
