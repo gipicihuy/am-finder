@@ -156,7 +156,7 @@ function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text: logMsg }),
-    signal: AbortSignal.timeout(3000),
+    signal: AbortSignal.timeout(8000),
   }).catch(() => {});
 }
 
