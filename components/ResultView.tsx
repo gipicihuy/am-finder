@@ -253,6 +253,8 @@ function CopyButton({ url }: { url: string }) {
 
 const EASE_OPEN = "cubic-bezier(0.22, 1, 0.36, 1)";
 const EASE_CLOSE = "cubic-bezier(0.4, 0, 0.2, 1)";
+// Jarak tombol overlay (mute/expand/close) dari sudut video, sama dengan CSS.
+const CONTROL_INSET = 6;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -307,6 +309,29 @@ function VideoPreview({
       [{ transform: "translate(-50%, -50%) scale(1)" }, { transform: flipTransform(slot, current) }],
       { duration: 220, easing: EASE_CLOSE, fill: "forwards" },
     );
+    // Kotak video mengecil (scale), jadi tombol di dalamnya ikut mengecil lalu
+    // "loncat" ke ukuran normal saat selesai. Lawan skalanya supaya ukuran
+    // tombol di layar tetap 28px sepanjang animasi.
+    const scale = slot.width / current.width;
+    if (scale > 0 && Number.isFinite(scale)) {
+      const shift = CONTROL_INSET / scale - CONTROL_INSET;
+      box
+        .querySelectorAll<HTMLElement>(".video-mute, .video-close, .video-expand, .video-center-play")
+        .forEach((el) => {
+          const center = el.classList.contains("video-center-play");
+          const right = el.classList.contains("video-close") || el.classList.contains("video-expand");
+          el.style.transformOrigin = center ? "center" : right ? "top right" : "top left";
+          const from = center ? "translate(-50%, -50%)" : "none";
+          const to = center
+            ? `translate(-50%, -50%) scale(${1 / scale})`
+            : `translate(${right ? -shift : shift}px, ${shift}px) scale(${1 / scale})`;
+          el.animate([{ transform: from }, { transform: to }], {
+            duration: 220,
+            easing: EASE_CLOSE,
+            fill: "forwards",
+          });
+        });
+    }
     const finish = () => {
       closingRef.current = false;
       setClosing(false);
@@ -325,7 +350,15 @@ function VideoPreview({
     const box = boxRef.current;
     if (!box) return;
     if (!expanded) {
-      if (typeof box.getAnimations === "function") box.getAnimations().forEach((animation) => animation.cancel());
+      if (typeof box.getAnimations === "function") {
+        let running: Animation[];
+        try {
+          running = box.getAnimations({ subtree: true });
+        } catch {
+          running = box.getAnimations();
+        }
+        running.forEach((animation) => animation.cancel());
+      }
       return;
     }
     const first = firstRectRef.current;
@@ -430,7 +463,7 @@ function VideoPreview({
         <div className="video-preview video-preview-ghost" ref={ghostRef} style={{ aspectRatio: ratio }} aria-hidden="true" />
       ) : null}
       <div
-        className={`video-preview${expanded ? " is-open" : ""}`}
+        className={`video-preview${expanded ? " is-open" : ""}${closing ? " is-closing" : ""}`}
         ref={boxRef}
         style={{ aspectRatio: ratio }}
       >
@@ -494,16 +527,14 @@ function VideoPreview({
           >
             <VolumeIcon muted={muted} />
           </button>
-          {!expanded ? (
-            <button type="button" className="video-expand" onClick={handleExpandClick} aria-label={ui.result.expand}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M15 3h6v6" />
-                <path d="M9 21H3v-6" />
-                <path d="M21 3l-7 7" />
-                <path d="M3 21l7-7" />
-              </svg>
-            </button>
-          ) : null}
+          <button type="button" className="video-expand" onClick={handleExpandClick} aria-label={ui.result.expand}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 3h6v6" />
+              <path d="M9 21H3v-6" />
+              <path d="M21 3l-7 7" />
+              <path d="M3 21l7-7" />
+            </svg>
+          </button>
         </>
       ) : null}
       </div>

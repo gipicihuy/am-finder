@@ -1110,6 +1110,18 @@ body::before {
   border-color: rgba(5, 250, 168, 0.5);
 }
 
+/* Saat preview terbuka, tombol expand disembunyikan seketika (diganti tombol
+   close). Saat menutup, ia muncul halus di sudut yang sama. */
+.video-expand {
+  transition: color 120ms ease, border-color 120ms ease, opacity 160ms ease-out 60ms;
+}
+
+.video-preview.is-open:not(.is-closing) .video-expand {
+  visibility: hidden;
+  opacity: 0;
+  transition: none;
+}
+
 .video-mute {
   position: absolute;
   top: 6px;
