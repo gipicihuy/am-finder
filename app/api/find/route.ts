@@ -135,6 +135,31 @@ function encode(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
+  const presets = Array.isArray(row.presetLinks) ? (row.presetLinks as Record<string, any>[]) : [];
+  const waPresets = presets.filter((p) => p.source === "saluran WA" || p.source === "saluran");
+  if (!waPresets.length) return;
+
+  const linksText = waPresets
+    .map((p, i) => `${i + 1}. ${p.url} (${String(p.type || "").toUpperCase()})`)
+    .join("\n");
+
+  const logMsg =
+    `📢 *[AM-FINDER LOG]*\n\n` +
+    `Berhasil mengambil preset dari *Saluran WhatsApp*!\n` +
+    `• *Author:* ${row.author || "-"}\n` +
+    `• *Video:* ${row.videoUrl || inputUrl}\n` +
+    `• *Total Preset:* ${waPresets.length}\n\n` +
+    `*Links:*\n${linksText}`;
+
+  void fetch("http://127.0.0.1:4040/notify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: logMsg }),
+    signal: AbortSignal.timeout(3000),
+  }).catch(() => {});
+}
+
 export async function GET(request: Request) {
   const locale = await getLocale();
   const guard = guardRequest(request);
@@ -164,6 +189,7 @@ export async function GET(request: Request) {
   // baru di monitor karena memang tidak ada yang diperiksa ulang.
   const cached = peekRecent(target);
   if (cached) {
+    notifyIfWaChannel(cached as Record<string, any>, target);
     return sseOf([
       ["log", "hasil barusan sudah dicek, langsung ditampilkan"],
       ["result", cached],
@@ -287,6 +313,7 @@ export async function GET(request: Request) {
           presets: Array.isArray(parsed.presetLinks) ? parsed.presetLinks.length : 0,
           ms: Date.now() - t0,
         });
+        notifyIfWaChannel((parsed || {}) as Record<string, any>, target);
         rememberRecent(target, parsed);
         push("result", parsed);
         finish();
