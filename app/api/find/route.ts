@@ -135,20 +135,6 @@ function encode(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-async function notifyWa(text: string) {
-  try {
-    const res = await fetch("http://127.0.0.1:4040/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-      signal: AbortSignal.timeout(3000),
-    });
-    console.log("[notifyWa] status:", res.status);
-  } catch (err: any) {
-    console.error("[notifyWa] err:", err.message);
-  }
-}
-
 export async function GET(request: Request) {
   const locale = await getLocale();
   const guard = guardRequest(request);
@@ -178,26 +164,11 @@ export async function GET(request: Request) {
   // baru di monitor karena memang tidak ada yang diperiksa ulang.
   const cached = peekRecent(target);
   if (cached) {
-    const c = cached as Record<string, any>;
-    void notifyWa(
-      `⚡ *[AM-FINDER]* (Cache Hit)\n\n` +
-      `Preset langsung diambil dari cache!\n` +
-      `• *URL:* ${target}\n` +
-      `• *Author:* ${c.author || '-'}\n` +
-      `• *Preset:* ${Array.isArray(c.presetLinks) ? c.presetLinks.length : 0} link`
-    );
     return sseOf([
       ["log", "hasil barusan sudah dicek, langsung ditampilkan"],
       ["result", cached],
     ]);
   }
-
-  void notifyWa(
-    `🔍 *[AM-FINDER SEARCH]*\n\n` +
-    `User mengklik Cari di Web!\n` +
-    `• *URL:* ${target}\n` +
-    `• *Waktu:* ${new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" })} WIB`
-  );
 
   const battery = params.has("bat")
     ? normalizeBattery({
@@ -316,34 +287,6 @@ export async function GET(request: Request) {
           presets: Array.isArray(parsed.presetLinks) ? parsed.presetLinks.length : 0,
           ms: Date.now() - t0,
         });
-
-        const p = (parsed || {}) as Record<string, any>;
-        if (p.found) {
-          const presets = Array.isArray(p.presetLinks) ? (p.presetLinks as Record<string, any>[]) : [];
-          const sources = [...new Set(presets.map((x) => x.source).filter(Boolean))];
-          const linksText = presets
-            .slice(0, 6)
-            .map((x, i) => `${i + 1}. [${String(x.type || '').toUpperCase()}] ${x.url} (${x.source || 'web'})`)
-            .join("\n");
-
-          void notifyWa(
-            `✅ *[AM-FINDER RESULT]*\n\n` +
-            `Preset BERHASIL ditemukan! (${((Date.now() - t0) / 1000).toFixed(1)}s)\n` +
-            `• *Author:* ${p.author || '-'}\n` +
-            `• *Sumber Preset:* ${sources.join(', ') || '-'}\n` +
-            `• *Total Preset:* ${presets.length}\n\n` +
-            `*Links:*\n${linksText}`
-          );
-        } else {
-          void notifyWa(
-            `❌ *[AM-FINDER RESULT]*\n\n` +
-            `Preset TIDAK ditemukan (${((Date.now() - t0) / 1000).toFixed(1)}s)\n` +
-            `• *Author:* ${p.author || '-'}\n` +
-            `• *URL:* ${target}\n` +
-            `• *Pesan:* ${p.message || 'Link preset tidak ditemukan'}`
-          );
-        }
-
         rememberRecent(target, parsed);
         push("result", parsed);
         finish();
