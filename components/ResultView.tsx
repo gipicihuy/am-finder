@@ -166,14 +166,11 @@ function OpenIcon() {
   );
 }
 
-function VideoDownloadIcon() {
+function VideoIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="4" width="13" height="11" rx="2" />
-      <path d="m15 8.5 5.5-3v7l-5.5-3" />
-      <circle cx="18" cy="18" r="4.8" fill="var(--accent)" stroke="var(--surface-2)" strokeWidth="1.6" />
-      <path d="M18 15.9v4.2" stroke="var(--accent-ink)" strokeWidth="1.9" />
-      <path d="m16.2 18.5 1.8 1.8 1.8-1.8" stroke="var(--accent-ink)" strokeWidth="1.9" />
+      <rect x="2" y="6" width="14" height="12" rx="2" />
+      <path d="m16 10 5.5-3.2v10.4L16 14" />
     </svg>
   );
 }
@@ -552,7 +549,6 @@ export function ResultView({ result }: { result: FindResult }) {
   const [videoError, setVideoError] = useState("");
   const [coverFailed, setCoverFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const downloadSeq = useRef(0);
 
   useEffect(() => {
@@ -572,16 +568,11 @@ export function ResultView({ result }: { result: FindResult }) {
 
   useEffect(() => {
     if (!menuOpen) return undefined;
-    const onPointer = (event: PointerEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false);
-    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMenuOpen(false);
     };
-    document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
   }, [menuOpen]);
@@ -852,7 +843,7 @@ export function ResultView({ result }: { result: FindResult }) {
                 </a>
               ) : null}
               {canDownload ? (
-                <div className="sound-dl" ref={menuRef}>
+                <div className="sound-dl">
                   <button
                     type="button"
                     className="sound-btn is-primary"
@@ -879,7 +870,7 @@ export function ResultView({ result }: { result: FindResult }) {
                   {menuOpen ? (
                     <div className="sound-menu" role="menu" aria-label={ui.result.downloadMenu}>
                       <button type="button" role="menuitem" className="sound-menu-item" onClick={() => pickDownload("video")}>
-                        <VideoDownloadIcon />
+                        <VideoIcon />
                         <span>{ui.result.downloadVideo}</span>
                       </button>
                       <button type="button" role="menuitem" className="sound-menu-item" onClick={() => pickDownload("audio")}>
