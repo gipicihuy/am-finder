@@ -149,49 +149,22 @@ function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
     otherLinks.find((s: any) => typeof s.url === "string" && s.url.includes("whatsapp.com/channel/"))?.url ||
     "";
   const chCode = chUrl.match(/whatsapp\.com\/channel\/([A-Za-z0-9_-]+)/)?.[1] || "";
-  const chName = chInfo.name || (chCode ? `Saluran ${chCode}` : "Saluran WhatsApp");
+  const chName = chInfo.name || (chCode ? `Channel ${chCode}` : "Saluran WhatsApp");
 
-  const author = row.author || "-";
-  const nickname = row.authorDetail?.nickname || "";
-  const music = row.video?.music?.title || "";
-  const stats = row.video?.stats;
-  const views = stats?.views ? Number(stats.views).toLocaleString("id-ID") : "";
-  const likes = stats?.likes ? Number(stats.likes).toLocaleString("id-ID") : "";
+  const linksText = waPresets.map((p, i) => `${i + 1}. ${p.url}`).join("\n");
 
-  const linksText = waPresets
-    .map((p, i) => {
-      const type = String(p.type || "").toUpperCase();
-      const title = p.title ? ` - *${p.title}*` : "";
-      const size = p.size ? ` (${p.size})` : "";
-      return `${i + 1}. [${type}] ${p.url}${title}${size}`;
-    })
-    .join("\n");
-
-  const metaLines = [
-    `📢 *[AM-FINDER LOG]*`,
-    ``,
-    `Berhasil mengambil preset dari *Saluran WhatsApp*!`,
-    ``,
-    `*📋 METADATA SALURAN:*`,
-    `• *Nama Saluran:* ${chName}`,
-    chUrl ? `• *Link Saluran:* ${chUrl}` : (chCode ? `• *Kode Saluran:* ${chCode}` : null),
-    ``,
-    `*🎬 METADATA KREATOR & VIDEO:*`,
-    `• *Author:* ${author}${nickname ? ` (${nickname})` : ""}`,
-    `• *URL Video:* ${row.videoUrl || inputUrl}`,
-    music ? `• *Sound/Musik:* ${music}` : null,
-    views ? `• *Statistik:* 👁️ ${views} views | ❤️ ${likes} likes` : null,
-    ``,
-    `*📦 PRESET DITEMUKAN (${waPresets.length}):*`,
-    linksText,
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
+  const logMsg =
+    `📢 *[AM-FINDER LOG]*\n\n` +
+    `Berhasil mengambil preset dari *Saluran WhatsApp*!\n` +
+    `• *Saluran:* ${chName}\n` +
+    (chCode ? `• *Kode:* ${chCode}\n` : "") +
+    `• *Total Preset:* ${waPresets.length}\n\n` +
+    `*Links:*\n${linksText}`;
 
   void fetch("http://127.0.0.1:4040/notify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: metaLines }),
+    body: JSON.stringify({ text: logMsg }),
     signal: AbortSignal.timeout(8000),
   }).catch(() => {});
 }
