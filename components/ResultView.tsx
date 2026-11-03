@@ -667,39 +667,46 @@ export function ResultView({ result }: { result: FindResult }) {
     }
   }
 
-  const canDownloadVideo = Boolean(playUrl);
+  const canDownloadVideo = Boolean(videoId && (playUrl || isYt));
 
   async function handleDownloadVideo() {
-    if (!playUrl || videoBusy) return;
+    if (!videoId || videoBusy) return;
+    const requestId = downloadSeq.current + 1;
+    downloadSeq.current = requestId;
     setVideoBusy(true);
     setVideoError("");
     try {
-      if (playUrl.startsWith("http")) {
-        const link = document.createElement("a");
-        link.href = playUrl;
-        link.download = `${videoId || "video"}.mp4`;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+      const res = await fetch(`/api/video/${encodeURIComponent(videoId)}?dl=1`, {
+        cache: "no-store",
+      });
+      if (downloadSeq.current !== requestId) return;
+      if (!res.ok) {
+        setVideoError(ui.result.videoFailed);
         return;
       }
-      const res = await fetch(playUrl);
-      if (!res.ok) throw new Error("video download failed");
       const blob = await res.blob();
+      if (downloadSeq.current !== requestId) return;
+      if (!blob.size) {
+        setVideoError(ui.result.videoFailed);
+        return;
+      }
+      const name =
+        filenameFromDisposition(res.headers.get("content-disposition")) ||
+        `${soundTitle || videoId}.mp4`;
       const href = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = href;
-      link.download = `${soundTitle || videoId || "video"}.mp4`;
+      link.download = name;
+      link.rel = "noopener";
       document.body.appendChild(link);
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(href), 30_000);
     } catch {
+      if (downloadSeq.current !== requestId) return;
       setVideoError(ui.result.videoFailed);
     } finally {
-      setVideoBusy(false);
+      if (downloadSeq.current === requestId) setVideoBusy(false);
     }
   }
 
