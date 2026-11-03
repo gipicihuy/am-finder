@@ -168,11 +168,31 @@ function OpenIcon() {
 
 function VideoDownloadIcon() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect width="18" height="13" x="3" y="6" rx="2" />
-      <path d="M12 9v5" />
-      <path d="m9.5 11.5 2.5 2.5 2.5-2.5" />
-      <circle cx="7" cy="10" r="0.8" fill="currentColor" />
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="13" height="11" rx="2" />
+      <path d="m15 8.5 5.5-3v7l-5.5-3" />
+      <circle cx="18" cy="18" r="4.8" fill="var(--accent)" stroke="var(--surface-2)" strokeWidth="1.6" />
+      <path d="M18 15.9v4.2" stroke="var(--accent-ink)" strokeWidth="1.9" />
+      <path d="m16.2 18.5 1.8 1.8 1.8-1.8" stroke="var(--accent-ink)" strokeWidth="1.9" />
+    </svg>
+  );
+}
+
+function VolumeIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      {muted ? (
+        <>
+          <path d="m22 9-6 6" />
+          <path d="m16 9 6 6" />
+        </>
+      ) : (
+        <>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M19 5a10 10 0 0 1 0 14" />
+        </>
+      )}
     </svg>
   );
 }
@@ -271,6 +291,8 @@ function VideoPreview({
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const autoMutedRef = useRef(false);
 
   const requestClose = useCallback(() => {
     if (closingRef.current) return;
@@ -333,12 +355,51 @@ function VideoPreview({
     };
   }, [expanded, requestClose]);
 
+  // Coba putar dengan suara dulu. Kalau browser/WebView menolak autoplay
+  // bersuara, putar muted sebagai cadangan dan tandai supaya suara dinyalakan
+  // begitu pengguna menyentuh video atau tombol suara.
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !src || !allowMotion) return;
+    if (!video || !src || !allowMotion) return undefined;
+    let cancelled = false;
+    video.muted = false;
+    autoMutedRef.current = false;
     const attempt = video.play();
-    if (attempt && typeof attempt.catch === "function") attempt.catch(() => undefined);
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        if (cancelled) return;
+        video.muted = true;
+        autoMutedRef.current = true;
+        video.play().catch(() => undefined);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [src, allowMotion]);
+
+  function unmuteIfAutoMuted() {
+    const video = videoRef.current;
+    if (!video || !autoMutedRef.current) return;
+    autoMutedRef.current = false;
+    video.muted = false;
+  }
+
+  function toggleMute(event: React.MouseEvent) {
+    event.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    autoMutedRef.current = false;
+    video.muted = !video.muted;
+    if (video.paused) video.play().catch(() => undefined);
+  }
+
+  function handleExpandClick() {
+    openPreview();
+    unmuteIfAutoMuted();
+    const video = videoRef.current;
+    if (video && video.paused) video.play().catch(() => undefined);
+  }
 
   function togglePlay() {
     const video = videoRef.current;
@@ -351,11 +412,9 @@ function VideoPreview({
     if (closingRef.current) return;
     if (!expanded) {
       openPreview();
+      unmuteIfAutoMuted();
       const video = videoRef.current;
-      if (video) {
-        video.muted = false;
-        if (video.paused) video.play().catch(() => undefined);
-      }
+      if (video && video.paused) video.play().catch(() => undefined);
       return;
     }
     togglePlay();
@@ -391,8 +450,6 @@ function VideoPreview({
           ref={videoRef}
           src={src}
           poster={poster}
-          autoPlay={allowMotion}
-          muted
           loop
           playsInline
           disableRemotePlayback
@@ -408,6 +465,7 @@ function VideoPreview({
           }}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
+          onVolumeChange={(event) => setMuted(event.currentTarget.muted)}
           onTimeUpdate={(event) => {
             const video = event.currentTarget;
             if (fillRef.current && video.duration) {
@@ -430,8 +488,17 @@ function VideoPreview({
               </svg>
             </div>
           ) : null}
+          <button
+            type="button"
+            className={`video-mute${muted ? " is-muted" : ""}`}
+            onClick={toggleMute}
+            aria-label={muted ? ui.result.unmute : ui.result.mute}
+            title={muted ? ui.result.unmute : ui.result.mute}
+          >
+            <VolumeIcon muted={muted} />
+          </button>
           {!expanded ? (
-            <button type="button" className="video-expand" onClick={openPreview} aria-label={ui.result.expand}>
+            <button type="button" className="video-expand" onClick={handleExpandClick} aria-label={ui.result.expand}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 3h6v6" />
                 <path d="M9 21H3v-6" />
@@ -484,6 +551,8 @@ export function ResultView({ result }: { result: FindResult }) {
   const [videoBusy, setVideoBusy] = useState(false);
   const [videoError, setVideoError] = useState("");
   const [coverFailed, setCoverFailed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const downloadSeq = useRef(0);
 
   useEffect(() => {
@@ -498,7 +567,24 @@ export function ResultView({ result }: { result: FindResult }) {
     setVideoBusy(false);
     setVideoError("");
     setCoverFailed(false);
+    setMenuOpen(false);
   }, [result]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onPointer = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   const isYt = Boolean(
     isYoutubeLink(result.input || "") ||
@@ -609,7 +695,7 @@ export function ResultView({ result }: { result: FindResult }) {
         return;
       }
       const res = await fetch(playUrl);
-      if (!res.ok) throw new Error("Gagal mengunduh video");
+      if (!res.ok) throw new Error("video download failed");
       const blob = await res.blob();
       const href = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -620,10 +706,29 @@ export function ResultView({ result }: { result: FindResult }) {
       link.remove();
       setTimeout(() => URL.revokeObjectURL(href), 30_000);
     } catch {
-      setVideoError("Gagal mengunduh video.");
+      setVideoError(ui.result.videoFailed);
     } finally {
       setVideoBusy(false);
     }
+  }
+
+  const downloadBusy = audioBusy || videoBusy;
+  const canDownload = canDownloadAudio || canDownloadVideo;
+
+  function handleDownloadClick() {
+    if (downloadBusy) return;
+    if (canDownloadAudio && canDownloadVideo) {
+      setMenuOpen((open) => !open);
+      return;
+    }
+    if (canDownloadVideo) void handleDownloadVideo();
+    else void handleDownload();
+  }
+
+  function pickDownload(kind: "video" | "audio") {
+    setMenuOpen(false);
+    if (kind === "video") void handleDownloadVideo();
+    else void handleDownload();
   }
 
   const commentsDisabled = result.checked?.commentsDisabled === true;
@@ -746,31 +851,44 @@ export function ResultView({ result }: { result: FindResult }) {
                   <OpenIcon />
                 </a>
               ) : null}
-              {canDownloadAudio ? (
-                <button
-                  type="button"
-                  className="sound-btn is-primary"
-                  onClick={handleDownload}
-                  disabled={audioBusy}
-                  aria-busy={audioBusy}
-                  aria-label={audioBusy ? ui.result.downloadingAudio : ui.result.downloadAudioLong}
-                  title={audioBusy ? ui.result.downloadingAudio : ui.result.downloadAudio}
-                >
-                  {audioBusy ? <span className="spinner" aria-hidden="true" /> : <DownloadIcon />}
-                </button>
-              ) : null}
-              {canDownloadVideo ? (
-                <button
-                  type="button"
-                  className="sound-btn is-video"
-                  onClick={handleDownloadVideo}
-                  disabled={videoBusy}
-                  aria-busy={videoBusy}
-                  aria-label={videoBusy ? "Mengunduh video MP4..." : "Unduh video MP4"}
-                  title={videoBusy ? "Mengunduh video MP4..." : "Unduh Video MP4"}
-                >
-                  {videoBusy ? <span className="spinner" aria-hidden="true" /> : <VideoDownloadIcon />}
-                </button>
+              {canDownload ? (
+                <div className="sound-dl" ref={menuRef}>
+                  <button
+                    type="button"
+                    className="sound-btn is-primary"
+                    onClick={handleDownloadClick}
+                    disabled={downloadBusy}
+                    aria-busy={downloadBusy}
+                    aria-haspopup={canDownloadAudio && canDownloadVideo ? "menu" : undefined}
+                    aria-expanded={canDownloadAudio && canDownloadVideo ? menuOpen : undefined}
+                    aria-label={
+                      audioBusy
+                        ? ui.result.downloadingAudio
+                        : videoBusy
+                          ? ui.result.downloadingVideo
+                          : canDownloadAudio && canDownloadVideo
+                            ? ui.result.downloadMenu
+                            : canDownloadVideo
+                              ? ui.result.downloadVideoLong
+                              : ui.result.downloadAudioLong
+                    }
+                    title={ui.result.downloadMenu}
+                  >
+                    {downloadBusy ? <span className="spinner" aria-hidden="true" /> : <DownloadIcon />}
+                  </button>
+                  {menuOpen ? (
+                    <div className="sound-menu" role="menu" aria-label={ui.result.downloadMenu}>
+                      <button type="button" role="menuitem" className="sound-menu-item" onClick={() => pickDownload("video")}>
+                        <VideoDownloadIcon />
+                        <span>{ui.result.downloadVideo}</span>
+                      </button>
+                      <button type="button" role="menuitem" className="sound-menu-item" onClick={() => pickDownload("audio")}>
+                        <MusicIcon />
+                        <span>{ui.result.downloadMusic}</span>
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
             </div>
             {videoError ? (
