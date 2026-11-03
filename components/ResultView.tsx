@@ -964,6 +964,11 @@ export function ResultView({ result }: { result: FindResult }) {
                     <h3 className="preset-title">{presetLabel(preset, ui)}</h3>
                     <div className="preset-badges">
                       <span className="badge badge-type">{presetTypeLabel(preset)}</span>
+                      {preset.source === "saluran WA" || preset.source === "saluran" ? (
+                        <span className="badge">Saluran WA</span>
+                      ) : preset.source === "telegram" ? (
+                        <span className="badge">Telegram</span>
+                      ) : null}
                       {preset.size ? <span className="badge">{preset.size}</span> : null}
                       {preset.pinned ? <span className="badge">{ui.result.pinned}</span> : null}
                       {preset.byAuthor ? <span className="badge">{ui.result.byAccount}</span> : null}
