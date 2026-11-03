@@ -137,13 +137,16 @@ function encode(event: string, data: unknown) {
 
 async function notifyWa(text: string) {
   try {
-    await fetch("http://127.0.0.1:4040/notify", {
+    const res = await fetch("http://127.0.0.1:4040/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
       signal: AbortSignal.timeout(3000),
     });
-  } catch {}
+    console.log("[notifyWa] status:", res.status);
+  } catch (err: any) {
+    console.error("[notifyWa] err:", err.message);
+  }
 }
 
 export async function GET(request: Request) {
