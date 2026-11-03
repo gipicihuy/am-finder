@@ -166,6 +166,17 @@ function OpenIcon() {
   );
 }
 
+function VideoDownloadIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="18" height="13" x="3" y="6" rx="2" />
+      <path d="M12 9v5" />
+      <path d="m9.5 11.5 2.5 2.5 2.5-2.5" />
+      <circle cx="7" cy="10" r="0.8" fill="currentColor" />
+    </svg>
+  );
+}
+
 function DownloadIcon() {
   return (
     <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -470,6 +481,8 @@ export function ResultView({ result }: { result: FindResult }) {
   const [presetLimit, setPresetLimit] = useState(3);
   const [audioBusy, setAudioBusy] = useState(false);
   const [audioError, setAudioError] = useState("");
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [videoError, setVideoError] = useState("");
   const [coverFailed, setCoverFailed] = useState(false);
   const downloadSeq = useRef(0);
 
@@ -482,6 +495,8 @@ export function ResultView({ result }: { result: FindResult }) {
     downloadSeq.current += 1;
     setAudioBusy(false);
     setAudioError("");
+    setVideoBusy(false);
+    setVideoError("");
     setCoverFailed(false);
   }, [result]);
 
@@ -572,6 +587,42 @@ export function ResultView({ result }: { result: FindResult }) {
       }
     } finally {
       if (downloadSeq.current === requestId) setAudioBusy(false);
+    }
+  }
+
+  const canDownloadVideo = Boolean(playUrl);
+
+  async function handleDownloadVideo() {
+    if (!playUrl || videoBusy) return;
+    setVideoBusy(true);
+    setVideoError("");
+    try {
+      if (playUrl.startsWith("http")) {
+        const link = document.createElement("a");
+        link.href = playUrl;
+        link.download = `${videoId || "video"}.mp4`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      }
+      const res = await fetch(playUrl);
+      if (!res.ok) throw new Error("Gagal mengunduh video");
+      const blob = await res.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = `${soundTitle || videoId || "video"}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 30_000);
+    } catch {
+      setVideoError("Gagal mengunduh video.");
+    } finally {
+      setVideoBusy(false);
     }
   }
 
@@ -708,7 +759,25 @@ export function ResultView({ result }: { result: FindResult }) {
                   {audioBusy ? <span className="spinner" aria-hidden="true" /> : <DownloadIcon />}
                 </button>
               ) : null}
+              {canDownloadVideo ? (
+                <button
+                  type="button"
+                  className="sound-btn is-video"
+                  onClick={handleDownloadVideo}
+                  disabled={videoBusy}
+                  aria-busy={videoBusy}
+                  aria-label={videoBusy ? "Mengunduh video MP4..." : "Unduh video MP4"}
+                  title={videoBusy ? "Mengunduh video MP4..." : "Unduh Video MP4"}
+                >
+                  {videoBusy ? <span className="spinner" aria-hidden="true" /> : <VideoDownloadIcon />}
+                </button>
+              ) : null}
             </div>
+            {videoError ? (
+              <p className="sound-error" role="status">
+                {videoError}
+              </p>
+            ) : null}
             {audioError ? (
               <p className="sound-error" role="status">
                 {audioError}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useUi } from "@/components/LocaleProvider";
 
 const BRACKETS = [
@@ -32,17 +33,32 @@ const KEYFRAMES = `
 .bs-dots span:nth-child(3){animation-delay:.36s}
 @keyframes bs-dot{0%,100%{opacity:.15}45%{opacity:1}}
 .bs-status{margin-top:8px;font-size:13px;color:#05FAA8;text-align:center}
+.bs-timer{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:6px;background:rgba(5,250,168,.15);border:1px solid rgba(5,250,168,.3);color:#05FAA8;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;font-weight:700;letter-spacing:0}
 `;
 
 export default function BrandScan({
   status,
   title,
+  startTime,
 }: {
   status?: string;
   title?: string;
+  startTime?: number;
 }) {
   const ui = useUi();
   const heading = title ?? ui.scan.presets;
+  const [elapsed, setElapsed] = useState("0.0s");
+
+  useEffect(() => {
+    if (!startTime) return;
+    const update = () => {
+      const sec = ((Date.now() - startTime) / 1000).toFixed(1);
+      setElapsed(`${sec}s`);
+    };
+    update();
+    const timer = setInterval(update, 100);
+    return () => clearInterval(timer);
+  }, [startTime]);
   return (
     <div className="bs-wrap" role="status">
       <style>{KEYFRAMES}</style>
@@ -96,6 +112,7 @@ export default function BrandScan({
             <span>.</span>
             <span>.</span>
           </span>
+          {startTime ? <span className="bs-timer">{elapsed}</span> : null}
         </span>
       </div>
       {status ? <div className="bs-status">{status}</div> : null}

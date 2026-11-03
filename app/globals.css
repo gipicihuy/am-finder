@@ -374,11 +374,19 @@ body::before {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.clear-btn {
+.search-actions {
   position: absolute;
-  right: 8px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 2;
+}
+
+.clear-btn,
+.mic-btn {
   width: 30px;
   height: 30px;
   display: grid;
@@ -388,16 +396,35 @@ body::before {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  transition: all 120ms ease;
+  padding: 0;
 }
 
-.clear-btn:hover {
+.clear-btn:hover,
+.mic-btn:hover {
   color: var(--foreground);
   background: var(--surface-3);
   border-color: var(--border);
 }
 
-.clear-btn:focus-visible {
+.mic-btn:hover {
+  color: var(--accent);
+}
+
+.mic-btn.is-listening {
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.15);
+  border-color: rgba(255, 71, 87, 0.4);
+  animation: micPulse 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes micPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+  100% { transform: scale(1.08); box-shadow: 0 0 0 5px rgba(255, 71, 87, 0); }
+}
+
+.clear-btn:focus-visible,
+.mic-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -909,6 +936,33 @@ body::before {
   height: 16px;
   border-color: rgba(4, 20, 11, 0.25);
   border-top-color: var(--accent-ink);
+}
+
+.sound-btn.is-video {
+  border-color: rgba(5, 250, 168, 0.4);
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
+.sound-btn.is-video:hover {
+  background: rgba(5, 250, 168, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sound-btn.is-video .spinner {
+  width: 16px;
+  height: 16px;
+  border-color: rgba(5, 250, 168, 0.25);
+  border-top-color: var(--accent);
+}
+
+.result-time {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
 .sound-error {

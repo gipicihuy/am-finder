@@ -92,6 +92,16 @@ function PlayIcon() {
   );
 }
 
+function MicIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" x2="12" y1="19" y2="22" />
+    </svg>
+  );
+}
+
 function CandThumb({
   url,
   thumb,
@@ -217,6 +227,58 @@ export default function SearchTest({
   const checkRef = useRef<EventSource | null>(null);
   const searchRunRef = useRef(0);
   const checkRunRef = useRef(0);
+
+  const [searchRunRefCurrent, setSearchRunRefCurrent] = useState(0);
+  const [searchStartTime, setSearchStartTime] = useState<number | null>(null);
+  const [searchDuration, setSearchDuration] = useState<string | null>(null);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SpeechRec =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRec) {
+      setVoiceSupported(true);
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = "id-ID";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onresult = (event: any) => {
+        const text = event.results?.[0]?.[0]?.transcript || "";
+        if (text) {
+          changeQuery(text);
+          search(text);
+        }
+        setVoiceListening(false);
+      };
+      rec.onerror = () => setVoiceListening(false);
+      rec.onend = () => setVoiceListening(false);
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+  function toggleVoice() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec = recognitionRef.current as any;
+    if (!rec) return;
+    if (voiceListening) {
+      rec.stop();
+      setVoiceListening(false);
+    } else {
+      try {
+        rec.lang = "id-ID";
+        rec.start();
+        setVoiceListening(true);
+      } catch {
+        setVoiceListening(false);
+      }
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -627,6 +689,9 @@ export default function SearchTest({
     checkRef.current?.close();
     checkRunRef.current += 1;
     setSearching(true);
+    const t0 = Date.now();
+    setSearchStartTime(t0);
+    setSearchDuration(null);
     setError("");
     setOpenUrl("");
 
@@ -650,6 +715,7 @@ export default function SearchTest({
     const fail = (msg: string) => {
       source.close();
       setSearching(false);
+      setSearchStartTime(null);
       setError(msg);
     };
 
@@ -665,6 +731,9 @@ export default function SearchTest({
       if (searchRef.current !== source) return;
       source.close();
       setSearching(false);
+      const elapsed = ((Date.now() - t0) / 1000).toFixed(1) + "s";
+      setSearchDuration(elapsed);
+      setSearchStartTime(null);
       if (!items.length) {
         setCands([]);
         setError(ui.search.errNoVideos);
@@ -916,14 +985,27 @@ export default function SearchTest({
                   onFocus={onSuggestFocus}
                   onBlur={onSuggestBlur}
                 />
-                {q ? (
-                  <button type="button" className="clear-btn" aria-label={ui.search.clear} onClick={clearSearch}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                      <path d="M18 6 6 18" />
-                      <path d="m6 6 12 12" />
-                    </svg>
-                  </button>
-                ) : null}
+                <span className="search-actions">
+                  {q ? (
+                    <button type="button" className="clear-btn" aria-label={ui.search.clear} onClick={clearSearch}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                      </svg>
+                    </button>
+                  ) : null}
+                  {voiceSupported ? (
+                    <button
+                      type="button"
+                      className={`mic-btn${voiceListening ? " is-listening" : ""}`}
+                      aria-label={voiceListening ? "Mendengarkan suara..." : "Cari dengan suara (VN)"}
+                      title={voiceListening ? "Mendengarkan suara..." : "Cari dengan suara (VN)"}
+                      onClick={toggleVoice}
+                    >
+                      <MicIcon />
+                    </button>
+                  ) : null}
+                </span>
               </span>
               <button className="btn-primary" type="submit" disabled={searching}>
                 {searching ? ui.buttons.searching : ui.buttons.search}
@@ -993,7 +1075,7 @@ export default function SearchTest({
 
           {embedded && searching && (
             <div className="run" aria-live="polite">
-              <BrandScan title={ui.scan.videos} />
+              <BrandScan title={ui.scan.videos} startTime={searchStartTime || undefined} />
             </div>
           )}
 
@@ -1005,6 +1087,7 @@ export default function SearchTest({
                     <ArrowRuleOrnament />
                   </span>
                   {cands.length} video
+                  {searchDuration ? <span className="result-time">({searchDuration})</span> : null}
                 </h2>
                 <div className="view-toggle" role="group" aria-label={ui.search.viewMode}>
                   <button

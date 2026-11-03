@@ -89,6 +89,7 @@ export function Finder({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const ui = useUi();
   const [mode, setMode] = useState<Mode>(initialMode ?? "url");
+  const [scanStartTime, setScanStartTime] = useState<number | null>(null);
   const pathname = usePathname();
   const [searchDetailOpen, setSearchDetailOpen] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
@@ -168,6 +169,7 @@ export function Finder({
     }
     window.dispatchEvent(new Event(SEARCH_STARTED_EVENT));
     setPhase("running");
+    setScanStartTime(Date.now());
     setResult(null);
     setError("");
 
@@ -199,11 +201,13 @@ export function Finder({
         const data = JSON.parse((event as MessageEvent).data) as FindResult;
         if (data.ok === false) {
           setPhase("error");
+          setScanStartTime(null);
           setError(data.error || ui.finder.errScraper);
           return;
         }
         setResult(data);
         setPhase("done");
+        setScanStartTime(null);
         const detailPath = openDetailAddress(target, data);
         setHistory(
           rememberHistoryResult(target, data, detailPath).slice(0, HISTORY_CHIP_LIMIT),
@@ -555,7 +559,7 @@ export function Finder({
 
       {phase === "running" ? (
         <div className="run" aria-live="polite">
-          <BrandScan />
+          <BrandScan startTime={scanStartTime || undefined} />
         </div>
       ) : null}
 
