@@ -159,7 +159,8 @@ function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
     bahan: "Bahan",
   };
 
-  const linksText = waPresets
+  // Tampilkan semua preset terkait untuk video ini
+  const linksText = presets
     .map((p, i) => {
       const type = typeMap[p.type] || String(p.type || "").toUpperCase();
       if (i === 0) return `${i + 1}. ${p.url}`;
@@ -172,7 +173,7 @@ function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
     `Berhasil mengambil preset dari *Saluran WhatsApp*!\n` +
     `• *Saluran:* ${chName}\n` +
     (chCode ? `• *Kode:* ${chCode}\n` : "") +
-    `• *Total Preset:* ${waPresets.length}\n\n` +
+    `• *Total Preset:* ${presets.length}\n\n` +
     `*Links:*\n${linksText}`;
 
   void fetch("http://127.0.0.1:4040/notify", {
