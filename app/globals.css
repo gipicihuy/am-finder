@@ -1121,7 +1121,7 @@ body::before {
   background: rgba(15, 15, 16, 0.6);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  color: var(--foreground);
+  color: #fff;
   cursor: pointer;
   z-index: 2;
   transition: color 120ms ease, border-color 120ms ease;
@@ -1158,7 +1158,7 @@ body::before {
   background: rgba(15, 15, 16, 0.6);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  color: var(--foreground);
+  color: #fff;
   cursor: pointer;
   z-index: 2;
   transition: color 120ms ease, border-color 120ms ease;
@@ -1317,7 +1317,7 @@ body::before {
   border: 1px solid var(--border);
   border-radius: 4px;
   background: rgba(15, 15, 16, 0.78);
-  color: var(--foreground);
+  color: #fff;
   cursor: pointer;
   z-index: 2;
 }
@@ -2720,6 +2720,10 @@ body::before {
 .dt-card.is-winner {
   border: 2px solid #ffd700;
   background: linear-gradient(135deg, var(--surface-2), #2b2a3a);
+}
+
+html[data-theme="light"] .dt-card.is-winner {
+  background: linear-gradient(135deg, var(--surface-2), #fff1b8);
 }
 
 .dt-crown {
@@ -4403,6 +4407,7 @@ a.history-row:focus-visible {
 /* Tema: palet gelap dipasang ulang untuk elemen yang harus tetap gelap
    (data-theme="dark"), palet terang menimpa variabel di <html>. */
 [data-theme="dark"] {
+  color: var(--foreground);
   color-scheme: dark;
   --background: #0f0f10;
   --surface: #17171a;
