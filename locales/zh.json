@@ -32,9 +32,6 @@
       "legal": "法律条款"
     },
     "theme": {
-      "label": "主题",
-      "light": "浅色",
-      "dark": "深色",
       "toLight": "切换到浅色主题",
       "toDark": "切换到深色主题"
     }
