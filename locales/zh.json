@@ -178,6 +178,7 @@
     "videoFailed": "无法下载视频。",
     "downloadMusic": "音乐 (MP3)",
     "unmute": "开启声音",
+    "seek": "拖动进度",
     "mute": "静音",
     "openAudio": "打开音频",
     "presetLinks": "预设链接",

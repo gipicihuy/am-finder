@@ -178,6 +178,7 @@
     "videoFailed": "Couldn't download the video.",
     "downloadMusic": "Music (MP3)",
     "unmute": "Turn sound on",
+    "seek": "Seek video",
     "mute": "Mute",
     "openAudio": "Open audio",
     "presetLinks": "Preset links",

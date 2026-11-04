@@ -14,7 +14,11 @@ export async function SiteHeader() {
         </a>
 
         <div className="nav-title">
-          <span className="nav-name">{ui.header.brand}</span>
+          {/* Tautan ke beranda juga di teks. aria-hidden + tabIndex -1 karena
+              logo di kiri sudah jadi tautan yang sama untuk keyboard/screen reader. */}
+          <a className="nav-title-link" href="/" aria-hidden="true" tabIndex={-1} draggable={false}>
+            <span className="nav-name">{ui.header.brand}</span>
+          </a>
         </div>
 
         <LanguageDropdown />

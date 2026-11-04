@@ -322,6 +322,14 @@ function morphFrame(rect: DOMRect): Keyframe {
   };
 }
 
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const total = Math.floor(seconds);
+  const m = Math.floor(total / 60);
+  const sec = String(total % 60).padStart(2, "0");
+  return `${m}:${sec}`;
+}
+
 function VideoPreview({
   src,
   poster,
@@ -339,6 +347,10 @@ function VideoPreview({
   const boxRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
+  const seekRef = useRef<HTMLInputElement>(null);
+  const curTimeRef = useRef<HTMLSpanElement>(null);
+  const durTimeRef = useRef<HTMLSpanElement>(null);
+  const draggingRef = useRef(false);
   const ghostRef = useRef<HTMLDivElement>(null);
   const firstRectRef = useRef<DOMRect | null>(null);
   const closingRef = useRef(false);
@@ -414,6 +426,51 @@ function VideoPreview({
       document.body.style.overflow = "";
     };
   }, [expanded, requestClose]);
+
+  // Sinkronkan slider seek dengan posisi video selama preview terbuka. Pakai
+  // requestAnimationFrame supaya geraknya mulus (timeupdate cuma ~4x/detik).
+  useEffect(() => {
+    if (!expanded) return undefined;
+    const video = videoRef.current;
+    const input = seekRef.current;
+    if (!video || !input) return undefined;
+    let raf = 0;
+    const paint = () => {
+      const duration = video.duration;
+      if (Number.isFinite(duration) && duration > 0) {
+        if (!draggingRef.current) {
+          const ratio = Math.min(1, video.currentTime / duration);
+          input.value = String(Math.round(ratio * 1000));
+          input.style.setProperty("--p", `${ratio * 100}%`);
+          if (curTimeRef.current) curTimeRef.current.textContent = formatTime(video.currentTime);
+        }
+        if (durTimeRef.current) durTimeRef.current.textContent = formatTime(duration);
+      }
+      raf = requestAnimationFrame(paint);
+    };
+    const stopDrag = () => {
+      draggingRef.current = false;
+    };
+    window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("pointercancel", stopDrag);
+    raf = requestAnimationFrame(paint);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener("pointercancel", stopDrag);
+      draggingRef.current = false;
+    };
+  }, [expanded, src]);
+
+  function handleSeek(event: React.ChangeEvent<HTMLInputElement>) {
+    const video = videoRef.current;
+    const input = event.currentTarget;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+    const ratio = Number(input.value) / 1000;
+    video.currentTime = ratio * video.duration;
+    input.style.setProperty("--p", `${ratio * 100}%`);
+    if (curTimeRef.current) curTimeRef.current.textContent = formatTime(video.currentTime);
+  }
 
   // Coba putar dengan suara dulu. Kalau browser/WebView menolak autoplay
   // bersuara, putar muted sebagai cadangan dan tandai supaya suara dinyalakan
@@ -541,6 +598,26 @@ function VideoPreview({
           <div className="video-progress" aria-hidden="true">
             <span ref={fillRef} />
           </div>
+          {expanded ? (
+            <div className="video-seek">
+              <span className="video-time" ref={curTimeRef}>0:00</span>
+              <input
+                ref={seekRef}
+                className="video-range"
+                type="range"
+                min={0}
+                max={1000}
+                step={1}
+                defaultValue={0}
+                aria-label={ui.result.seek}
+                onChange={handleSeek}
+                onPointerDown={() => {
+                  draggingRef.current = true;
+                }}
+              />
+              <span className="video-time" ref={durTimeRef}>0:00</span>
+            </div>
+          ) : null}
           {!playing ? (
             <div className="video-center-play" aria-hidden="true">
               <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
