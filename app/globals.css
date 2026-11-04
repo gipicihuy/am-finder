@@ -4512,7 +4512,7 @@ html[data-theme="light"] {
 /* --- Support Admin / Donasi QRIS Page --- */
 .support-admin-page {
   width: 100%;
-  max-width: 540px;
+  max-width: 520px;
   margin: 0 auto;
   padding: 32px 14px 64px;
 }
@@ -4528,59 +4528,159 @@ html[data-theme="light"] {
   margin-bottom: 28px;
 }
 
-.sa-badge {
+.sa-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sa-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 4px 12px;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
   border-radius: 9999px;
-  border: 1px solid var(--accent);
-  margin-bottom: 14px;
+}
+
+.sa-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
 }
 
 .sa-title {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--foreground);
   line-height: 1.25;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.sa-title em {
+  font-style: normal;
+  color: var(--accent);
 }
 
 @media (min-width: 640px) {
   .sa-title {
-    font-size: 32px;
+    font-size: 34px;
   }
 }
 
 .sa-subtitle {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.6;
-  max-width: 480px;
+  max-width: 460px;
   margin: 0 auto;
 }
 
-.sa-qr-card-wrapper {
+/* Container Frame dengan Hiasan Khas AM Finder */
+.sa-qr-frame-container {
   display: flex;
   justify-content: center;
   margin-bottom: 24px;
 }
 
-.sa-qr-card {
-  background: #ffffff !important;
-  color: #111111 !important;
+.sa-tech-frame {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 24px 20px 20px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  padding: 18px 14px 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 32px var(--accent-soft);
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* Corner Brackets / Siku Cyber Khas Tema */
+.sa-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.sa-corner-tl {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  border-top-left-radius: 6px;
+}
+
+.sa-corner-tr {
+  top: -1px;
+  right: -1px;
+  border-top: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  border-top-right-radius: 6px;
+}
+
+.sa-corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  border-bottom-left-radius: 6px;
+}
+
+.sa-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  border-bottom-right-radius: 6px;
+}
+
+.sa-frame-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  max-width: 340px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sa-frame-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.sa-frame-ornament {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+
+/* Kartu Putih QR (Selalu Bersih dan Hitam Putih) */
+.sa-qr-card {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-radius: 16px;
+  padding: 16px 14px 14px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .sa-qr-header {
@@ -4588,22 +4688,22 @@ html[data-theme="light"] {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px dashed #e0e0e0;
 }
 
 .sa-qr-brand {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: #111111 !important;
 }
 
 .sa-qr-type-badge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
   background: #f0f0f0;
@@ -4616,8 +4716,8 @@ html[data-theme="light"] {
 }
 
 .sa-qr-box {
-  width: 260px;
-  height: 260px;
+  width: 240px;
+  height: 240px;
   background: #ffffff;
   display: flex;
   align-items: center;
@@ -4632,7 +4732,7 @@ html[data-theme="light"] {
 
 .sa-qr-footer {
   text-align: center;
-  margin-top: 14px;
+  margin-top: 12px;
   width: 100%;
 }
 
@@ -4640,50 +4740,97 @@ html[data-theme="light"] {
   font-size: 16px;
   font-weight: 700;
   color: #111111 !important;
+  line-height: 1.2;
 }
 
-.sa-merchant-city {
-  font-size: 12px;
+.sa-merchant-sub {
+  font-size: 11px;
   color: #666666 !important;
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
-.sa-amount-display {
+.sa-amount-tag {
   margin-top: 8px;
-  padding: 4px 14px;
+  padding: 4px 12px;
   background: #f4f4f6;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #111111 !important;
   display: inline-block;
 }
 
+/* Action Button Unduh di Bawah Frame */
+.sa-frame-actions {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.sa-btn-download {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.sa-btn-download:hover {
+  opacity: 0.92;
+}
+
+.sa-btn-download:active {
+  transform: scale(0.98);
+}
+
+/* Kontrol Pilihan Nominal */
 .sa-controls {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.sa-controls-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 .sa-section-label {
-  display: block;
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 10px;
+}
+
+.sa-min-tag {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .sa-chip-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 440px) {
   .sa-chip-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -4691,7 +4838,7 @@ html[data-theme="light"] {
 
 .sa-chip {
   min-height: 44px;
-  padding: 10px 8px;
+  padding: 8px 10px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--foreground);
@@ -4714,7 +4861,7 @@ html[data-theme="light"] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 4px 14px var(--accent-soft);
+  box-shadow: 0 4px 12px var(--accent-soft);
 }
 
 .sa-custom-amount-wrapper {
@@ -4740,13 +4887,13 @@ html[data-theme="light"] {
 
 .sa-amount-input {
   width: 100%;
-  min-height: 48px;
-  padding: 10px 14px 10px 44px;
+  min-height: 46px;
+  padding: 10px 14px 10px 42px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--foreground);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   outline: none;
   transition: border-color 0.15s ease;
@@ -4757,14 +4904,14 @@ html[data-theme="light"] {
 }
 
 .sa-input-hint {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   display: flex;
   justify-content: space-between;
 }
 
 .sa-reset-btn {
-  margin-top: 14px;
+  margin-top: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4775,7 +4922,7 @@ html[data-theme="light"] {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 6px 0;
   min-height: 44px;
 }
 
@@ -4783,74 +4930,19 @@ html[data-theme="light"] {
   text-decoration: underline;
 }
 
-.sa-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-@media (min-width: 480px) {
-  .sa-actions {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.sa-btn-primary {
-  min-height: 48px;
-  padding: 12px 18px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: opacity 0.15s ease, transform 0.1s ease;
-}
-
-.sa-btn-primary:active {
-  transform: scale(0.98);
-}
-
-.sa-btn-secondary {
-  min-height: 48px;
-  padding: 12px 18px;
-  background: var(--surface);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.15s ease;
-}
-
-.sa-btn-secondary:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-}
-
+/* Petunjuk 3 Langkah */
 .sa-guide-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
+  padding: 18px;
+  margin-bottom: 20px;
 }
 
 .sa-guide-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   margin-top: 12px;
 }
 
@@ -4861,13 +4953,13 @@ html[data-theme="light"] {
 }
 
 .sa-step-num {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--accent);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -4877,7 +4969,7 @@ html[data-theme="light"] {
 }
 
 .sa-step-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-soft);
   line-height: 1.5;
 }
@@ -4890,7 +4982,7 @@ html[data-theme="light"] {
   text-align: center;
   padding: 16px 12px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
 }
 

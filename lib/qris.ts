@@ -11,7 +11,7 @@ export const MERCHANT_CITY = "Kab. Bekasi";
 export const MIN_DONATION = 1_000;
 export const MAX_DONATION = 10_000_000;
 
-export const NOMINAL_PRESETS = [5_000, 10_000, 20_000, 50_000] as const;
+export const NOMINAL_PRESETS = [1_000, 2_000, 5_000, 10_000] as const;
 
 /**
  * Menghitung CRC16-CCITT-FALSE (poly 0x1021, init 0xFFFF, no reflect, no xorout).

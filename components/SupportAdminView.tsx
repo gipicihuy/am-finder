@@ -13,13 +13,13 @@ import {
   formatRupiah,
   parseCleanNumber,
 } from "@/lib/qris";
+import { SectionOrnament } from "@/components/Ornament";
 
 export function SupportAdminView() {
   const inputId = useId();
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [customInput, setCustomInput] = useState<string>("");
   const [svgHtml, setSvgHtml] = useState<string>("");
-  const [copied, setCopied] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
   // Hitung nominal aktif: prioritas ke custom input jika ada nilainya, atau ke chip yang dipilih
@@ -85,7 +85,6 @@ export function SupportAdminView() {
       setCustomInput("");
       return;
     }
-    // Batasi maksimum angka
     const capped = Math.min(rawDigits, MAX_DONATION);
     setCustomInput(formatRupiah(capped));
     setSelectedPreset(null);
@@ -125,73 +124,106 @@ export function SupportAdminView() {
     }
   };
 
-  // Salin kode QRIS payload
-  const handleCopyCode = async () => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(currentPayload);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = currentPayload;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Gagal menyalin kode QRIS:", err);
-    }
-  };
-
   return (
     <div className="support-admin-page">
-      {/* Bagian Header / Ajakan */}
+      {/* Header Halaman */}
       <div className="sa-head">
-        <span className="sa-badge">
-          <span>☕</span>
-          <span>Dukungan Sukarela</span>
-        </span>
-        <h1 className="sa-title">Dukung AM Preset Finder</h1>
+        <div className="sa-badges" role="list" aria-label="Karakteristik layanan">
+          <span className="sa-pill" role="listitem">
+            <span className="sa-dot" aria-hidden="true" />
+            Bebas Iklan
+          </span>
+          <span className="sa-pill" role="listitem">
+            <span className="sa-dot" aria-hidden="true" />
+            Tanpa Langganan
+          </span>
+          <span className="sa-pill" role="listitem">
+            <span className="sa-dot" aria-hidden="true" />
+            100% Sukarela
+          </span>
+        </div>
+
+        <h1 className="sa-title">
+          Dukung <em>AM Preset Finder.</em>
+        </h1>
         <p className="sa-subtitle">
-          Bantu kami menjaga server tetap cepat, stabil, dan bebas iklan mengganggu. Donasi seikhlasnya sangat berarti untuk kelangsungan layanan ini.
+          AM Preset Finder gratis untuk semua orang tanpa iklan dan tanpa biaya langganan. Kalau kamu terbantu dan ingin traktir admin untuk biaya sewa server & domain, silakan scan QRIS di bawah ini. Nominal bebas dan sepenuhnya sukarela.
         </p>
       </div>
 
-      {/* Kartu QRIS */}
-      <div className="sa-qr-card-wrapper">
-        <article className="sa-qr-card" aria-label="Kode QRIS Donasi">
-          <div className="sa-qr-header">
-            <span className="sa-qr-brand">QRIS PEMBAYARAN</span>
-            <span className={`sa-qr-type-badge ${isDynamic ? "is-dynamic" : ""}`}>
-              {isDynamic ? "Nominal Terkunci" : "Nominal Bebas"}
+      {/* Frame Kartu QR Berornamen Khas AM Finder */}
+      <div className="sa-qr-frame-container">
+        <div className="sa-tech-frame">
+          {/* 4 Corner Ornaments Khas Tema */}
+          <span className="sa-corner sa-corner-tl" aria-hidden="true" />
+          <span className="sa-corner sa-corner-tr" aria-hidden="true" />
+          <span className="sa-corner sa-corner-bl" aria-hidden="true" />
+          <span className="sa-corner sa-corner-br" aria-hidden="true" />
+
+          {/* Header Hiasan Frame */}
+          <div className="sa-frame-top" aria-hidden="true">
+            <span className="sa-frame-title">AM PRESET FINDER • QRIS</span>
+            <span className="sa-frame-ornament">
+              <SectionOrnament />
             </span>
           </div>
 
-          <div
-            className="sa-qr-box"
-            aria-label={`QR Code QRIS ${isDynamic && activeAmount ? `Rp${formatRupiah(activeAmount)}` : "Nominal Bebas"}`}
-            dangerouslySetInnerHTML={{ __html: svgHtml }}
-          />
+          {/* Kartu Putih QR */}
+          <article className="sa-qr-card" aria-label="Kode QRIS Donasi">
+            <div className="sa-qr-header">
+              <span className="sa-qr-brand">QRIS PEMBAYARAN</span>
+              <span className={`sa-qr-type-badge ${isDynamic ? "is-dynamic" : ""}`}>
+                {isDynamic ? "Nominal Terkunci" : "Nominal Bebas"}
+              </span>
+            </div>
 
-          <div className="sa-qr-footer">
-            <p className="sa-merchant-name">{MERCHANT_NAME}</p>
-            <p className="sa-merchant-city">{MERCHANT_CITY}</p>
-            {isDynamic && activeAmount ? (
-              <span className="sa-amount-display">Rp{formatRupiah(activeAmount)}</span>
-            ) : (
-              <span className="sa-amount-display">Nominal Bebas (Isi di Aplikasi)</span>
-            )}
+            <div
+              className="sa-qr-box"
+              aria-label={`QR Code QRIS ${isDynamic && activeAmount ? `Rp${formatRupiah(activeAmount)}` : "Nominal Bebas"}`}
+              dangerouslySetInnerHTML={{ __html: svgHtml }}
+            />
+
+            <div className="sa-qr-footer">
+              <p className="sa-merchant-name">{MERCHANT_NAME}</p>
+              <p className="sa-merchant-sub">
+                Nama merchant ini yang akan muncul di aplikasi e-wallet / m-banking kamu.
+              </p>
+              <div className="sa-amount-tag">
+                {isDynamic && activeAmount ? (
+                  <span>Rp{formatRupiah(activeAmount)}</span>
+                ) : (
+                  <span>Nominal Bebas (Ketik Sendiri)</span>
+                )}
+              </div>
+            </div>
+          </article>
+
+          {/* Tombol Simpan QR di Dalam Frame */}
+          <div className="sa-frame-actions">
+            <button
+              type="button"
+              className="sa-btn-download"
+              onClick={handleDownloadPng}
+              disabled={isDownloading}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {isDownloading ? "Menyiapkan QR..." : "Unduh QRIS (PNG)"}
+            </button>
           </div>
-        </article>
+        </div>
       </div>
 
       {/* Kontrol Pilihan Nominal */}
       <section className="sa-controls" aria-label="Pilihan Nominal Donasi">
-        <h2 className="sa-section-label">Pilih Nominal Cepat</h2>
+        <div className="sa-controls-head">
+          <h2 className="sa-section-label">Pilih Nominal</h2>
+          <span className="sa-min-tag">Mulai dari Rp1.000</span>
+        </div>
+
         <div className="sa-chip-grid" role="group" aria-label="Nominal preset">
           {NOMINAL_PRESETS.map((preset) => {
             const isSelected = selectedPreset === preset && !customInput;
@@ -211,7 +243,7 @@ export function SupportAdminView() {
 
         <div className="sa-custom-amount-wrapper">
           <label htmlFor={inputId} className="sa-section-label">
-            Atau Masukkan Nominal Sendiri
+            Atau Ketik Nominal Sendiri
           </label>
           <div className="sa-input-row">
             <span className="sa-input-prefix" aria-hidden="true">
@@ -222,7 +254,7 @@ export function SupportAdminView() {
               type="text"
               inputMode="numeric"
               className="sa-amount-input"
-              placeholder="Contoh: 15.000"
+              placeholder="Contoh: 3.000 atau 15.000"
               value={customInput}
               onChange={handleCustomInputChange}
               aria-describedby={`${inputId}-hint`}
@@ -236,7 +268,7 @@ export function SupportAdminView() {
 
         {isDynamic && (
           <button type="button" className="sa-reset-btn" onClick={handleReset}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
@@ -244,31 +276,6 @@ export function SupportAdminView() {
           </button>
         )}
       </section>
-
-      {/* Tombol Aksi */}
-      <div className="sa-actions">
-        <button
-          type="button"
-          className="sa-btn-primary"
-          onClick={handleDownloadPng}
-          disabled={isDownloading}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          {isDownloading ? "Menyiapkan..." : "Simpan QR (PNG)"}
-        </button>
-
-        <button type="button" className="sa-btn-secondary" onClick={handleCopyCode}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-          {copied ? "Tersalin! ✓" : "Salin Kode QRIS"}
-        </button>
-      </div>
 
       {/* Petunjuk 3 Langkah */}
       <section className="sa-guide-card" aria-label="Cara Pembayaran QRIS">
@@ -283,13 +290,13 @@ export function SupportAdminView() {
           <div className="sa-guide-item">
             <span className="sa-step-num">2</span>
             <p className="sa-step-text">
-              Pilih menu <strong>Bayar / Scan QR</strong> (arahkan kamera ke layar atau pilih gambar QR dari galeri HP Anda).
+              Pilih menu <strong>Bayar / Scan QR</strong> (arahkan kamera ke layar atau unggah gambar QR yang sudah kamu unduh).
             </p>
           </div>
           <div className="sa-guide-item">
             <span className="sa-step-num">3</span>
             <p className="sa-step-text">
-              Pastikan nama merchant yang muncul adalah <strong>Azein</strong>, masukkan nominal (jika memakai nominal bebas), lalu konfirmasi pembayaran.
+              Pastikan nama merchant yang muncul adalah <strong>Azein</strong>, konfirmasi nominal, lalu masukkan PIN.
             </p>
           </div>
         </div>
@@ -297,8 +304,8 @@ export function SupportAdminView() {
 
       {/* Catatan Terima Kasih */}
       <footer className="sa-thank-you">
-        <p className="font-semibold text-[var(--foreground)]">Terima kasih banyak atas kebaikan Anda! ❤️</p>
-        <p>Dukungan Anda membantu layanan pencari preset ini tetap aktif dan bisa dinikmati semua orang tanpa batas.</p>
+        <p className="font-semibold text-[var(--foreground)]">Makasih banyak atas traktirannya! ❤️</p>
+        <p>Setiap rupiah bantuanmu sangat berarti untuk menjaga server AM Preset Finder tetap online dan bebas dinikmati semua orang.</p>
       </footer>
     </div>
   );
