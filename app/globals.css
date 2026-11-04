@@ -4439,22 +4439,6 @@ html[data-theme="light"] {
   --accent-soft: rgba(0, 122, 84, 0.12);
 }
 
-/* Logo: di tema terang garis dibuat lebih tebal & hijau lebih pekat supaya
-   tidak tenggelam di latar putih (di tema gelap neon sudah kontras). */
-html[data-theme="light"] .am-logo-ring {
-  stroke-width: 3.8px;
-}
-
-html[data-theme="light"] .am-logo-frame {
-  stroke-width: 3px;
-}
-
-html[data-theme="light"] .nav-logo,
-html[data-theme="light"] .footer-logo-mark,
-html[data-theme="light"] .drawer-logo {
-  color: #005c3f;
-}
-
 .ic-fg {
   stroke: var(--foreground);
 }
