@@ -157,26 +157,7 @@ img {
 }
 
 html[data-menu="open"] .nav-logo svg,
-html[data-menu="open"] .nav-title-link {
-  align-self: flex-start;
-  margin: -20px 0;
-  padding: 20px 14px 20px 0;
-  color: inherit;
-  text-decoration: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.nav-title-link:hover {
-  color: inherit;
-}
-.nav-logo {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.nav-name {
+html[data-menu="open"] .nav-name {
   opacity: 0;
 }
 
@@ -207,6 +188,28 @@ html[data-flying] .drawer-name {
   gap: 3px;
   min-width: 0;
   padding: 10px 14px 10px 0;
+}
+
+.nav-title-link {
+  align-self: flex-start;
+  margin: -20px 0;
+  padding: 20px 14px 20px 0;
+  color: inherit;
+  text-decoration: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-title-link:hover {
+  color: inherit;
+}
+
+.nav-logo {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nav-name {
