@@ -1,4 +1,4 @@
-export type PresetType = "5mb" | "xml";
+export type PresetType = "5mb" | "xml" | "sound" | "font" | "bahan";
 
 export type PresetLink = {
   type: PresetType;

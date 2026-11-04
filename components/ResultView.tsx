@@ -107,11 +107,21 @@ function ratioBox(ratio?: string) {
 
 function presetLabel(preset: PresetLink, ui: UiTexts): string {
   if (preset.title) return preset.title;
-  return preset.type === "5mb" ? ui.result.preset5mb : ui.result.fileXml;
+  if (preset.type === "5mb") return ui.result.preset5mb;
+  if (preset.type === "xml") return ui.result.fileXml;
+  if (preset.type === "sound") return "Sound / Musik";
+  if (preset.type === "font") return "Font";
+  if (preset.type === "bahan") return "Bahan / Overlay";
+  return "Link File";
 }
 
 function presetTypeLabel(preset: PresetLink): string {
-  return preset.type === "5mb" ? "5MB" : "XML";
+  if (preset.type === "5mb") return "5MB";
+  if (preset.type === "xml") return "XML";
+  if (preset.type === "sound") return "Musik";
+  if (preset.type === "font") return "Font";
+  if (preset.type === "bahan") return "Bahan";
+  return String(preset.type).toUpperCase();
 }
 
 function PresetThumb({ preset }: { preset: PresetLink }) {
@@ -132,6 +142,27 @@ function PresetThumb({ preset }: { preset: PresetLink }) {
       />
     );
   }
+  if (preset.type === "sound") {
+    return (
+      <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
+        <MusicIcon />
+      </span>
+    );
+  }
+  if (preset.type === "font") {
+    return (
+      <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
+        <FontIcon />
+      </span>
+    );
+  }
+  if (preset.type === "bahan") {
+    return (
+      <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
+        <BoxIcon />
+      </span>
+    );
+  }
   if (preset.type === "xml") {
     return (
       <span className="preset-thumb preset-thumb-ph preset-thumb-file" aria-hidden="true">
@@ -143,6 +174,26 @@ function PresetThumb({ preset }: { preset: PresetLink }) {
     <span className="preset-thumb preset-thumb-ph" aria-hidden="true">
       5MB
     </span>
+  );
+}
+
+function FontIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="4 7 4 4 20 4 20 7" />
+      <line x1="9" y1="20" x2="15" y2="20" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </svg>
+  );
+}
+
+function BoxIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
   );
 }
 
@@ -978,7 +1029,15 @@ export function ResultView({ result }: { result: FindResult }) {
                     <div className="preset-actions">
                       <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
                         {preset.type === "5mb" ? <OpenIcon /> : <DownloadIcon />}
-                        {preset.type === "5mb" ? ui.buttons.openPreset : ui.buttons.openFile}
+                        {preset.type === "5mb"
+                          ? ui.buttons.openPreset
+                          : preset.type === "sound"
+                            ? "Unduh Audio"
+                            : preset.type === "font"
+                              ? "Unduh Font"
+                              : preset.type === "bahan"
+                                ? "Unduh Bahan"
+                                : ui.buttons.openFile}
                       </a>
                       <CopyButton url={preset.url} />
                     </div>

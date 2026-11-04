@@ -151,7 +151,21 @@ function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
   const chCode = chUrl.match(/whatsapp\.com\/channel\/([A-Za-z0-9_-]+)/)?.[1] || "";
   const chName = chInfo.name || (chCode ? `Channel ${chCode}` : "Saluran WhatsApp");
 
-  const linksText = waPresets.map((p, i) => `${i + 1}. ${p.url}`).join("\n");
+  const typeMap: Record<string, string> = {
+    "5mb": "5MB",
+    xml: "XML",
+    sound: "Musik",
+    font: "Font",
+    bahan: "Bahan",
+  };
+
+  const linksText = waPresets
+    .map((p, i) => {
+      const type = typeMap[p.type] || String(p.type || "").toUpperCase();
+      if (i === 0) return `${i + 1}. ${p.url}`;
+      return `${i + 1}. ${p.url} (${type})`;
+    })
+    .join("\n");
 
   const logMsg =
     `📢 *[AM-FINDER LOG]*\n\n` +
