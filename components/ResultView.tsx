@@ -304,18 +304,22 @@ function CopyButton({ url }: { url: string }) {
 
 const EASE_OPEN = "cubic-bezier(0.22, 1, 0.36, 1)";
 const EASE_CLOSE = "cubic-bezier(0.4, 0, 0.2, 1)";
-// Jarak tombol overlay (mute/expand/close) dari sudut video, sama dengan CSS.
-const CONTROL_INSET = 6;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function flipTransform(from: DOMRect, to: DOMRect) {
-  const dx = from.left + from.width / 2 - (to.left + to.width / 2);
-  const dy = from.top + from.height / 2 - (to.top + to.height / 2);
-  const scale = from.width / to.width;
-  return `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${scale})`;
+// Keyframe posisi + ukuran kotak (titik tengah, lebar, tinggi). Dianimasikan
+// langsung, bukan lewat scale, supaya kotak berubah bentuk dari layar penuh
+// (tegak) ke thumbnail (melebar) secara mulus dan tombol di dalamnya tetap
+// menempel di pojok dengan ukuran normal.
+function morphFrame(rect: DOMRect): Keyframe {
+  return {
+    left: `${rect.left + rect.width / 2}px`,
+    top: `${rect.top + rect.height / 2}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+  };
 }
 
 function VideoPreview({
@@ -356,33 +360,11 @@ function VideoPreview({
     setClosing(true);
     const current = box.getBoundingClientRect();
     const slot = ghost.getBoundingClientRect();
-    const animation = box.animate(
-      [{ transform: "translate(-50%, -50%) scale(1)" }, { transform: flipTransform(slot, current) }],
-      { duration: 220, easing: EASE_CLOSE, fill: "forwards" },
-    );
-    // Kotak video mengecil (scale), jadi tombol di dalamnya ikut mengecil lalu
-    // "loncat" ke ukuran normal saat selesai. Lawan skalanya supaya ukuran
-    // tombol di layar tetap 28px sepanjang animasi.
-    const scale = slot.width / current.width;
-    if (scale > 0 && Number.isFinite(scale)) {
-      const shift = CONTROL_INSET / scale - CONTROL_INSET;
-      box
-        .querySelectorAll<HTMLElement>(".video-mute, .video-close, .video-expand, .video-center-play")
-        .forEach((el) => {
-          const center = el.classList.contains("video-center-play");
-          const right = el.classList.contains("video-close") || el.classList.contains("video-expand");
-          el.style.transformOrigin = center ? "center" : right ? "top right" : "top left";
-          const from = center ? "translate(-50%, -50%)" : "none";
-          const to = center
-            ? `translate(-50%, -50%) scale(${1 / scale})`
-            : `translate(${right ? -shift : shift}px, ${shift}px) scale(${1 / scale})`;
-          el.animate([{ transform: from }, { transform: to }], {
-            duration: 220,
-            easing: EASE_CLOSE,
-            fill: "forwards",
-          });
-        });
-    }
+    const animation = box.animate([morphFrame(current), morphFrame(slot)], {
+      duration: 240,
+      easing: EASE_CLOSE,
+      fill: "forwards",
+    });
     const finish = () => {
       closingRef.current = false;
       setClosing(false);
@@ -417,10 +399,7 @@ function VideoPreview({
     if (!first || typeof box.animate !== "function" || prefersReducedMotion()) return;
     const last = box.getBoundingClientRect();
     if (!last.width) return;
-    box.animate(
-      [{ transform: flipTransform(first, last) }, { transform: "translate(-50%, -50%) scale(1)" }],
-      { duration: 280, easing: EASE_OPEN },
-    );
+    box.animate([morphFrame(first), morphFrame(last)], { duration: 280, easing: EASE_OPEN });
   }, [expanded]);
 
   useEffect(() => {

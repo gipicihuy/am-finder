@@ -1113,7 +1113,7 @@ body::before {
 /* Saat preview terbuka, tombol expand disembunyikan seketika (diganti tombol
    close). Saat menutup, ia muncul halus di sudut yang sama. */
 .video-expand {
-  transition: color 120ms ease, border-color 120ms ease, opacity 160ms ease-out 60ms;
+  transition: color 120ms ease, border-color 120ms ease, opacity 200ms ease-out;
 }
 
 .video-preview.is-open:not(.is-closing) .video-expand {
@@ -1222,7 +1222,13 @@ body::before {
 
 .preview-backdrop.is-closing ~ .video-preview .video-close {
   opacity: 0;
-  transition: opacity 120ms ease-out;
+  transition: opacity 160ms ease-out;
+}
+
+/* Bayangan ikut memudar saat menutup, bukan hilang mendadak di akhir. */
+.video-preview.is-open.is-closing {
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: box-shadow 240ms ease-in;
 }
 
 @keyframes preview-fade {
