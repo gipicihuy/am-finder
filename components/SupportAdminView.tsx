@@ -4,8 +4,6 @@ import { useEffect, useId, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
   STATIC_QRIS_PAYLOAD,
-  MERCHANT_NAME,
-  MERCHANT_CITY,
   MIN_DONATION,
   MAX_DONATION,
   NOMINAL_PRESETS,
@@ -128,26 +126,11 @@ export function SupportAdminView() {
     <div className="support-admin-page">
       {/* Header Halaman */}
       <div className="sa-head">
-        <div className="sa-badges" role="list" aria-label="Karakteristik layanan">
-          <span className="sa-pill" role="listitem">
-            <span className="sa-dot" aria-hidden="true" />
-            Bebas Iklan
-          </span>
-          <span className="sa-pill" role="listitem">
-            <span className="sa-dot" aria-hidden="true" />
-            Tanpa Langganan
-          </span>
-          <span className="sa-pill" role="listitem">
-            <span className="sa-dot" aria-hidden="true" />
-            100% Sukarela
-          </span>
-        </div>
-
         <h1 className="sa-title">
           Dukung <em>AM Preset Finder.</em>
         </h1>
         <p className="sa-subtitle">
-          AM Preset Finder gratis untuk semua orang tanpa iklan dan tanpa biaya langganan. Kalau kamu terbantu dan ingin traktir admin untuk biaya sewa server & domain, silakan scan QRIS di bawah ini. Nominal bebas dan sepenuhnya sukarela.
+          Kalau kamu terbantu dan mau traktir admin untuk biaya sewa server & domain, silakan scan QRIS di bawah ini. Nominal bebas dan sepenuhnya sukarela.
         </p>
       </div>
 
@@ -184,10 +167,6 @@ export function SupportAdminView() {
             />
 
             <div className="sa-qr-footer">
-              <p className="sa-merchant-name">{MERCHANT_NAME}</p>
-              <p className="sa-merchant-sub">
-                Nama merchant ini yang akan muncul di aplikasi e-wallet / m-banking kamu.
-              </p>
               <div className="sa-amount-tag">
                 {isDynamic && activeAmount ? (
                   <span>Rp{formatRupiah(activeAmount)}</span>
@@ -198,7 +177,7 @@ export function SupportAdminView() {
             </div>
           </article>
 
-          {/* Tombol Simpan QR di Dalam Frame */}
+          {/* Tombol Unduh QR di Dalam Frame */}
           <div className="sa-frame-actions">
             <button
               type="button"
@@ -211,7 +190,7 @@ export function SupportAdminView() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              {isDownloading ? "Menyiapkan QR..." : "Unduh QRIS (PNG)"}
+              {isDownloading ? "Menyiapkan QR..." : "Unduh QRIS"}
             </button>
           </div>
         </div>
@@ -284,7 +263,7 @@ export function SupportAdminView() {
           <div className="sa-guide-item">
             <span className="sa-step-num">1</span>
             <p className="sa-step-text">
-              Buka aplikasi e-wallet (<strong>DANA, GoPay, OVO, ShopeePay</strong>) atau <strong>m-Banking</strong> bank apa pun.
+              Buka aplikasi e-wallet (<strong>DANA, GoPay, OVO, ShopeePay</strong>) atau <strong>m-Banking</strong> apa pun.
             </p>
           </div>
           <div className="sa-guide-item">
@@ -296,7 +275,7 @@ export function SupportAdminView() {
           <div className="sa-guide-item">
             <span className="sa-step-num">3</span>
             <p className="sa-step-text">
-              Pastikan nama merchant yang muncul adalah <strong>Azein</strong>, konfirmasi nominal, lalu masukkan PIN.
+              Periksa detail pembayaran, masukkan/konfirmasi nominal, lalu selesaikan transaksi dengan PIN kamu.
             </p>
           </div>
         </div>
