@@ -222,7 +222,6 @@ export function SideMenu() {
             <AmLogo size={32} />
           </Link>
           <span className="drawer-name">{ui.header.brand}</span>
-          <ThemeToggle />
           <button ref={closeRef} type="button" className="drawer-close" aria-label={ui.menu.close} onClick={() => closeMenu()}>
             <CloseIcon />
           </button>
@@ -317,6 +316,10 @@ export function SideMenu() {
             )}
           </div>
         </nav>
+
+        <div className="drawer-foot">
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

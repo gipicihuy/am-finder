@@ -30,6 +30,13 @@
       "whatsapp": "WhatsApp Channel",
       "donate": "Donate",
       "legal": "Legal"
+    },
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "toLight": "Switch to light theme",
+      "toDark": "Switch to dark theme"
     }
   },
   "home": {
