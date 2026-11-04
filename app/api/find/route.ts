@@ -168,13 +168,16 @@ function notifyIfWaChannel(row: Record<string, any>, inputUrl: string) {
     })
     .join("\n");
 
+  const messageUrl = chInfo.messageUrl || (chCode ? `https://whatsapp.com/channel/${chCode}` : "");
+
   const logMsg =
     `📢 *[AM-FINDER LOG]*\n\n` +
     `Berhasil mengambil preset dari *Saluran WhatsApp*!\n` +
     `• *Saluran:* ${chName}\n` +
     (chCode ? `• *Kode:* ${chCode}\n` : "") +
     `• *Total Preset:* ${presets.length}\n\n` +
-    `*Links:*\n${linksText}`;
+    `*Links:*\n${linksText}` +
+    (messageUrl ? `\n\n🔗 *Pesan Saluran:*\n${messageUrl}` : "");
 
   void fetch("http://127.0.0.1:4040/notify", {
     method: "POST",
