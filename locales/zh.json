@@ -44,6 +44,7 @@
     "all": "全部",
     "found": "已找到",
     "notFound": "未找到",
+    "none": "无预设",
     "unknown": "已保存",
     "presetCount": "{count} 个预设",
     "emptyTitle": "还没有历史记录",

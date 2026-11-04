@@ -44,6 +44,7 @@
     "all": "All",
     "found": "Found",
     "notFound": "Not found",
+    "none": "Empty",
     "unknown": "Saved",
     "presetCount": "{count} presets",
     "emptyTitle": "No history yet",
