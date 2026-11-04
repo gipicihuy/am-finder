@@ -86,8 +86,14 @@ function buildWebsiteJsonLd(locale: Locale) {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getLocale();
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('amfinder:theme')==='light')document.documentElement.dataset.theme='light'}catch(e){}",
+          }}
+        />
         {/* Ditulis manual: Next menghapus trailing slash pada canonical/og:url root. */}
         <link rel="canonical" href={`${siteUrl}/`} />
         <meta property="og:url" content={`${siteUrl}/`} />

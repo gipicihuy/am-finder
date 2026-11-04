@@ -27,12 +27,12 @@ const KEYFRAMES = `
 @keyframes bs-spin{to{transform:rotate(360deg)}}
 .bs-scan{position:absolute;left:0;right:0;top:0;height:14px;background:linear-gradient(to bottom,rgba(5,250,168,0) 0%,rgba(5,250,168,.55) 60%,rgba(5,250,168,0) 100%);opacity:0;pointer-events:none;animation:bs-scan 1.8s ease-in-out .6s infinite}
 @keyframes bs-scan{0%{transform:translateY(-14px);opacity:0}15%{opacity:.9}75%{opacity:.75}100%{transform:translateY(44px);opacity:0}}
-.bs-title{font-family:AXGC,sans-serif;font-size:18px;font-weight:800;color:#F2F2F3;letter-spacing:.3px;white-space:nowrap}
+.bs-title{font-family:AXGC,sans-serif;font-size:18px;font-weight:800;color:var(--foreground);letter-spacing:.3px;white-space:nowrap}
 .bs-dots span{opacity:.15;animation:bs-dot 1.1s infinite}
 .bs-dots span:nth-child(2){animation-delay:.18s}
 .bs-dots span:nth-child(3){animation-delay:.36s}
 @keyframes bs-dot{0%,100%{opacity:.15}45%{opacity:1}}
-.bs-status{margin-top:8px;font-size:13px;color:#05FAA8;text-align:center}
+.bs-status{margin-top:8px;font-size:13px;color:var(--accent);text-align:center}
 .bs-timer{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:6px;background:rgba(5,250,168,.15);border:1px solid rgba(5,250,168,.3);color:#05FAA8;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;font-weight:700;letter-spacing:0}
 `;
 
@@ -73,7 +73,7 @@ export default function BrandScan({
             strokeLinejoin="round"
           >
             <g transform="translate(24 24) scale(0.82) translate(-24 -24)">
-              <g stroke="#F2F2F3" strokeWidth={2.6}>
+              <g style={{ stroke: "var(--foreground)" }} strokeWidth={2.6}>
                 {BRACKETS.map((d, i) => (
                   <path
                     key={d}
@@ -87,7 +87,7 @@ export default function BrandScan({
             </g>
             <g className="bs-spin">
               <g
-                stroke="#05FAA8"
+                style={{ stroke: "var(--accent)" }}
                 strokeWidth={3.2}
                 transform="translate(24 24) scale(0.82) translate(-24 -24) translate(24 24) scale(0.8) translate(-24 -25.7)"
               >

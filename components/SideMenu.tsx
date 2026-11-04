@@ -9,6 +9,7 @@ import { APK_URL } from "@/lib/app-links";
 import { isInAndroidApp, isIos } from "@/lib/in-app";
 import { clearBrandFlight, flyBrand, prefersReducedMotion } from "@/lib/brand-flight";
 import { useUi } from "@/components/LocaleProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -221,6 +222,7 @@ export function SideMenu() {
             <AmLogo size={32} />
           </Link>
           <span className="drawer-name">{ui.header.brand}</span>
+          <ThemeToggle />
           <button ref={closeRef} type="button" className="drawer-close" aria-label={ui.menu.close} onClick={() => closeMenu()}>
             <CloseIcon />
           </button>

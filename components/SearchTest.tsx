@@ -17,12 +17,12 @@ import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 import { rememberHistoryLink, rememberHistoryResult } from "@/lib/history";
 
-const BG = "#0F0F10";
-const SURFACE = "#17171A";
-const BORDER = "#2C2C33";
-const FG = "#F2F2F3";
-const MUTED = "#9B9BA3";
-const ACCENT = "#05FAA8";
+const BG = "var(--background)";
+const SURFACE = "var(--surface)";
+const BORDER = "var(--border)";
+const FG = "var(--foreground)";
+const MUTED = "var(--muted)";
+const ACCENT = "var(--accent)";
 const DANGER = "#FF6B6B";
 
 type Candidate = {
@@ -1052,7 +1052,7 @@ export default function SearchTest({
                 border: "none",
                 borderRadius: 14,
                 background: ACCENT,
-                color: "#06110C",
+                color: "var(--accent-ink)",
                 fontWeight: 700,
                 fontSize: 16,
                 opacity: searching ? 0.6 : 1,
@@ -1239,6 +1239,7 @@ export default function SearchTest({
             <div
               role="status"
               aria-live="polite"
+              data-theme="dark"
               style={{
                 position: "fixed",
                 inset: 0,

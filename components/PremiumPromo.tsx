@@ -34,6 +34,7 @@ export function PremiumPromo() {
   return (
     <aside
       className={phase === "out" ? "promo-bar is-leaving" : "promo-bar"}
+      data-theme="dark"
       aria-label="Promo Alight Motion Premium"
     >
       <span className="promo-icon" aria-hidden="true">
