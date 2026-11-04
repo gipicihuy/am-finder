@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { shouldSuppressPromo } from "@/lib/promo-paths";
 
 const WA_URL =
   "https://wa.me/6283182725011?text=" + encodeURIComponent("Halo, saya mau beli Alight Motion Premium 1 tahun (Rp4.900)");
@@ -29,7 +30,7 @@ export function PremiumPromo() {
   }, [phase]);
 
   if (phase === "idle" || phase === "gone") return null;
-  if (pathname.startsWith("/monitor-givy")) return null;
+  if (shouldSuppressPromo(pathname)) return null;
 
   return (
     <aside

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { WhatsAppIcon } from "@/components/ShareIcons";
 import { useUi } from "@/components/LocaleProvider";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
+import { shouldSuppressPromo } from "@/lib/promo-paths";
 
 const CHANNEL_URL = "https://whatsapp.com/channel/0029Vb6dsXw6xCSY9sn9aD2r";
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
@@ -14,17 +16,19 @@ const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
  * Sekali per page load (tidak muncul lagi setelah ditutup), tanpa localStorage/cookie.
  */
 export function WaChannelToast() {
+  const pathname = usePathname();
   const ui = useUi();
   const [phase, setPhase] = useState<"idle" | "in" | "out" | "gone">("idle");
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onSearchStarted() {
+      if (shouldSuppressPromo(pathname)) return;
       setPhase((current) => (current === "idle" ? "in" : current));
     }
     window.addEventListener(SEARCH_STARTED_EVENT, onSearchStarted);
     return () => window.removeEventListener(SEARCH_STARTED_EVENT, onSearchStarted);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (phase !== "out") return;
@@ -53,7 +57,7 @@ export function WaChannelToast() {
 
   const close = useCallback(() => setPhase((current) => (current === "in" ? "out" : current)), []);
 
-  if (phase === "idle" || phase === "gone") return null;
+  if (phase === "idle" || phase === "gone" || shouldSuppressPromo(pathname)) return null;
 
   return (
     <div

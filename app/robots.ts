@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         // /search dan /preset sengaja diblokir: isinya kerangka yang diisi dari
         // browser, nggak ada yang bisa di-crawl, dan /preset id-nya bisa banyak
         // banget kalau dibiarin. Meta noindex tetap dipasang buat yang hiraukan robots.txt.
-        disallow: ["/api/", "/search", "/preset"],
+        disallow: ["/api/", "/search", "/preset", "/support-admin"],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,

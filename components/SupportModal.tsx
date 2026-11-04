@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useUi } from "@/components/LocaleProvider";
+import { shouldSuppressPromo } from "@/lib/promo-paths";
 
 const SUPPORT_URL = "https://sociabuzz.com/givyo/tribe";
-const SILENT_PATHS = new Set(["/terms", "/privacy"]);
 
 /**
  * Modal dukungan. Muncul sekali setiap page load (state di memori saja, tanpa
  * localStorage/cookie), jadi kunjungan/reload berikutnya tampil lagi.
  * Tidak dirender di server, hanya setelah hydrate, supaya tidak masuk HTML awal.
- * Halaman /terms dan /privacy tidak pernah menampilkan modal ini.
+ * Halaman yang ada di SUPPRESSED_PROMO_PATHS tidak pernah menampilkan modal ini.
  */
 export function SupportModal() {
   const ui = useUi();
@@ -26,9 +26,9 @@ export function SupportModal() {
   useEffect(() => {
     // Layout tidak di-remount saat pindah halaman, jadi ref ini hidup selama
     // satu page load. Muat ulang (refresh) baru mereset dan memunculkan modal lagi.
-    if (SILENT_PATHS.has(pathname)) {
+    if (shouldSuppressPromo(pathname)) {
       setOpen(false);
-      // Mendarat langsung di /terms atau /privacy dihitung sebagai "sudah dilihat",
+      // Mendarat langsung di halaman bebas promo dihitung sebagai "sudah dilihat",
       // supaya kembali ke beranda tidak memunculkan modal.
       openedOnce.current = true;
       return;
@@ -77,7 +77,7 @@ export function SupportModal() {
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || shouldSuppressPromo(pathname)) return null;
 
   return (
     <div
