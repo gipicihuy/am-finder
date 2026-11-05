@@ -45,11 +45,11 @@ export const ADS_CONFIG: AdsConfig = {
   directLink: {
     url: "https://uplcm.com/4/12197668",
     web: {
-      enabled: false,
+      enabled: true,
       cooldownMinutes: 10,
     },
     android: {
-      enabled: false,
+      enabled: true,
       cooldownMinutes: 10,
     },
   },

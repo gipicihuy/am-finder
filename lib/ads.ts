@@ -75,10 +75,41 @@ export function triggerDirectLink(): boolean {
     }
   } else {
     try {
-      // window.open() langsung di dalam click handler kartu
-      const win = window.open(url, "_blank", "noopener,noreferrer");
-      if (win) {
-        // Berhasil dibuka (tidak diblokir popup blocker) -> baru simpan timestamp
+      let opened = false;
+
+      // 1. Coba window.open() tanpa 3rd param 'noopener' agar Chromium tidak otomatis return null
+      try {
+        const win = window.open(url, "_blank");
+        if (win) {
+          try {
+            win.opener = null;
+          } catch {
+            // Abaikan jika tidak diizinkan
+          }
+          opened = true;
+        }
+      } catch {
+        opened = false;
+      }
+
+      // 2. Fallback via synthetic anchor click (sangat kompatibel di mobile browser)
+      if (!opened) {
+        try {
+          const a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          opened = true;
+        } catch {
+          opened = false;
+        }
+      }
+
+      if (opened) {
+        // Berhasil dibuka -> simpan timestamp cooldown
         try {
           localStorage.setItem(storageKey, String(now));
         } catch {
@@ -86,7 +117,8 @@ export function triggerDirectLink(): boolean {
         }
         return true;
       }
-      // Jika popup blocker memblokir (win === null), cooldown tidak dihanguskan
+
+      // Jika popup blocker benar-benar memblokir keduanya, cooldown tidak dihanguskan
       return false;
     } catch {
       return false;
