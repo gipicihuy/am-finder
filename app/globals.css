@@ -2234,6 +2234,11 @@ body::before {
   opacity: 1;
 }
 
+/* Tema terang: ikon tab tidak aktif jangan terlalu pudar di latar krem */
+html[data-theme="light"] .mode-tab-icon {
+  opacity: 0.88;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mode-tab-icon {
     transition: none;
