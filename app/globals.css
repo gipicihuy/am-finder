@@ -4431,17 +4431,22 @@ html[data-theme="light"] {
   --surface-2: #f1e9d4;
   --surface-3: #e8dfc7;
   --foreground: #1d1b14;
-  --muted: #6b6553;
-  --text-soft: #4a4638;
+  --muted: #554f40;
+  --text-soft: #38342a;
   --border: #e2d9c1;
   --border-strong: #d0c5a8;
-  --accent: #007a54;
+  --accent: #00694a;
   --accent-ink: #ffffff;
-  --accent-soft: rgba(0, 122, 84, 0.12);
+  --accent-soft: rgba(0, 105, 74, 0.12);
   /* Logo AM: tile gelap + neon seperti di tema gelap, supaya tetap tegas di latar putih */
   --logo-tile: #0f0f10;
   --logo-ring: #05faa8;
   --logo-frame: #f2f2f3;
+}
+
+/* Teks gelap di latar terang tampak lebih tipis; naikkan sedikit bobot dasarnya */
+html[data-theme="light"] body {
+  font-weight: 500;
 }
 
 .ic-fg {
