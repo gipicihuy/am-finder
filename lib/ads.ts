@@ -37,16 +37,18 @@ export function triggerDirectLink(): boolean {
   const cooldownMs = config.cooldownMinutes * 60 * 1000;
   const now = Date.now();
 
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const last = parseInt(raw, 10);
-      if (!isNaN(last) && now - last < cooldownMs) {
-        return false; // Masih dalam masa cooldown
+  if (cooldownMs > 0) {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const last = parseInt(raw, 10);
+        if (!isNaN(last) && now - last < cooldownMs) {
+          return false; // Masih dalam masa cooldown
+        }
       }
+    } catch {
+      // localStorage diblokir / private mode, abaikan
     }
-  } catch {
-    // localStorage diblokir / private mode, abaikan
   }
 
   const url = ADS_CONFIG.directLink.url;

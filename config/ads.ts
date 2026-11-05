@@ -35,9 +35,9 @@ export const ADS_CONFIG: AdsConfig = {
     zoneId: "12197676",
     scriptUrl: "https://nap5k.com/tag.min.js",
     slots: {
-      slotA_detailVideo: false, // Slot A: Halaman detail video, setelah Preset Links
-      slotB_searchPreset: false, // Slot B: Tab Cari Preset, setelah daftar hasil & show more
-      slotC_homePage: false,     // Slot C: Beranda, setelah Step by Step
+      slotA_detailVideo: true, // Slot A: Halaman detail video, setelah Preset Links
+      slotB_searchPreset: true, // Slot B: Tab Cari Preset, setelah daftar hasil & show more
+      slotC_homePage: true,     // Slot C: Beranda, setelah Step by Step
     },
   },
 
@@ -46,11 +46,11 @@ export const ADS_CONFIG: AdsConfig = {
     url: "https://uplcm.com/4/12197668",
     web: {
       enabled: true,
-      cooldownMinutes: 10,
+      cooldownMinutes: 0, // 0 = setiap klik kartu langsung redirect/buka iklan tanpa cooldown
     },
     android: {
       enabled: true,
-      cooldownMinutes: 10,
+      cooldownMinutes: 0,
     },
   },
 };
