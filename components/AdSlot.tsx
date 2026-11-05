@@ -65,22 +65,7 @@ export function AdSlot({ slot, className = "" }: AdSlotProps) {
       <div
         className="ad-slot-content"
         id={`ad-zone-${ADS_CONFIG.banner.zoneId}-${slot}`}
-      >
-        <a
-          href={ADS_CONFIG.directLink.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ad-banner-link"
-        >
-          <div className="ad-banner-inner">
-            <span className="ad-banner-badge">SPONSORED</span>
-            <span className="ad-banner-title">
-              Dapatkan Preset & Aset Alight Motion Terbaru
-            </span>
-            <span className="ad-banner-action">Lihat Selengkapnya →</span>
-          </div>
-        </a>
-      </div>
+      />
     </div>
   );
 }
