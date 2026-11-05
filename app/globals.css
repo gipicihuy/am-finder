@@ -270,6 +270,11 @@ body::before {
   mask-image: linear-gradient(to bottom, #000 0%, #000 15%, transparent 100%);
 }
 
+/* Tema terang: titik latar pakai hijau aksen (neon mint hampir tak terlihat di krem) */
+html[data-theme="light"] body::before {
+  background-image: radial-gradient(circle at 1.5px 1.5px, rgba(0, 105, 74, 0.3) 1.3px, transparent 1.8px);
+}
+
 /* page head */
 .page-tagline {
   margin: 0 0 8px;
