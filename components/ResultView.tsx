@@ -7,6 +7,7 @@ import { isYoutubeLink, youtubeId } from "@/lib/tiktok-link";
 import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { useUi } from "@/components/LocaleProvider";
+import { AdSlot } from "@/components/AdSlot";
 import type { UiTexts } from "@/lib/ui";
 
 type ShareLink = NonNullable<FindResult["shareLinks"]>[number];
@@ -1141,6 +1142,8 @@ export function ResultView({ result }: { result: FindResult }) {
             </button>
           )}
       </section>
+
+      <AdSlot slot="slotA_detailVideo" />
     </>
   );
 }

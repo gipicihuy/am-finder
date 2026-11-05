@@ -8,6 +8,7 @@ import { useUi } from "@/components/LocaleProvider";
 import { ResultView } from "@/components/ResultView";
 import { FoundToast } from "@/components/FoundToast";
 import { HowSteps } from "@/components/HowSteps";
+import { AdSlot } from "@/components/AdSlot";
 import BrandScan from "./BrandScan";
 import SearchTest from "./SearchTest";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
@@ -556,7 +557,10 @@ export function Finder({
       </div>
 
       {phase === "idle" ? (
-        <HowSteps title={ui.states.howTitle} steps={ui.states.howSteps} />
+        <>
+          <HowSteps title={ui.states.howTitle} steps={ui.states.howSteps} />
+          <AdSlot slot="slotC_homePage" />
+        </>
       ) : null}
 
       {phase === "running" ? (
