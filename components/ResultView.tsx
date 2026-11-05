@@ -1104,14 +1104,14 @@ export function ResultView({ result }: { result: FindResult }) {
                         {metaText ? <span className="preset-meta-text">{metaText}</span> : null}
                       </div>
                       {preset.detail ? <p className="preset-detail">{preset.detail}</p> : null}
-                    </div>
-                  </div>
 
-                  <div className="preset-field">
-                    <span className="preset-field-url" title={preset.url}>
-                      {preset.url}
-                    </span>
-                    <CopyButton url={preset.url} variant="icon" />
+                      <div className="preset-field">
+                        <span className="preset-field-url" title={preset.url}>
+                          {preset.url}
+                        </span>
+                        <CopyButton url={preset.url} variant="icon" />
+                      </div>
+                    </div>
                   </div>
 
                   <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
