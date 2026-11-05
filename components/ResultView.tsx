@@ -272,7 +272,7 @@ function CheckIcon() {
   );
 }
 
-function CopyButton({ url }: { url: string }) {
+function CopyButton({ url, variant = "text" }: { url: string; variant?: "text" | "icon" }) {
   const ui = useUi();
   const [done, setDone] = useState(false);
 
@@ -292,6 +292,21 @@ function CopyButton({ url }: { url: string }) {
     }
     setDone(true);
     setTimeout(() => setDone(false), 1600);
+  }
+
+  if (variant === "icon") {
+    const label = done ? ui.buttons.copied : ui.buttons.copy;
+    return (
+      <button
+        type="button"
+        className={`preset-copy${done ? " is-done" : ""}`}
+        onClick={copy}
+        aria-label={label}
+        title={label}
+      >
+        {done ? <CheckIcon /> : <CopyIcon />}
+      </button>
+    );
   }
 
   return (
@@ -1065,39 +1080,45 @@ export function ResultView({ result }: { result: FindResult }) {
             {presets.slice(0, presetLimit).map((preset) => {
               return (
                 <article className="preset-row" key={`${preset.type}-${preset.url}`}>
-                  <PresetThumb preset={preset} />
+                  <div className="preset-top">
+                    <PresetThumb preset={preset} />
 
-                  <div className="preset-body">
-                    <h3 className="preset-title">{presetLabel(preset, ui)}</h3>
-                    <div className="preset-badges">
-                      <span className="badge badge-type">{presetTypeLabel(preset)}</span>
-                      {preset.source === "saluran WA" || preset.source === "saluran" ? (
-                        <span className="badge">Saluran WA</span>
-                      ) : preset.source === "telegram" ? (
-                        <span className="badge">Telegram</span>
-                      ) : null}
-                      {preset.size ? <span className="badge">{preset.size}</span> : null}
-                      {preset.pinned ? <span className="badge">{ui.result.pinned}</span> : null}
-                      {preset.byAuthor ? <span className="badge">{ui.result.byAccount}</span> : null}
-                    </div>
-                    {preset.detail ? <p className="preset-detail">{preset.detail}</p> : null}
-                    <p className="preset-url">{preset.url}</p>
-                    <div className="preset-actions">
-                      <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
-                        {preset.type === "5mb" ? <OpenIcon /> : <DownloadIcon />}
-                        {preset.type === "5mb"
-                          ? ui.buttons.openPreset
-                          : preset.type === "sound"
-                            ? "Unduh Audio"
-                            : preset.type === "font"
-                              ? "Unduh Font"
-                              : preset.type === "bahan"
-                                ? "Unduh Bahan"
-                                : ui.buttons.openFile}
-                      </a>
-                      <CopyButton url={preset.url} />
+                    <div className="preset-body">
+                      <h3 className="preset-title">{presetLabel(preset, ui)}</h3>
+                      <div className="preset-badges">
+                        <span className="badge badge-type">{presetTypeLabel(preset)}</span>
+                        {preset.source === "saluran WA" || preset.source === "saluran" ? (
+                          <span className="badge">Saluran WA</span>
+                        ) : preset.source === "telegram" ? (
+                          <span className="badge">Telegram</span>
+                        ) : null}
+                        {preset.size ? <span className="badge">{preset.size}</span> : null}
+                        {preset.pinned ? <span className="badge">{ui.result.pinned}</span> : null}
+                        {preset.byAuthor ? <span className="badge">{ui.result.byAccount}</span> : null}
+                      </div>
+                      {preset.detail ? <p className="preset-detail">{preset.detail}</p> : null}
                     </div>
                   </div>
+
+                  <div className="preset-field">
+                    <span className="preset-field-url" title={preset.url}>
+                      {preset.url}
+                    </span>
+                    <CopyButton url={preset.url} variant="icon" />
+                  </div>
+
+                  <a className="btn-open" href={preset.url} target="_blank" rel="noopener noreferrer">
+                    {preset.type === "5mb" ? <OpenIcon /> : <DownloadIcon />}
+                    {preset.type === "5mb"
+                      ? ui.buttons.openPreset
+                      : preset.type === "sound"
+                        ? "Unduh Audio"
+                        : preset.type === "font"
+                          ? "Unduh Font"
+                          : preset.type === "bahan"
+                            ? "Unduh Bahan"
+                            : ui.buttons.openFile}
+                  </a>
                 </article>
               );
             })}
