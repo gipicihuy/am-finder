@@ -1,49 +1,26 @@
 /**
- * Konfigurasi Sistem Monetisasi Iklan AM Finder
+ * Konfigurasi Sistem Iklan AM Finder
  *
- * Catatan:
- * - Iklan hanya diaktifkan untuk halaman Cari Preset (Search).
- * - Tanpa kotak/frame visual atau teks "IKLAN".
- * - Direct link dipicu pada klik kartu hasil pencarian.
+ * Menggunakan Google AdSense resmi:
+ * ca-pub-7137191663908391
  */
 
 export interface AdsConfig {
-  banner: {
-    zoneId: string;
-    scriptUrl: string;
+  googleAdsense: {
+    client: string;
     enabled: boolean;
   };
-  directLink: {
-    url: string;
-    web: {
-      enabled: boolean;
-      cooldownMinutes: number;
-    };
-    android: {
-      enabled: boolean;
-      cooldownMinutes: number;
-    };
+  monetag: {
+    enabled: boolean;
   };
 }
 
 export const ADS_CONFIG: AdsConfig = {
-  // Banner / In-Page Push (Monetag) - aktif khusus di halaman Search
-  banner: {
-    zoneId: "12197676",
-    scriptUrl: "https://nap5k.com/tag.min.js",
+  googleAdsense: {
+    client: "ca-pub-7137191663908391",
     enabled: true,
   },
-
-  // Direct Link (Monetag) - tiap klik hasil search langsung memicu direct link
-  directLink: {
-    url: "https://uplcm.com/4/12197668",
-    web: {
-      enabled: true,
-      cooldownMinutes: 0,
-    },
-    android: {
-      enabled: true,
-      cooldownMinutes: 0,
-    },
+  monetag: {
+    enabled: false,
   },
 };

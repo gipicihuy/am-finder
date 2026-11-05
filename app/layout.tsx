@@ -57,6 +57,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: siteDescription,
       images: ["/og-image.png"],
     },
+    other: {
+      "google-adsense-account": "ca-pub-7137191663908391",
+    },
   };
 }
 
@@ -97,6 +100,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         {/* Ditulis manual: Next menghapus trailing slash pada canonical/og:url root. */}
         <link rel="canonical" href={`${siteUrl}/`} />
         <meta property="og:url" content={`${siteUrl}/`} />
+        <meta name="google-adsense-account" content="ca-pub-7137191663908391" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7137191663908391"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="min-h-screen antialiased">
         <script

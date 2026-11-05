@@ -16,8 +16,6 @@ import { format } from "@/lib/i18n";
 import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 import { rememberHistoryLink, rememberHistoryResult } from "@/lib/history";
-import { triggerDirectLink } from "@/lib/ads";
-import { AdSlot } from "@/components/AdSlot";
 
 const BG = "var(--background)";
 const SURFACE = "var(--surface)";
@@ -796,7 +794,6 @@ export default function SearchTest({
   }, [openUrl]);
 
   async function openVideo(url: string) {
-    triggerDirectLink();
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
@@ -947,7 +944,6 @@ export default function SearchTest({
           : { maxWidth: 520, margin: "0 auto", padding: "24px 16px 64px", color: FG }
       }
     >
-      <AdSlot />
       {!openUrl && (
         <>
           {!embedded && (
