@@ -1470,27 +1470,18 @@ html[data-theme="light"] body::before {
   overflow-wrap: anywhere;
 }
 
-.preset-badges {
+.preset-meta-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 8px 10px;
 }
 
-/* Chip hanya untuk tipe file; sumber dan ukuran jadi teks biasa */
-.preset-row .badge:not(.badge-type) {
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 12.5px;
+.preset-meta-text {
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.preset-row .badge:not(.badge-type) + .badge:not(.badge-type)::before {
-  content: "·";
-  margin-right: 8px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .badge {
@@ -1619,15 +1610,20 @@ html[data-theme="light"] body::before {
 }
 
 .preset-field {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 44px;
+  height: 42px;
   margin-top: 14px;
-  padding: 0 4px 0 12px;
+  padding: 0 44px 0 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--background);
+  transition: border-color 140ms ease;
+}
+
+.preset-field:focus-within {
+  border-color: var(--accent);
 }
 
 .preset-field-url {
@@ -1639,12 +1635,16 @@ html[data-theme="light"] body::before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  user-select: all;
 }
 
 .preset-copy {
-  flex: none;
-  width: 36px;
-  height: 36px;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -1653,20 +1653,27 @@ html[data-theme="light"] body::before {
   background: var(--surface-2);
   color: var(--foreground);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  box-shadow: -8px 0 10px 2px var(--background);
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
 }
 
 .preset-copy:hover {
   background: var(--surface-3);
+  color: var(--accent);
+}
+
+.preset-copy:active {
+  transform: translateY(-50%) scale(0.92);
 }
 
 .preset-copy.is-done {
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
 .preset-copy .btn-ico {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 .btn-open {
@@ -5122,11 +5129,14 @@ html[data-theme="light"] .history-pill.is-missing {
 
 .preset-row .btn-open {
   display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 44px;
-  margin-top: 14px;
+  margin-top: 12px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14.5px;
+  font-weight: 700;
   gap: 8px;
 }
 

@@ -1078,6 +1078,20 @@ export function ResultView({ result }: { result: FindResult }) {
 
           <div className="preset-list">
             {presets.slice(0, presetLimit).map((preset) => {
+              const sourceName =
+                preset.source === "saluran WA" || preset.source === "saluran"
+                  ? "Saluran WA"
+                  : preset.source === "telegram"
+                    ? "Telegram"
+                    : null;
+              const metaBits = [
+                sourceName,
+                preset.size,
+                preset.pinned ? ui.result.pinned : null,
+                preset.byAuthor ? ui.result.byAccount : null,
+              ].filter(Boolean);
+              const metaText = metaBits.join(" · ");
+
               return (
                 <article className="preset-row" key={`${preset.type}-${preset.url}`}>
                   <div className="preset-top">
@@ -1085,16 +1099,9 @@ export function ResultView({ result }: { result: FindResult }) {
 
                     <div className="preset-body">
                       <h3 className="preset-title">{presetLabel(preset, ui)}</h3>
-                      <div className="preset-badges">
+                      <div className="preset-meta-line">
                         <span className="badge badge-type">{presetTypeLabel(preset)}</span>
-                        {preset.source === "saluran WA" || preset.source === "saluran" ? (
-                          <span className="badge">Saluran WA</span>
-                        ) : preset.source === "telegram" ? (
-                          <span className="badge">Telegram</span>
-                        ) : null}
-                        {preset.size ? <span className="badge">{preset.size}</span> : null}
-                        {preset.pinned ? <span className="badge">{ui.result.pinned}</span> : null}
-                        {preset.byAuthor ? <span className="badge">{ui.result.byAccount}</span> : null}
+                        {metaText ? <span className="preset-meta-text">{metaText}</span> : null}
                       </div>
                       {preset.detail ? <p className="preset-detail">{preset.detail}</p> : null}
                     </div>
