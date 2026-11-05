@@ -1704,49 +1704,6 @@ html[data-theme="light"] body::before {
   filter: brightness(1.06);
 }
 
-/* Monetag AdSlot Container */
-.ad-slot-wrap {
-  position: relative;
-  width: 100%;
-  min-height: 80px;
-  margin: 22px 0 16px;
-  padding: 8px 12px 10px;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.ad-slot-header {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 4px;
-}
-
-.ad-slot-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  opacity: 0.85;
-}
-
-.ad-slot-content {
-  width: 100%;
-  min-height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
 /* riwayat */
 .chips {
   display: flex;

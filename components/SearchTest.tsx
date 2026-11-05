@@ -947,6 +947,7 @@ export default function SearchTest({
           : { maxWidth: 520, margin: "0 auto", padding: "24px 16px 64px", color: FG }
       }
     >
+      <AdSlot />
       {!openUrl && (
         <>
           {!embedded && (
@@ -1219,7 +1220,6 @@ export default function SearchTest({
                   {ui.search.showMore}
                 </button>
               )}
-              <AdSlot slot="slotB_searchPreset" />
             </section>
           )}
         </>

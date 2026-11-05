@@ -1,1 +1,1 @@
-export { ADS_CONFIG, type AdsConfig, type AdSlotKey } from "@/config/ads";
+export { ADS_CONFIG, type AdsConfig } from "@/config/ads";

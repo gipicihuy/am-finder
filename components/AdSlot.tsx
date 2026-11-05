@@ -1,35 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
-import { ADS_CONFIG, type AdSlotKey } from "@/config/ads";
+import { useEffect } from "react";
+import { ADS_CONFIG } from "@/config/ads";
 
-// Halaman-halaman terlarang yang tidak boleh menampilkan iklan
-const BLOCKED_PATHS = ["/monitor-givy", "/terms", "/privacy", "/support-admin"];
 const MONETAG_SCRIPT_ID = "monetag-tag-script";
 
-interface AdSlotProps {
-  slot: AdSlotKey;
-  className?: string;
-}
-
-export function AdSlot({ slot, className = "" }: AdSlotProps) {
-  const pathname = usePathname();
-  const mountedRef = useRef(false);
-
-  // Periksa apakah slot ini diaktifkan di konfigurasi
-  const isSlotEnabled = ADS_CONFIG.banner.slots[slot] === true;
-
-  // Periksa apakah halaman termasuk dalam daftar yang dilarang
-  const isBlockedPage = Boolean(
-    pathname && BLOCKED_PATHS.some((p) => pathname.startsWith(p))
-  );
-
+/**
+ * AdSlot untuk Monetag:
+ * Memuat tag In-Page Push Monetag di latar belakang tanpa merender
+ * kotak/frame atau teks "IKLAN" visual apa pun di halaman.
+ */
+export function AdSlot() {
   useEffect(() => {
-    if (!isSlotEnabled || isBlockedPage) return;
+    if (!ADS_CONFIG.banner.enabled) return;
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
-    // Singleton guard: pastikan script Monetag In-Page Push tidak dimuat berulang kali
     if (!document.getElementById(MONETAG_SCRIPT_ID)) {
       try {
         const script = document.createElement("script");
@@ -43,29 +28,10 @@ export function AdSlot({ slot, className = "" }: AdSlotProps) {
           target.appendChild(script);
         }
       } catch {
-        // Script injection fallback aman
+        // Fallback aman jika script gagal dimuat
       }
     }
-  }, [isSlotEnabled, isBlockedPage]);
+  }, []);
 
-  if (!isSlotEnabled || isBlockedPage) {
-    return null;
-  }
-
-  return (
-    <div
-      className={`ad-slot-wrap ${className}`.trim()}
-      role="region"
-      aria-label="Iklan"
-      data-ad-slot={slot}
-    >
-      <div className="ad-slot-header">
-        <span className="ad-slot-label">Iklan</span>
-      </div>
-      <div
-        className="ad-slot-content"
-        id={`ad-zone-${ADS_CONFIG.banner.zoneId}-${slot}`}
-      />
-    </div>
-  );
+  return null; // Murni script latar belakang, tanpa kotak atau teks "IKLAN"
 }

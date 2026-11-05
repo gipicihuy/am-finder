@@ -2,19 +2,16 @@
  * Konfigurasi Sistem Monetisasi Iklan AM Finder
  *
  * Catatan:
- * - Seluruh fitur default OFF (false) agar tidak mengganggu stabilitas sebelum diaktifkan secara sengaja.
- * - Banner (In-Page Push) dan Direct Link terpisah dan independen 100%.
+ * - Iklan hanya diaktifkan untuk halaman Cari Preset (Search).
+ * - Tanpa kotak/frame visual atau teks "IKLAN".
+ * - Direct link dipicu pada klik kartu hasil pencarian.
  */
 
 export interface AdsConfig {
   banner: {
     zoneId: string;
     scriptUrl: string;
-    slots: {
-      slotA_detailVideo: boolean;
-      slotB_searchPreset: boolean;
-      slotC_homePage: boolean;
-    };
+    enabled: boolean;
   };
   directLink: {
     url: string;
@@ -30,23 +27,19 @@ export interface AdsConfig {
 }
 
 export const ADS_CONFIG: AdsConfig = {
-  // Banner / In-Page Push (Monetag)
+  // Banner / In-Page Push (Monetag) - aktif khusus di halaman Search
   banner: {
     zoneId: "12197676",
     scriptUrl: "https://nap5k.com/tag.min.js",
-    slots: {
-      slotA_detailVideo: true, // Slot A: Halaman detail video, setelah Preset Links
-      slotB_searchPreset: true, // Slot B: Tab Cari Preset, setelah daftar hasil & show more
-      slotC_homePage: true,     // Slot C: Beranda, setelah Step by Step
-    },
+    enabled: true,
   },
 
-  // Direct Link (Monetag)
+  // Direct Link (Monetag) - tiap klik hasil search langsung memicu direct link
   directLink: {
     url: "https://uplcm.com/4/12197668",
     web: {
       enabled: true,
-      cooldownMinutes: 0, // 0 = setiap klik kartu langsung redirect/buka iklan tanpa cooldown
+      cooldownMinutes: 0,
     },
     android: {
       enabled: true,
@@ -54,5 +47,3 @@ export const ADS_CONFIG: AdsConfig = {
     },
   },
 };
-
-export type AdSlotKey = keyof AdsConfig["banner"]["slots"];
