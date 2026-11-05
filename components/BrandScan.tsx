@@ -20,7 +20,7 @@ const SPIRAL = [
 const KEYFRAMES = `
 .bs-wrap{display:flex;flex-direction:column;align-items:center;padding:14px 0 4px}
 .bs-row{display:flex;align-items:center;justify-content:center;gap:11px}
-.bs-logo{position:relative;width:44px;height:44px;overflow:hidden;border-radius:10px;flex-shrink:0}
+.bs-logo{position:relative;width:44px;height:44px;overflow:hidden;border-radius:10px;flex-shrink:0;background:var(--logo-tile,transparent)}
 .bs-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:bs-draw .55s cubic-bezier(.22,1,.36,1) forwards}
 @keyframes bs-draw{to{stroke-dashoffset:0}}
 .bs-spin{transform-box:view-box;transform-origin:24px 24px;animation:bs-spin 12s linear .7s infinite}
@@ -33,7 +33,7 @@ const KEYFRAMES = `
 .bs-dots span:nth-child(3){animation-delay:.36s}
 @keyframes bs-dot{0%,100%{opacity:.15}45%{opacity:1}}
 .bs-status{margin-top:8px;font-size:13px;color:var(--accent);text-align:center}
-.bs-timer{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:6px;background:rgba(5,250,168,.15);border:1px solid rgba(5,250,168,.3);color:#05FAA8;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;font-weight:700;letter-spacing:0}
+.bs-timer{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:6px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent);font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;font-weight:700;letter-spacing:0}
 `;
 
 export default function BrandScan({
@@ -73,7 +73,7 @@ export default function BrandScan({
             strokeLinejoin="round"
           >
             <g transform="translate(24 24) scale(0.82) translate(-24 -24)">
-              <g style={{ stroke: "var(--foreground)" }} strokeWidth={2.6}>
+              <g style={{ stroke: "var(--logo-frame, var(--foreground))" }} strokeWidth={2.6}>
                 {BRACKETS.map((d, i) => (
                   <path
                     key={d}
@@ -87,7 +87,7 @@ export default function BrandScan({
             </g>
             <g className="bs-spin">
               <g
-                style={{ stroke: "var(--accent)" }}
+                style={{ stroke: "var(--logo-ring, var(--accent))" }}
                 strokeWidth={3.2}
                 transform="translate(24 24) scale(0.82) translate(-24 -24) translate(24 24) scale(0.8) translate(-24 -25.7)"
               >

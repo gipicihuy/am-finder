@@ -55,6 +55,13 @@
   --accent: #05FAA8;
   --accent-ink: #04140b;
   --accent-soft: rgba(5, 250, 168, 0.12);
+  --logo-tile: transparent;
+  --logo-ring: #05faa8;
+  --logo-frame: #f2f2f3;
+  --danger-text: #ffb3b9;
+  --danger-text-strong: #ffd7da;
+  --danger-bg: rgba(255, 95, 109, 0.07);
+  --danger-border: rgba(255, 95, 109, 0.45);
   --radius: 8px;
   --radius-sm: 6px;
 }
@@ -644,14 +651,14 @@ body::before {
 
 .state-miss {
   margin-top: 20px;
-  border: 1px solid rgba(255, 95, 109, 0.45);
+  border: 1px solid var(--danger-border);
   border-style: solid;
-  background: rgba(255, 95, 109, 0.07);
-  color: #ffb3b9;
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .state-miss strong {
-  color: #ffd7da;
+  color: var(--danger-text-strong);
 }
 
 .miss-sources {
@@ -728,14 +735,14 @@ body::before {
 }
 
 .state-error {
-  border: 1px solid rgba(255, 95, 109, 0.5);
+  border: 1px solid var(--danger-border);
   border-style: solid;
-  background: rgba(255, 95, 109, 0.08);
-  color: #ffb3b9;
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .state-error strong {
-  color: #ffd7da;
+  color: var(--danger-text-strong);
 }
 
 /* running: log proses */
@@ -4426,6 +4433,13 @@ a.history-row:focus-visible {
   --accent: #05faa8;
   --accent-ink: #04140b;
   --accent-soft: rgba(5, 250, 168, 0.12);
+  --logo-tile: transparent;
+  --logo-ring: #05faa8;
+  --logo-frame: #f2f2f3;
+  --danger-text: #ffb3b9;
+  --danger-text-strong: #ffd7da;
+  --danger-bg: rgba(255, 95, 109, 0.07);
+  --danger-border: rgba(255, 95, 109, 0.45);
 }
 
 html[data-theme="light"] {
@@ -4447,11 +4461,64 @@ html[data-theme="light"] {
   --logo-tile: #0f0f10;
   --logo-ring: #05faa8;
   --logo-frame: #f2f2f3;
+  --danger-text: #b3261e;
+  --danger-text-strong: #8c1d18;
+  --danger-bg: rgba(179, 38, 30, 0.07);
+  --danger-border: rgba(179, 38, 30, 0.35);
 }
 
 /* Teks gelap di latar terang tampak lebih tipis; naikkan sedikit bobot dasarnya */
 html[data-theme="light"] body {
   font-weight: 500;
+}
+
+/* Override warna khusus tema terang agar memenuhi target kontras WCAG AA (>= 4.5:1 untuk teks, >= 3:1 untuk UI) */
+html[data-theme="light"] .state-miss .miss-sources-title {
+  color: var(--danger-text-strong);
+}
+
+html[data-theme="light"] .btn-primary:hover {
+  background: #00573d;
+}
+
+html[data-theme="light"] .mic-btn.is-listening {
+  color: #b3261e;
+  background: rgba(179, 38, 30, 0.12);
+  border-color: rgba(179, 38, 30, 0.4);
+}
+
+html[data-theme="light"] .dt-preview-note {
+  color: #7a4f00;
+  background: rgba(122, 79, 0, 0.08);
+  border-color: rgba(122, 79, 0, 0.28);
+}
+
+html[data-theme="light"] .dt-progress-pct.is-done {
+  color: #7a4f00;
+}
+
+html[data-theme="light"] .dt-progress-fill.is-done {
+  background: #8a5a00;
+}
+
+html[data-theme="light"] .dt-card-star {
+  color: #7a4f00;
+}
+
+html[data-theme="light"] .dt-heart {
+  color: #dc2626;
+}
+
+html[data-theme="light"] .mon-event-result.is-empty {
+  background: rgba(122, 79, 0, 0.08);
+  border-color: #8a5a00;
+  color: #7a4f00;
+}
+
+html[data-theme="light"] .history-pill.is-missing {
+  background: rgba(122, 79, 0, 0.12);
+  color: #7a4f00;
+  border: 1px solid rgba(122, 79, 0, 0.25);
 }
 
 .ic-fg {
