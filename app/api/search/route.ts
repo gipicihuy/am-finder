@@ -1,6 +1,6 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import path from "node:path";
+import type { ChildProcess } from "node:child_process";
 import { searchTiktok, setLog } from "../../../lib/ttsearch";
+import { runFindProcess } from "../../../lib/find-core";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordCari, recordVisit } from "../../../lib/monitor";
@@ -192,69 +192,31 @@ function runVideo(
     push("log", `[video ${index + 1}] ${cand.url}`);
     push("videoStart", meta);
 
-    const child = spawn(
-      process.execPath,
-      [path.join(process.cwd(), "lib", "amfinder.js"), cand.url, "--raw", "--all"],
-      { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] },
-    );
-    children.add(child);
+    let child: ChildProcess | null = null;
 
-    let stdout = "";
-    let stderrBuffer = "";
-    const done = (row: Record<string, unknown>) => {
-      children.delete(child);
-      resolve(row);
-    };
-    const timer = setTimeout(() => {
-      try {
-        child.kill("SIGKILL");
-      } catch {
-        /* proses sudah mati */
-      }
-    }, CHILD_TIMEOUT_MS);
-
-    child.stdout?.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr?.on("data", (chunk: Buffer) => {
-      stderrBuffer += chunk.toString();
-      let index2 = stderrBuffer.indexOf("\n");
-      while (index2 >= 0) {
-        const line = stderrBuffer.slice(0, index2);
-        stderrBuffer = stderrBuffer.slice(index2 + 1);
-        const text = line.replace(/^\[[\d.]+s\]\s*/, "").trim();
-        if (text) push("log", `[video ${index + 1}] ${text}`);
-        index2 = stderrBuffer.indexOf("\n");
-      }
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      done({ ...meta, found: false, error: error.message });
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      const jsonStart = stdout.indexOf("{");
-      if (code !== 0 || jsonStart < 0) {
-        const tail = stderrBuffer.trim().split("\n").pop();
-        done({ ...meta, found: false, error: (tail || "gagal memproses video").slice(0, 200) });
+    void runFindProcess(cand.url, {
+      timeoutMs: CHILD_TIMEOUT_MS,
+      onLog: (line) => push("log", `[video ${index + 1}] ${line}`),
+      onSpawn: (proc) => {
+        child = proc;
+        children.add(proc);
+      },
+    }).then((result) => {
+      if (child) children.delete(child);
+      if (!result.ok) {
+        resolve({ ...meta, found: false, error: result.error.slice(0, 200) });
         return;
       }
-      try {
-        const r = JSON.parse(stdout.slice(jsonStart)) as Record<string, unknown>;
-        done({
-          ...meta,
-          found: !!r.found,
-          context: r.context ?? null,
-          presetLinks: Array.isArray(r.presetLinks) ? r.presetLinks : [],
-          message: r.message ?? null,
-          checked: r.checked ?? null,
-          shareLinks: r.shareLinks ?? null,
-        });
-      } catch {
-        done({ ...meta, found: false, error: "JSON pipeline tidak valid" });
-      }
+      const r = result.row;
+      resolve({
+        ...meta,
+        found: !!r.found,
+        context: r.context ?? null,
+        presetLinks: Array.isArray(r.presetLinks) ? r.presetLinks : [],
+        message: r.message ?? null,
+        checked: r.checked ?? null,
+        shareLinks: r.shareLinks ?? null,
+      });
     });
   });
 }

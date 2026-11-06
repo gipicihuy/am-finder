@@ -57,6 +57,51 @@ npm run build      # build produksi
 npm start          # jalankan build produksi
 ```
 
+## API publik & API key
+
+Endpoint JSON (bukan SSE) untuk mengambil link preset dari satu link video:
+
+```bash
+curl -s "https://amfinder.web.id/api/public/v1/find?url=https://www.tiktok.com/@akun/video/1234567890" \
+  -H "Authorization: Bearer amf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+Autentikasi lewat header `Authorization: Bearer amf_...` atau `X-API-Key: amf_...`.
+Key **tidak** diterima lewat query string, dan key asli hanya ditampilkan sekali
+saat dibuat. Yang disimpan di `data/apikeys.json` cuma hash SHA-256 + prefix.
+
+Batasan:
+
+- Burst 5 request / 10 detik per key.
+- Kuota harian per key (bisa `unlimited`), reset 00:00 WIB.
+- Plafon global API per hari lewat `AMF_API_GLOBAL_DAILY` (default `3000`).
+- Hanya respons 2xx yang dihitung. Request 400/401/429 tidak dihitung; kalau
+  sumber video gagal (5xx), kuota dikembalikan.
+- Respons 429 menyertakan `Retry-After`; semua respons terautentikasi punya
+  `X-RateLimit-Limit`, `X-RateLimit-Remaining`, dan `X-RateLimit-Reset`.
+
+Status yang mungkin muncul: `400 invalid_url`, `401 missing_key` /
+`invalid_key` / `key_revoked` / `key_expired`, `429 burst_limit` /
+`daily_quota_exceeded`, `503 tikwm_quota` / `global_daily_cap` /
+`server_busy`, dan `502 upstream_error`.
+
+### Kelola key
+
+Token admin dibuat otomatis di `data/.admin-token` (permission `0600`) saat
+server pertama jalan, atau pakai `AMF_ADMIN_TOKEN` dari env. Token ini tidak
+pernah ditulis ke log atau respons.
+
+```bash
+node scripts/apikey.mjs create --name "Partner" --limit 50 --days 30
+node scripts/apikey.mjs list
+node scripts/apikey.mjs update <id> --limit unlimited --days never
+node scripts/apikey.mjs revoke <id>
+```
+
+Script memanggil endpoint admin (`/api/admin/keys`) dengan
+`AMF_BASE_URL` (default `http://127.0.0.1:3000`); script tidak menulis
+`data/apikeys.json` langsung. Folder `data/` sudah masuk `.gitignore`.
+
 ## Deploy otomatis (GitHub ↔ VPS)
 
 Repo ini dua arah sinkron dengan VPS yang menjalankan website:

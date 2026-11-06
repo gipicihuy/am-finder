@@ -54,6 +54,11 @@ const SCOPES = {
   token: { burst: 4, burstMs: 10_000, sustained: 24, sustainedMs: 60_000, penaltyAt: 40, penaltyMs: 60_000 },
   // Laporan dari client (honeypot / runtime watcher).
   security: { burst: 6, burstMs: 10_000, sustained: 20, sustainedMs: 60_000, penaltyAt: 35, penaltyMs: 60_000 },
+  // API publik dengan API key. Burst 5 request / 10 detik per key, sesuai
+  // kesepakatan dengan pemakai API. Kuota harian ditangani terpisah.
+  api: { burst: 5, burstMs: 10_000, sustained: 60, sustainedMs: 60_000, penaltyAt: 120, penaltyMs: 60_000 },
+  // Endpoint admin (buat/ubah/cabut key). Ketat karena menyentuh kredensial.
+  admin: { burst: 10, burstMs: 10_000, sustained: 60, sustainedMs: 60_000, penaltyAt: 120, penaltyMs: 60_000 },
 } as const satisfies Record<string, ScopeConfig>;
 
 export type Scope = keyof typeof SCOPES;
@@ -163,6 +168,13 @@ export function checkLimit(key: string, cfg: ScopeConfig, now = Date.now()): Lim
 // biar permintaan yang kelewat langsung ditolak tanpa makan slot.
 export function limitByIp(request: Request, scope: Scope): LimitResult {
   return limitHeaders(request.headers, scope);
+}
+
+// Cek limit berdasarkan identitas lain (mis. id API key). Dipakai API publik
+// supaya batas burst mengikuti key, bukan IP — satu key bisa dipakai dari
+// beberapa server pemakai.
+export function limitByKey(key: string, scope: Scope): LimitResult {
+  return checkLimit(`${scope}:${key}`, SCOPES[scope]);
 }
 
 // Versi yang nerima Headers langsung — dipakai generateMetadata, yang cuma punya
