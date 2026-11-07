@@ -19,9 +19,9 @@ const FLUSH_MS = 5_000;
 const KEY_PREFIX = "amf_";
 const TIMEZONE = "Asia/Jakarta";
 
-// Key buatan sendiri (custom) boleh bebas asal 12-64 karakter aman untuk URL.
+// Key buatan sendiri (custom) boleh bebas asal 3-64 karakter aman untuk URL.
 // Key acak bawaan (amf_ + 32 hex) otomatis memenuhi pola ini.
-const KEY_FORMAT = /^[A-Za-z0-9_-]{12,64}$/;
+const KEY_FORMAT = /^[A-Za-z0-9_-]{3,64}$/;
 
 export class ApiKeyError extends Error {
   code: "invalid_custom_key" | "key_exists";
@@ -324,7 +324,7 @@ export function createApiKey(input: {
     if (!KEY_FORMAT.test(key)) {
       throw new ApiKeyError(
         "invalid_custom_key",
-        "key custom harus 12-64 karakter: huruf, angka, _ atau -",
+        "key custom harus 3-64 karakter: huruf, angka, _ atau -",
       );
     }
     const digest = hashKey(key);
