@@ -1,5 +1,18 @@
 import type { ChildProcess } from "node:child_process";
 import { searchTiktok, setLog } from "../../../lib/ttsearch";
+import {
+  CANDIDATE_LIMIT,
+  QUERY_PREFIX,
+  SEARCH_BUDGET_MS,
+  filterPresetCandidates,
+  normalizeQuery,
+  normalizeText,
+  rankCandidates,
+  scoreCandidate,
+  withSearchLock,
+  type Candidate,
+  type SearchResult,
+} from "../../../lib/search-core";
 import { runFindProcess } from "../../../lib/find-core";
 import { normalizeBattery, sendLog } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
@@ -12,18 +25,12 @@ import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SEARCH_BUDGET_MS = 40_000;
 const TOTAL_TIMEOUT_MS = 150_000;
 const CHILD_TIMEOUT_MS = 120_000;
 const MAX_ACTIVE = 3;
 const MAX_QUEUE = 8;
 const TOP_DEFAULT = 3;
 const TOP_MAX = 5;
-// Jumlah kandidat di mode=pick. Aman buat dikecilin/dibesarkan: di mode ini
-// backend cuma nyari daftar, scraping baru jalan saat user pilih satu video.
-// Dibatesin 30 karena tiap +30 kandidat = +1 request ke tikwm, kuotanya
-// cuma 10.000 request/hari.
-const CANDIDATE_LIMIT = 30;
 // Pesan yang dilihat user kalau semua engine gagal. Detail teknisnya tetap
 // dikirim lewat event "log" biar gampang didebug, tapi jangan nyasar ke user.
 
@@ -49,129 +56,11 @@ function release() {
   else active -= 1;
 }
 
-// logSink di ttsearch.js global — fase pencarian dijalankan antri biar
-// log SSE dari dua request gak saling nyampur.
-let searchChain: Promise<unknown> = Promise.resolve();
-function withSearchLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = searchChain.then(fn, fn);
-  searchChain = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  return run;
-}
-
 function encode(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-function normalizeQuery(raw: string | null): string | null {
-  if (!raw) return null;
-  const q = raw.trim().replace(/\s+/g, " ").slice(0, 100);
-  if (q.length < 3) return null;
-  return q;
-}
-
-// Prefix pencarian tersembunyi: user cukup ketik keyword (mis. "sesi potret"),
-// backend yang nambahin "preset am" biar hasilnya relevan sama preset AM.
-// Prefix ini TIDAK dikirim balik ke klien — cuma dipakai buat pencarian.
-const QUERY_PREFIX = "preset am";
-
 type Push = (event: string, data: unknown) => void;
-
-type Candidate = {
-  url: string;
-  handle?: string;
-  kind?: string;
-  snippet?: string;
-  thumb?: string;
-  thumbFallback?: string;
-};
-
-type SearchResult = {
-  items: Candidate[];
-  engine?: string;
-  fromCache?: boolean;
-};
-
-function normalizeText(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Ranking relevansi: caption yang memuat frasa utuh judul yang diketik user
-// diunggulkan, lalu yang cocok per kata. Kandidat yang gak cocok sama sekali
-// tetap dikirim tapi nempel di belakang — biar hasil sesuai ekspektasi judul.
-function scoreCandidate(snippet: string | undefined, queryNorm: string): number {
-  const text = normalizeText(snippet ?? "");
-  if (!text || !queryNorm) return 0;
-  let score = 0;
-  if (text.includes(queryNorm)) score += 100;
-  const padded = ` ${text} `;
-  const tokens = queryNorm.split(" ").filter(t => t.length >= 2);
-  let hits = 0;
-  for (const token of tokens) {
-    if (padded.includes(` ${token}`)) hits += 1;
-  }
-  if (hits > 0) score += hits * 20;
-  if (tokens.length > 0 && hits === tokens.length) score += 40;
-  return score;
-}
-
-// Kata kunci penanda video preset. Sengaja disamakan sama CONTEXT_CORE /
-// CONTEXT_SUPPORT di lib/amfinder.js — kalau salah satu diubah, ubah dua-duanya.
-const PRESET_CONTEXT_CORE = [
-  "presetalightmotion",
-  "alightmotionpreset",
-  "presetdibawah5mb",
-  "presetxml",
-  "preset5mb",
-  "alightmotion",
-  "ampreset",
-  "amedit",
-  "alightmotiontutorial",
-  "alightmotionedits",
-  "alightmotionpro",
-];
-const PRESET_CONTEXT_SUPPORT = ["preset", "5mb", "velocity", "jedagjedug", "jedugalighmotion", "amprem"];
-
-// Cari preset itu nyari video yang membagikan preset, bukan sekadar video yang
-// menyebut judul lagu yang diketik user. Tanpa saringan ini, search "kaulah
-// kamuku" nyampur cover lagu dan lirik video bareng video preset.
-// Sama persis cara kerja videoContext() di lib/amfinder.js.
-function presetContextLevel(snippet?: string, handle?: string): "core" | "support" | "none" {
-  const raw = `${snippet ?? ""}\n${(handle ?? "").replace(/^@/, "")}`
-    .toLowerCase()
-    .replace(/https?:\/\/\S+/g, " ");
-  const hay = raw.replace(/[#@]/g, " ").replace(/[\s_-]+/g, "");
-  if (!hay) return "none";
-  if (PRESET_CONTEXT_CORE.some((k) => hay.includes(k))) return "core";
-  if (PRESET_CONTEXT_SUPPORT.some((k) => hay.includes(k))) return "support";
-  return "none";
-}
-
-// Saring kandidat yang jelas bukan video preset. Kalau saringannya bikin
-// hasil tinggal sedikit banget (query niche), kembalikan daftar asli —
-// lebih baik kurang tepat daripada kosong sama sekali.
-function filterPresetCandidates(items: Candidate[]): Candidate[] {
-  const kept = items.filter((it) => presetContextLevel(it.snippet, it.handle) !== "none");
-  return kept.length >= 3 ? kept : items;
-}
-
-function rankCandidates(items: Candidate[], queryNorm: string): Candidate[] {
-  return items
-    .map((item, index) => ({ item, index, score: scoreCandidate(item.snippet, queryNorm) }))
-    .sort(
-      (a, b) =>
-        (b.score > 0 ? 1 : 0) - (a.score > 0 ? 1 : 0) ||
-        b.score - a.score ||
-        a.index - b.index,
-    )
-    .map((entry) => entry.item);
-};
 
 function runVideo(
   cand: Candidate,

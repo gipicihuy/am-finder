@@ -16,11 +16,14 @@ import {
   runFindProcess,
 } from "../../../../../lib/find-core";
 import { quotaBlockedMs } from "../../../../../lib/tikwm-quota.js";
+import { SearchBusyError, normalizeQuery, searchCandidates } from "../../../../../lib/search-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PUBLIC_TIMEOUT_MS = 150_000;
+const SEARCH_LIMIT_DEFAULT = 10;
+const SEARCH_LIMIT_MAX = 30;
 
 function withQuota(
   record: Parameters<typeof quotaHeaders>[0],
@@ -32,6 +35,97 @@ function withQuota(
     status,
     headers: { ...quotaHeaders(record), ...extraHeaders },
   });
+}
+
+// Mode pencarian: ?apikey=KEY&q=KATA_KUNCI. Mengembalikan daftar video kandidat
+// (sama seperti tab "Cari Preset"). Ambil preset-nya dengan memanggil endpoint
+// ini lagi memakai url= dari salah satu hasil. Memakai key, burst limit, dan
+// kuota harian yang sama dengan mode url=.
+async function handleSearch(
+  key: Parameters<typeof quotaHeaders>[0] & Parameters<typeof reserveQuota>[0],
+  rawQuery: string,
+  rawLimit: string | null,
+): Promise<Response> {
+  const query = normalizeQuery(rawQuery);
+  if (!query) {
+    return withQuota(key, 400, {
+      ok: false,
+      code: "invalid_query",
+      error: "parameter q minimal 3 karakter",
+    });
+  }
+
+  const limitNum = Number(rawLimit);
+  const limit =
+    rawLimit && Number.isFinite(limitNum) && limitNum >= 1
+      ? Math.min(Math.floor(limitNum), SEARCH_LIMIT_MAX)
+      : SEARCH_LIMIT_DEFAULT;
+
+  const quota = checkDailyQuota(key);
+  if (!quota.ok) {
+    const snapshot = quotaSnapshot(key);
+    const retryAfter = Math.max(1, snapshot.reset - Math.floor(Date.now() / 1000));
+    return withQuota(
+      key,
+      quota.status,
+      { ok: false, code: quota.code, error: quota.error },
+      quota.status === 429 ? { "Retry-After": String(retryAfter) } : {},
+    );
+  }
+
+  const blockedMs = quotaBlockedMs();
+  if (blockedMs > 0) {
+    return withQuota(
+      key,
+      503,
+      {
+        ok: false,
+        code: "tikwm_quota",
+        error: "kuota sumber preset harian sedang hampir habis, coba lagi nanti",
+      },
+      { "Retry-After": String(Math.ceil(blockedMs / 1000)) },
+    );
+  }
+
+  const t0 = Date.now();
+  reserveQuota(key);
+  try {
+    const { items, fromCache } = await searchCandidates(query);
+    const videos = items.slice(0, limit).map((item) => ({
+      url: item.url,
+      handle: item.handle ?? "",
+      kind: item.kind ?? "video",
+      snippet: item.snippet ?? "",
+      thumb: item.thumb ?? "",
+    }));
+    return withQuota(key, 200, {
+      ok: true,
+      query,
+      fromCache,
+      candidates: videos.length,
+      videos,
+      elapsedMs: Date.now() - t0,
+    });
+  } catch (error) {
+    refundQuota(key);
+    if (error instanceof SearchBusyError) {
+      return withQuota(
+        key,
+        503,
+        {
+          ok: false,
+          code: "server_busy",
+          error: "server sedang penuh, coba lagi beberapa saat lagi",
+        },
+        { "Retry-After": "5" },
+      );
+    }
+    return withQuota(key, 502, {
+      ok: false,
+      code: "upstream_error",
+      error: "gagal mencari video, coba lagi nanti",
+    });
+  }
 }
 
 export async function GET(request: Request) {
@@ -57,12 +151,20 @@ export async function GET(request: Request) {
     );
   }
 
+  // q= (pencarian) dipakai kalau url= tidak dikirim. Kalau dua-duanya ada, url= menang.
+  const rawQuery = requestUrl.searchParams.get("q");
+  if (rawQuery !== null && !requestUrl.searchParams.has("url")) {
+    return handleSearch(key, rawQuery, requestUrl.searchParams.get("limit"));
+  }
+
   const target = normalizeTarget(requestUrl.searchParams.get("url"));
   if (!target) {
     return withQuota(key, 400, {
       ok: false,
       code: "invalid_url",
-      error: "parameter url harus berupa link video TikTok/YouTube yang valid",
+      error: requestUrl.searchParams.has("url")
+        ? "parameter url harus berupa link video TikTok/YouTube yang valid"
+        : "kirim parameter url (link video TikTok/YouTube) atau q (kata kunci pencarian)",
     });
   }
 
