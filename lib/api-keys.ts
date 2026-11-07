@@ -382,10 +382,12 @@ export type ApiAuthResult =
       error: string;
     };
 
-export function authenticateApiKey(headers: Headers): ApiAuthResult {
+export function authenticateApiKey(headers: Headers, queryKey?: string | null): ApiAuthResult {
   const authorization = headers.get("authorization") || "";
   const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || "";
-  const raw = bearer || headers.get("x-api-key")?.trim() || "";
+  // Urutan: header Authorization, lalu X-API-Key, lalu parameter ?apikey=
+  // (parameter dipakai supaya gampang dites langsung dari browser).
+  const raw = bearer || headers.get("x-api-key")?.trim() || queryKey?.trim() || "";
 
   if (!raw) {
     return { ok: false, status: 401, code: "missing_key", error: "API key wajib dikirim" };

@@ -35,7 +35,8 @@ function withQuota(
 }
 
 export async function GET(request: Request) {
-  const auth = authenticateApiKey(request.headers);
+  const requestUrl = new URL(request.url);
+  const auth = authenticateApiKey(request.headers, requestUrl.searchParams.get("apikey"));
   if (!auth.ok) {
     return Response.json(
       { ok: false, code: auth.code, error: auth.error },
@@ -56,7 +57,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const target = normalizeTarget(new URL(request.url).searchParams.get("url"));
+  const target = normalizeTarget(requestUrl.searchParams.get("url"));
   if (!target) {
     return withQuota(key, 400, {
       ok: false,

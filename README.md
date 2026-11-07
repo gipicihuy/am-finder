@@ -66,9 +66,16 @@ curl -s "https://amfinder.web.id/api/public/v1/find?url=https://www.tiktok.com/@
   -H "Authorization: Bearer amf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-Autentikasi lewat header `Authorization: Bearer amf_...` atau `X-API-Key: amf_...`.
-Key **tidak** diterima lewat query string, dan key asli hanya ditampilkan sekali
-saat dibuat. Yang disimpan di `data/apikeys.json` cuma hash SHA-256 + prefix.
+Autentikasi lewat header `Authorization: Bearer amf_...`, header `X-API-Key: amf_...`,
+atau parameter `apikey=` (paling gampang buat dites langsung dari browser):
+
+```
+https://amfinder.web.id/api/public/v1/find?url=<link video>&apikey=amf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Catatan: key di URL bisa tercatat di log server, riwayat browser, dan proxy. Untuk
+pemakaian serius, lebih aman pakai header. Key asli hanya ditampilkan sekali saat
+dibuat. Yang disimpan di `data/apikeys.json` cuma hash SHA-256 + prefix.
 
 Batasan:
 
