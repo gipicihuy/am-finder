@@ -14,13 +14,15 @@ import {
   type SearchResult,
 } from "../../../lib/search-core";
 import { runFindProcess } from "../../../lib/find-core";
-import { normalizeBattery, sendLog } from "../../../lib/track";
+import { logSearchToDiscord, normalizeBattery } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordCari, recordVisit } from "../../../lib/monitor";
 import { rememberQuery } from "../../../lib/suggest";
 import { getLocale } from "../../../lib/locale-server";
 import { apiText } from "../../../lib/api-text";
 import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
+import { clientIp } from "../../../lib/ip";
+import { reportServerError } from "../../../lib/discord";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -149,7 +151,7 @@ export async function GET(request: Request) {
       })
     : undefined;
   const searchQuery = `${QUERY_PREFIX} ${query}`;
-  void sendLog("search", request.headers, { link: `query: ${searchQuery}`, battery }).catch(() => {});
+  void logSearchToDiscord("search", request.headers, { query: searchQuery, battery }).catch(() => {});
 
   try {
     await acquire();
@@ -334,7 +336,8 @@ export async function GET(request: Request) {
           elapsedMs: Date.now() - t0,
         });
         finish();
-      })().catch(() => {
+      })().catch((err) => {
+        reportServerError("/api/search", err, request);
         push("error", { message: "proses pencarian terputus tak terduga" });
         finish();
       });

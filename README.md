@@ -23,22 +23,57 @@ Tempel link video TikTok, aplikasi menelusuri deskripsi akun, halaman link-in-bi
 3. Tekan `Cari preset`
 4. Tunggu log berjalan, hasilnya muncul sendiri
 
+## Log & Notifikasi Discord Webhook (dan Telegram)
+
+Sistem notifikasi dan alert terpusat ke Discord Webhook (dan Telegram khusus kunjungan).
+
+| Variabel Environment | Saluran / Tujuan | Keterangan |
+| --- | --- | --- |
+| `DISCORD_WEBHOOK_TIKTOK` | Webhook Pencarian TikTok | Log pencarian baru via URL video TikTok lengkap dengan info visitor |
+| `DISCORD_WEBHOOK_SEARCH` | Webhook Pencarian Keyword | Log pencarian baru via kata kunci / query |
+| `DISCORD_WEBHOOK_WHATSAPP` | Webhook Saluran WA | Notifikasi saat preset berhasil diekstrak dari Saluran WhatsApp (dedupe 10m) |
+| `DISCORD_WEBHOOK_TELEGRAM` | Webhook Saluran Telegram | Notifikasi saat preset berhasil diekstrak dari Channel Telegram (dedupe 10m) |
+| `DISCORD_WEBHOOK_ERROR` | Webhook Server Error | Tangkapan error server & scraper (throttle 60s per error identik) |
+| `DISCORD_WEBHOOK_ACTIVITY` | Webhook Aktivitas Bot | Deteksi bot ringan, crawler verified, UA scraper, dan handshake gagal |
+| `DISCORD_WEBHOOK_SECURITY` | Webhook Security Alert | Alert flood/DDoS, lonjakan trafik global (RPS), dan tripwire scraping |
+| `TELEGRAM_BOT_TOKEN` | Bot Telegram | Token bot Telegram khusus beacon kunjungan biasa (`kind: visit`) |
+| `TELEGRAM_CHAT_ID` | Chat Telegram | ID chat penerima log kunjungan |
+
+### Konfigurasi Keamanan & Blokir IP
+
+| Variabel | Default | Keterangan |
+| --- | --- | --- |
+| `SECURITY_GLOBAL_RPS` | `60` | Ambang lonjakan request/detik seluruh server untuk memicu alert security |
+| `AUTO_BLOCK` | `0` | Set `1` untuk mengaktifkan pemblokiran IP otomatis bila penyerang memicu strike berulang / tripwire kritis |
+| `AUTO_BLOCK_MINUTES` | `60` | Durasi pemblokiran otomatis dalam satuan menit |
+
+### Endpoint Admin IP Blocklist
+
+Endpoint admin dilindungi autentikasi token admin (`Authorization: Bearer $AMF_ADMIN_TOKEN`):
+
+- **Blokir IP**:
+  ```bash
+  curl -X POST https://<domain>/api/admin/block \
+    -H "Authorization: Bearer $AMF_ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"ip": "1.2.3.4", "reason": "DDoS/Flood", "ttlMinutes": 60}'
+  ```
+- **Lepas Blokir (Unblock)**:
+  ```bash
+  curl -X POST https://<domain>/api/admin/unblock \
+    -H "Authorization: Bearer $AMF_ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"ip": "1.2.3.4"}'
+  ```
+- **Lihat Daftar Blokir**:
+  ```bash
+  curl -X GET https://<domain>/api/admin/blocklist \
+    -H "Authorization: Bearer $AMF_ADMIN_TOKEN"
+  ```
+
 ## Log kunjungan ke Telegram (opsional)
 
-Setiap kunjungan halaman (`POST /api/v1/event`, dipanggil dari browser) dan setiap link yang ditempel dikirim ke bot Telegram berisi:
-
-- IP, **kota**, negara, dan ISP (geo lookup `ip-api.com`, di-cache per IP)
-- device, browser, dan **baterai hp** dari Battery Status API (`navigator.getBattery`, kalau browser tidak mendukung tampil `-`)
-- waktu dalam WIB
-
-Isi dua variabel environment ini (bisa lewat secret variables di host kamu):
-
-| Variabel | Isi |
-| --- | --- |
-| `TELEGRAM_BOT_TOKEN` | token dari @BotFather |
-| `TELEGRAM_CHAT_ID` | id chat penerima log |
-
-Kalau salah satu belum diisi, log tetap dicetak ke console server dengan format `[track] visit ip=... city=... battery=...` dan `[track] search ip=... city=... link=... battery=...`, lalu pengiriman Telegram dilewati. Request pengunjung tidak pernah menunggu geo/Telegram lebih dari beberapa detik dan error dikirim diam-diam.
+Setiap kunjungan halaman (`POST /api/v1/event`, dipanggil dari browser) dikirim ke bot Telegram berisi info visitor (IP, kota, device, baterai). Pencarian telah dipindahkan ke Discord Webhook.
 
 ## Stack
 

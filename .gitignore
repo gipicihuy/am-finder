@@ -3,6 +3,7 @@ node_modules/
 .next.prev/
 out/
 .env*
+!.env.example
 .vercel
 *.tsbuildinfo
 next-env.d.ts

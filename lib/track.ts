@@ -1,4 +1,5 @@
 import { clientIp, isPrivateIp } from "./ip";
+import { sendDiscordEmbed } from "./discord";
 
 export type Battery = { level?: number; charging?: boolean };
 
@@ -8,14 +9,14 @@ const GEO_MISS: Geo = { city: "-", region: "-", country: "-", isp: "-" };
 const geoCache = new Map<string, Geo>();
 const TIMEZONE = "Asia/Jakarta";
 
-async function geo(ip: string): Promise<Geo> {
+export async function geo(ip: string): Promise<Geo> {
   if (isPrivateIp(ip)) return GEO_MISS;
   const hit = geoCache.get(ip);
   if (hit) return hit;
   try {
     const res = await fetch(
       `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,city,regionName,country,isp`,
-      { signal: AbortSignal.timeout(3000) }
+      { signal: AbortSignal.timeout(3000) },
     );
     const data = (await res.json()) as {
       status?: string;
@@ -39,7 +40,7 @@ async function geo(ip: string): Promise<Geo> {
   }
 }
 
-function getBrowser(ua: string): string {
+export function getBrowser(ua: string): string {
   if (/Edg\//i.test(ua)) return "Microsoft Edge";
   if (/OPR\/|Opera/i.test(ua)) return "Opera";
   if (/SamsungBrowser/i.test(ua)) return "Samsung Browser";
@@ -52,7 +53,7 @@ function getBrowser(ua: string): string {
   return "Unknown Browser";
 }
 
-function getDevice(ua: string): string {
+export function getDevice(ua: string): string {
   if (/iPad/i.test(ua)) return "iPad (iOS)";
   if (/iPhone/i.test(ua)) return "iPhone (iOS)";
   if (/Android/i.test(ua) && /Mobile/i.test(ua)) return "Android Phone";
@@ -64,14 +65,14 @@ function getDevice(ua: string): string {
 }
 
 function escMdPlain(value: string): string {
-  return value.replace(/[_*\[\]()~`>#+\-=|{}.!\\]/g, "\\$&");
+  return value.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, "\\$&");
 }
 
 function escMdCode(value: string): string {
   return value.replace(/[`\\]/g, "\\$&");
 }
 
-function formatTime(date = new Date()): string {
+export function formatTime(date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
@@ -81,11 +82,11 @@ function formatTime(date = new Date()): string {
     hour12: false,
     timeZone: TIMEZONE,
   }).formatToParts(date);
-  const get = (t: string) => parts.find(p => p.type === t)?.value || "";
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || "";
   return `${get("day")} ${get("month")} ${get("year")}, ${get("hour")}:${get("minute")} WIB`;
 }
 
-function batteryText(battery?: Battery): string {
+export function batteryText(battery?: Battery): string {
   if (!battery || typeof battery.level !== "number" || Number.isNaN(battery.level)) return "-";
   const level = Math.max(0, Math.min(100, Math.round(battery.level)));
   return `${level}%${battery.charging ? " (charging)" : ""}`;
@@ -100,7 +101,53 @@ export function normalizeBattery(raw: unknown): Battery | undefined {
   return { level, charging: value.charging === true };
 }
 
-function visitorBlock(ip: string, g: Geo, ua: string, battery?: Battery): string {
+export type VisitorInfo = {
+  ip: string;
+  city: string;
+  region: string;
+  country: string;
+  isp: string;
+  device: string;
+  browser: string;
+  battery: string;
+  time: string;
+  ua: string;
+};
+
+export async function getVisitorInfo(headers: Headers, battery?: Battery): Promise<VisitorInfo> {
+  const ip = clientIp(headers);
+  const ua = (headers.get("user-agent") || "-").slice(0, 200);
+  const g = await geo(ip);
+
+  return {
+    ip,
+    city: g.city,
+    region: g.region,
+    country: g.country,
+    isp: g.isp,
+    device: getDevice(ua),
+    browser: getBrowser(ua),
+    battery: batteryText(battery),
+    time: formatTime(),
+    ua,
+  };
+}
+
+export function formatVisitorDiscord(info: VisitorInfo): string {
+  return [
+    "**🌐 Visitor Info**",
+    `🔌 **IP**      › \`${info.ip}\``,
+    `📍 **Kota**    › ${info.city}, ${info.region}`,
+    `🌍 **Negara**  › ${info.country}`,
+    `📡 **ISP**     › ${info.isp}`,
+    `🖥️ **Device**  › ${info.device}`,
+    `🌏 **Browser** › ${info.browser}`,
+    `🔋 **Baterai** › ${info.battery}`,
+    `🕐 **Waktu**   › ${info.time}`,
+  ].join("\n");
+}
+
+function visitorBlockTelegram(ip: string, g: Geo, ua: string, battery?: Battery): string {
   return [
     "*🌐 Visitor Info*",
     `🔌 *IP*      › \`${escMdCode(ip)}\``,
@@ -114,29 +161,34 @@ function visitorBlock(ip: string, g: Geo, ua: string, battery?: Battery): string
   ].join("\n");
 }
 
+/**
+ * Log kunjungan biasa (kind === "visit") tetap dikirim ke Telegram sesuai instruksi.
+ * Log pencarian dipindahkan ke Discord via logSearchToDiscord().
+ */
 export async function sendLog(
   kind: "visit" | "search",
   headers: Headers,
-  extra: { path?: string; link?: string; battery?: Battery } = {}
+  extra: { path?: string; link?: string; battery?: Battery } = {},
 ): Promise<void> {
+  if (kind === "search") {
+    // Dipindahkan ke Discord webhook (lihat logSearchToDiscord)
+    return;
+  }
+
   const ip = clientIp(headers);
   const ua = (headers.get("user-agent") || "-").slice(0, 200);
   const g = await geo(ip);
 
   console.log(
-    `[track] ${kind} ip=${ip} city=${g.city} path=${extra.path || "-"} ` +
-      `link=${extra.link || "-"} battery=${batteryText(extra.battery)}`
+    `[track] visit ip=${ip} city=${g.city} path=${extra.path || "-"} battery=${batteryText(extra.battery)}`,
   );
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
 
-  const head =
-    kind === "visit"
-      ? `🟢 *Visitor Baru*\n\n🖥 *Halaman* › \`${escMdCode(extra.path || "/")}\``
-      : `🔎 *Pencarian Baru*\n\n🔗 *Link*    › \`${escMdCode(extra.link || "-")}\``;
-  const text = `${head}\n\n${visitorBlock(ip, g, ua, extra.battery)}`;
+  const head = `🟢 *Visitor Baru*\n\n🖥 *Halaman* › \`${escMdCode(extra.path || "/")}\``;
+  const text = `${head}\n\n${visitorBlockTelegram(ip, g, ua, extra.battery)}`;
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -153,5 +205,37 @@ export async function sendLog(
     if (!res.ok) console.log(`[track] telegram http ${res.status}`);
   } catch {
     /* telegram lagi down: jangan ganggu request pengunjung */
+  }
+}
+
+/**
+ * Kirim log pencarian ke Discord webhook ("tiktok" untuk URL pencarian, "search" untuk keyword).
+ */
+export async function logSearchToDiscord(
+  channel: "tiktok" | "search",
+  headers: Headers,
+  extra: { link?: string; query?: string; battery?: Battery },
+): Promise<void> {
+  const info = await getVisitorInfo(headers, extra.battery);
+  const visitorDesc = formatVisitorDiscord(info);
+
+  if (channel === "tiktok") {
+    const link = extra.link || "-";
+    console.log(`[track] search (tiktok) ip=${info.ip} city=${info.city} link=${link}`);
+    sendDiscordEmbed("tiktok", {
+      title: "🔎 Pencarian Baru (URL TikTok)",
+      description: `🔗 **Link Target**\n\`${link}\`\n\n${visitorDesc}`,
+      color: 0x25f4ee, // TikTok cyan
+      timestamp: new Date().toISOString(),
+    });
+  } else {
+    const query = extra.query || extra.link || "-";
+    console.log(`[track] search (keyword) ip=${info.ip} city=${info.city} query=${query}`);
+    sendDiscordEmbed("search", {
+      title: "🔎 Pencarian Baru (Keyword)",
+      description: `🔍 **Keyword Query**\n\`${query}\`\n\n${visitorDesc}`,
+      color: 0x9b59b6, // Purple
+      timestamp: new Date().toISOString(),
+    });
   }
 }
