@@ -59,6 +59,12 @@ function isAndroidApp(): boolean {
   return typeof navigator !== "undefined" && /AMFinderApp\/1\.0/i.test(navigator.userAgent);
 }
 
+// APK v1.6+ membawa DownloadListener native (UA berisi AMFinderDL/1). Versi lama
+// tidak bisa mengunduh blob/attachment sama sekali.
+function hasNativeDownload(): boolean {
+  return typeof navigator !== "undefined" && /AMFinderDL\/1/i.test(navigator.userAgent);
+}
+
 function filenameFromDisposition(value: string | null): string | null {
   if (!value) return null;
   const utf8 = value.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
@@ -765,8 +771,15 @@ export function ResultView({ result }: { result: FindResult }) {
   async function handleDownload() {
     if (!canDownloadAudio || !videoId || audioBusy) return;
 
+    // APK v1.6+: navigasi langsung ke endpoint attachment, DownloadListener
+    // native yang menangani unduhan (blob URL tidak bisa diunduh WebView).
+    if (isAndroidApp() && hasNativeDownload()) {
+      window.location.assign(`/api/audio/${encodeURIComponent(videoId)}?dl=1`);
+      return;
+    }
+
     // WebView APK v1.5 belum punya DownloadListener. Buka link CDN di browser
-    // (perilaku lama) sampai APK v1.6 membawa handler unduhan native.
+    // (perilaku lama) untuk APK lama.
     if (isAndroidApp() && soundAudio) {
       const link = document.createElement("a");
       link.href = soundAudio;
@@ -824,6 +837,10 @@ export function ResultView({ result }: { result: FindResult }) {
 
   async function handleDownloadVideo() {
     if (!videoId || videoBusy) return;
+    if (isAndroidApp() && hasNativeDownload()) {
+      window.location.assign(`/api/video/${encodeURIComponent(videoId)}?dl=1`);
+      return;
+    }
     const requestId = downloadSeq.current + 1;
     downloadSeq.current = requestId;
     setVideoBusy(true);

@@ -1,10 +1,13 @@
 package com.givy.amfinder;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -12,11 +15,14 @@ import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.webkit.CookieManager;
+import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -55,6 +61,8 @@ public class MainActivity extends Activity {
     private boolean pageLoaded;
     private volatile String currentUrl;
     private Runnable completeProgressTask;
+    private static final int REQ_STORAGE = 4201;
+    private String pendingUrl, pendingUa, pendingDisposition, pendingMime;
 
     private final Runnable splashFinisher = new Runnable() {
         @Override
@@ -86,7 +94,7 @@ public class MainActivity extends Activity {
         // akurat. Tanpa ini, deteksi nebak dari "; wv)" yang juga dipakai
         // browser in-app milik aplikasi lain.
         web.getSettings().setUserAgentString(
-                web.getSettings().getUserAgentString() + " AMFinderApp/1.0");
+                web.getSettings().getUserAgentString() + " AMFinderApp/1.0 AMFinderDL/1");
         splash = buildSplash();
         offlinePanel = buildOfflinePanel();
         progressTrack = buildProgress();
@@ -173,6 +181,23 @@ public class MainActivity extends Activity {
             }
         }, "AndroidClipboard");
 
+        // WebView nggak otomatis ngunduh file. Tanpa DownloadListener, respons
+        // "Content-Disposition: attachment" (mis. /api/audio/<id>) cuma diabaikan.
+        // Cuma terima unduhan dari domain sendiri biar bukan jadi downloader bebas.
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            try {
+                String host = Uri.parse(url).getHost();
+                host = host == null ? "" : host.toLowerCase();
+                if (!host.equals(HOST) && !host.endsWith("." + HOST)) {
+                    openExternal(Uri.parse(url));
+                    return;
+                }
+            } catch (Exception e) {
+                return;
+            }
+            startDownload(url, userAgent, contentDisposition, mimeType);
+        });
+
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
@@ -232,6 +257,52 @@ public class MainActivity extends Activity {
             web.restoreState(savedInstanceState);
         }
         splash.post(splashFinisher);
+    }
+
+    private void startDownload(String url, String ua, String disposition, String mime) {
+        // Android 9 ke bawah butuh izin tulis untuk folder Download publik.
+        if (Build.VERSION.SDK_INT < 29
+                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            pendingUrl = url;
+            pendingUa = ua;
+            pendingDisposition = disposition;
+            pendingMime = mime;
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
+            return;
+        }
+        try {
+            String name = URLUtil.guessFileName(url, disposition, mime);
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+            req.setTitle(name);
+            req.setDescription("AM Finder");
+            if (mime != null && !mime.isEmpty()) req.setMimeType(mime);
+            if (ua != null) req.addRequestHeader("User-Agent", ua);
+            String cookie = CookieManager.getInstance().getCookie(url);
+            if (cookie != null) req.addRequestHeader("Cookie", cookie);
+            req.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name);
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            if (dm == null) throw new IllegalStateException("no DownloadManager");
+            dm.enqueue(req);
+            Toast.makeText(this, "Mengunduh: " + name, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Gagal memulai unduhan", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
+        super.onRequestPermissionsResult(code, perms, results);
+        if (code != REQ_STORAGE) return;
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED
+                && pendingUrl != null) {
+            startDownload(pendingUrl, pendingUa, pendingDisposition, pendingMime);
+        } else {
+            Toast.makeText(this, "Izin penyimpanan dibutuhkan untuk mengunduh", Toast.LENGTH_SHORT).show();
+        }
+        pendingUrl = pendingUa = pendingDisposition = pendingMime = null;
     }
 
     private FrameLayout buildSplash() {
