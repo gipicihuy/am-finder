@@ -241,13 +241,24 @@ export function reportSecurityAlert(
   const ip = clientIp(headers);
   if (!ip || isPrivateIp(ip)) return;
 
+  const ua = (headers.get("user-agent") || "-").slice(0, 200);
+
+  // Jika skor risiko masih di bawah ambang tinggi (< 60), kirim ke webhook "activity"
+  // (bukan alert merah "security"), supaya tidak spam notifikasi keamanan
+  if (input.score < 60) {
+    reportBotActivity(ip, input.reasons[0] || "Aktivitas Mencurigakan Ringan", {
+      ua,
+      path: input.path || "-",
+      score: input.score,
+    });
+    return;
+  }
+
   const dedupKey = `sec:alert:${ip}`;
   if (isDeduplicated(dedupKey, 30_000)) return;
 
-  const ua = (headers.get("user-agent") || "-").slice(0, 200);
-
-  // Auto-block jika AUTO_BLOCK=1 dan skor kritis (>= 90)
-  if (input.score >= 90) {
+  // Auto-block jika AUTO_BLOCK=1 dan skor benar-benar kritis (>= 85)
+  if (input.score >= 85) {
     checkAutoBlock(
       ip,
       `Skor scraping kritis (${input.score}): ${input.reasons.join(", ") || "-"}`,

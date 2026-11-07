@@ -14,7 +14,7 @@ import {
   type SearchResult,
 } from "../../../lib/search-core";
 import { runFindProcess } from "../../../lib/find-core";
-import { logSearchToDiscord, normalizeBattery } from "../../../lib/track";
+import { logSearchToDiscord, normalizeBattery, notifyPresetSources } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordCari, recordVisit } from "../../../lib/monitor";
 import { rememberQuery } from "../../../lib/suggest";
@@ -100,6 +100,9 @@ function runVideo(
         return;
       }
       const r = result.row;
+      if (r.found) {
+        notifyPresetSources(r, cand.url);
+      }
       resolve({
         ...meta,
         found: !!r.found,

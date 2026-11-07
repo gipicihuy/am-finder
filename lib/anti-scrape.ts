@@ -19,7 +19,7 @@ const FLAG_TTL_MS = 24 * 60 * 60_000; // 24 jam untuk client/ip yang kena flag r
 const MAX_CLOCK_SKEW_MS = 45_000;
 const MAX_STORE = 20_000;
 const MAX_ALERTS = 4_000;
-const FLAG_MIN_SCORE = 8;
+const FLAG_MIN_SCORE = 60;
 // Nilai ini menandai tiket "hasil racun": skornya di atas ambang racun, jadi
 // /api/find & /api/search balikin hasil bohong tanpa menolak koneksi.
 const ORIGINLESS_SCORE = 99;
@@ -319,17 +319,19 @@ export function verifyHandshake(
   s.challenges.delete(cid);
 
   const headerScore = scoreHeaders(headers);
-  const scripted = !originOk || !challenge.originOk || headerScore >= FLAG_MIN_SCORE;
+  const badOrigin = !originOk || !challenge.originOk;
   const tooFast = Date.now() - challenge.ts < MIN_PROOF_GAP_MS;
   const totalScore = Math.max(headerScore, Math.round(clientScore));
+  const finalScore = badOrigin ? 99 : Math.min(100, Math.max(0, totalScore));
 
-  if (scripted || totalScore >= FLAG_MIN_SCORE) {
+  if (badOrigin || finalScore >= FLAG_MIN_SCORE) {
     const flag = {
       at: Date.now(),
-      score: Math.max(99, totalScore),
+      score: finalScore,
       reasons: [
-        !originOk ? "bad origin" : "",
+        badOrigin ? "bad origin" : "",
         headerScore >= FLAG_MIN_SCORE ? "suspicious headers" : "",
+        tooFast ? "proof solved suspiciously fast" : "",
         "anti-scrape tripwire",
       ].filter(Boolean),
     };
@@ -340,7 +342,7 @@ export function verifyHandshake(
       did,
       headerScore,
       clientScore,
-      totalScore,
+      totalScore: finalScore,
       roundMs: Date.now() - challenge.ts,
     });
     void sendSecurityAlert(headers, {
@@ -355,7 +357,7 @@ export function verifyHandshake(
     did,
     iph: challenge.iph,
     uah: challenge.uah,
-    sc: scripted
+    sc: badOrigin
       ? ORIGINLESS_SCORE
       : tooFast
         ? FAST_PROOF_SCORE
@@ -516,8 +518,13 @@ export function scoreHeaders(headers: Headers): number {
   }
   if (BAD_HEADER.test(headers.get("x-requested-with") || "")) score += 25;
 
-  // Browser Chrome/Edge di desktop & mobile WAJIB mengirim sec-ch-ua
-  if (/Chrome\//i.test(ua) && !headers.get("sec-ch-ua")) {
+  // Cek versi Chrome dari User Agent
+  const chromeMatch = ua.match(/Chrome\/(\d+)/i);
+  const chromeVer = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
+
+  // sec-ch-ua hanya didukung & wajib di Chrome desktop & mobile versi 89+ (2021)
+  // Untuk Chrome < 89 atau WebView lawas di Android lama, sec-ch-ua memang belum ada
+  if (chromeVer >= 89 && !headers.get("sec-ch-ua")) {
     score += 25;
   }
 
@@ -529,7 +536,9 @@ export function scoreHeaders(headers: Headers): number {
   // Browser modern selalu mengirim sec-fetch-site pada fetch dan navigasi
   const fetchSite = headers.get("sec-fetch-site");
   if (!fetchSite) {
-    score += 20;
+    if (chromeVer >= 80) {
+      score += 15;
+    }
   } else if (fetchSite !== "same-origin" && fetchSite !== "same-site") {
     score += 30;
   }
@@ -651,7 +660,7 @@ export function guardRequest(request: Request): GuardResult {
   const serverScore = scoreHeaders(request.headers);
   const score = Math.max(serverScore, checked.ticket.sc || 0);
   const isFlagged = flagged(request.headers, checked.ticket.did);
-  const poison = isFlagged || score >= FLAG_MIN_SCORE;
+  const poison = isFlagged || score >= 75;
   if (poison) {
     console.warn("[security] poison", {
       score,

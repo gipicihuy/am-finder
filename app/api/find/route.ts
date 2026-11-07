@@ -1,5 +1,5 @@
 import type { ChildProcess } from "node:child_process";
-import { logSearchToDiscord, normalizeBattery } from "../../../lib/track";
+import { logSearchToDiscord, normalizeBattery, notifyPresetSources } from "../../../lib/track";
 import { limitByIp, tooManyRequests } from "../../../lib/rate-limit";
 import { recordUrl, recordVisit } from "../../../lib/monitor";
 import { getLocale } from "../../../lib/locale-server";
@@ -41,101 +41,6 @@ function sseOf(events: Array<[string, unknown]>): Response {
 
 function encode(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-}
-
-function notifyPresetSources(row: FindRow, inputUrl: string) {
-  const presets = Array.isArray(row.presetLinks) ? (row.presetLinks as Record<string, any>[]) : [];
-  if (!presets.length) return;
-
-  const typeMap: Record<string, string> = {
-    "5mb": "5MB",
-    xml: "XML",
-    sound: "Musik",
-    font: "Font",
-    bahan: "Bahan",
-  };
-
-  const linksText = presets
-    .map((p, i) => {
-      const type = typeMap[p.type] || String(p.type || "").toUpperCase();
-      if (i === 0) return `${i + 1}. ${p.url}`;
-      return `${i + 1}. ${p.url} (${type})`;
-    })
-    .join("\n");
-
-  const chInfo = (row.channelInfo || {}) as Record<string, any>;
-  const shareLinks = Array.isArray(row.shareLinks) ? row.shareLinks : [];
-  const otherLinks = Array.isArray(row.otherLinks) ? row.otherLinks : [];
-
-  // 1. Saluran WhatsApp
-  const waPresets = presets.filter((p) => p.source === "saluran WA" || p.source === "saluran");
-  if (waPresets.length) {
-    const chUrl =
-      chInfo.url ||
-      shareLinks.find((s: any) => typeof s.url === "string" && s.url.includes("whatsapp.com/channel/"))?.url ||
-      otherLinks.find((s: any) => typeof s.url === "string" && s.url.includes("whatsapp.com/channel/"))?.url ||
-      "";
-    const chCode = chUrl.match(/whatsapp\.com\/channel\/([A-Za-z0-9_-]+)/)?.[1] || "";
-    const chName = chInfo.name || (chCode ? `Channel ${chCode}` : "Saluran WhatsApp");
-    const messageUrl = chInfo.messageUrl || (chCode ? `https://whatsapp.com/channel/${chCode}` : "");
-
-    // Deduplikasi 10 menit per kode saluran / URL
-    const dedupKey = `wa:${chCode || chUrl || inputUrl}`;
-    if (!isDeduplicated(dedupKey, 10 * 60_000)) {
-      sendDiscordEmbed("whatsapp", {
-        title: "📢 Berhasil Mengambil Preset dari Saluran WhatsApp!",
-        color: 0x25d366, // WhatsApp green
-        fields: [
-          { name: "Saluran", value: chName, inline: true },
-          { name: "Kode", value: chCode ? `\`${chCode}\`` : "-", inline: true },
-          { name: "Total Preset", value: `${presets.length}`, inline: true },
-          { name: "Links", value: linksText.slice(0, 1000), inline: false },
-          ...(messageUrl ? [{ name: "Pesan Saluran", value: messageUrl, inline: false }] : []),
-          { name: "Video Target", value: inputUrl, inline: false },
-        ],
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
-  // 2. Channel Telegram
-  const tgPresets = presets.filter(
-    (p) => p.source === "telegram" || String(p.source || "").toLowerCase().includes("telegram"),
-  );
-  if (tgPresets.length) {
-    const chUrl =
-      chInfo.url ||
-      shareLinks.find(
-        (s: any) =>
-          typeof s.url === "string" &&
-          (s.url.includes("t.me/") || s.url.includes("telegram.me/")),
-      )?.url ||
-      otherLinks.find(
-        (s: any) =>
-          typeof s.url === "string" &&
-          (s.url.includes("t.me/") || s.url.includes("telegram.me/")),
-      )?.url ||
-      "";
-    const chName = chInfo.name || "Channel Telegram";
-    const messageUrl = chInfo.messageUrl || chUrl || "";
-
-    // Deduplikasi 10 menit per channel / URL
-    const dedupKey = `tg:${chName || chUrl || inputUrl}`;
-    if (!isDeduplicated(dedupKey, 10 * 60_000)) {
-      sendDiscordEmbed("telegram", {
-        title: "📢 Berhasil Mengambil Preset dari Saluran Telegram!",
-        color: 0x0088cc, // Telegram blue
-        fields: [
-          { name: "Channel", value: chName, inline: true },
-          { name: "Total Preset", value: `${presets.length}`, inline: true },
-          { name: "Links", value: linksText.slice(0, 1000), inline: false },
-          ...(messageUrl ? [{ name: "Pesan Channel", value: messageUrl, inline: false }] : []),
-          { name: "Video Target", value: inputUrl, inline: false },
-        ],
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
 }
 
 export async function GET(request: Request) {

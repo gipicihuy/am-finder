@@ -1,5 +1,5 @@
 import { clientIp, isPrivateIp } from "./ip";
-import { sendDiscordEmbed } from "./discord";
+import { isDeduplicated, sendDiscordEmbed } from "./discord";
 
 export type Battery = { level?: number; charging?: boolean };
 
@@ -246,6 +246,182 @@ export async function logSearchToDiscord(
       title: "🔎 Pencarian Baru (Keyword)",
       description: `🔍 **Keyword Query**\n\`${query}\`\n\n${visitorDesc}`,
       color: 0x9b59b6, // Purple
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * Ekstraksi judul video dari data hasil scraping.
+ * Memeriksa `video.title` (YouTube), `video.description` (TikTok/YouTube),
+ * atau cadangan judul dari nama preset pertama yang ditemukan.
+ */
+export function extractVideoTitle(row: Record<string, unknown>): string {
+  const video = (row.video || {}) as Record<string, any>;
+  if (typeof video.title === "string" && video.title.trim()) {
+    return video.title.trim();
+  }
+  const desc = typeof video.description === "string" ? video.description.trim() : "";
+  if (desc) {
+    const firstLine = desc.split(/[\r\n]+/)[0].trim();
+    if (firstLine) {
+      return firstLine.length > 180 ? `${firstLine.slice(0, 180)}…` : firstLine;
+    }
+    return desc.length > 180 ? `${desc.slice(0, 180)}…` : desc;
+  }
+  if (typeof row.title === "string" && row.title.trim()) {
+    return row.title.trim();
+  }
+  const presets = Array.isArray(row.presetLinks) ? (row.presetLinks as Record<string, any>[]) : [];
+  const firstPresetTitle = presets.find((p) => typeof p.title === "string" && p.title.trim())?.title?.trim();
+  if (firstPresetTitle) {
+    return firstPresetTitle;
+  }
+  if (typeof row.author === "string" && row.author.trim()) {
+    return `Video Preset by ${row.author.trim()}`;
+  }
+  return "-";
+}
+
+/**
+ * Format daftar preset untuk Discord Embed dengan link markdown yang rapi
+ * dan URL kode satu-klik salin/tap.
+ */
+export function formatPresetList(presets: Record<string, any>[]): string {
+  const typeMap: Record<string, string> = {
+    "5mb": "5MB",
+    xml: "XML",
+    sound: "Musik",
+    font: "Font",
+    bahan: "Bahan",
+  };
+
+  const lines: string[] = [];
+  let currentLen = 0;
+
+  for (let i = 0; i < presets.length; i++) {
+    const p = presets[i];
+    const type = typeMap[p.type] || String(p.type || "PRESET").toUpperCase();
+    const label = p.title ? `${type} • ${p.title}` : type;
+    const size = p.size ? ` \`(${p.size})\`` : "";
+    const src = p.source ? ` • _[${p.source}]_` : "";
+    const line = `${i + 1}. [**${label}**](${p.url})${size}${src}\n   🔗 \`${p.url}\``;
+
+    if (currentLen + line.length + 50 > 1020) {
+      lines.push(`_...dan ${presets.length - i} preset lainnya_`);
+      break;
+    }
+    lines.push(line);
+    currentLen += line.length + 1;
+  }
+
+  return lines.join("\n\n");
+}
+
+/**
+ * Notifikasi ke Discord saat preset berhasil ditemukan.
+ * Menampilkan Judul Video dan Daftar Link Preset ke:
+ * - "whatsapp" (bila ada preset dari Saluran WhatsApp)
+ * - "telegram" (bila ada preset dari Channel Telegram)
+ * - "tiktok" (preset-from-tiktok-youtube untuk preset TikTok / YouTube)
+ */
+export function notifyPresetSources(row: Record<string, unknown>, inputUrl: string): void {
+  const presets = Array.isArray(row.presetLinks) ? (row.presetLinks as Record<string, any>[]) : [];
+  if (!presets.length) return;
+
+  const videoTitle = extractVideoTitle(row);
+  const author = typeof row.author === "string" && row.author ? row.author : "-";
+  const chInfo = (row.channelInfo || {}) as Record<string, any>;
+  const shareLinks = Array.isArray(row.shareLinks) ? (row.shareLinks as Record<string, any>[]) : [];
+  const otherLinks = Array.isArray(row.otherLinks) ? (row.otherLinks as Record<string, any>[]) : [];
+
+  // 1. Saluran WhatsApp (jika ada preset dari saluran WA)
+  const waPresets = presets.filter((p) => p.source === "saluran WA" || p.source === "saluran");
+  if (waPresets.length) {
+    const chUrl =
+      chInfo.url ||
+      shareLinks.find((s: any) => typeof s.url === "string" && s.url.includes("whatsapp.com/channel/"))?.url ||
+      otherLinks.find((s: any) => typeof s.url === "string" && s.url.includes("whatsapp.com/channel/"))?.url ||
+      "";
+    const chCode = chUrl.match(/whatsapp\.com\/channel\/([A-Za-z0-9_-]+)/)?.[1] || "";
+    const chName = chInfo.name || (chCode ? `Channel ${chCode}` : "Saluran WhatsApp");
+    const messageUrl = chInfo.messageUrl || (chCode ? `https://whatsapp.com/channel/${chCode}` : "");
+
+    const dedupKey = `wa:${chCode || chUrl || inputUrl}`;
+    if (!isDeduplicated(dedupKey, 10 * 60_000)) {
+      sendDiscordEmbed("whatsapp", {
+        title: "📢 Berhasil Mengambil Preset dari Saluran WhatsApp!",
+        color: 0x25d366, // WhatsApp green
+        fields: [
+          { name: "🎬 Judul Video", value: videoTitle, inline: false },
+          { name: "📢 Saluran", value: chName, inline: true },
+          { name: "🔑 Kode", value: chCode ? `\`${chCode}\`` : "-", inline: true },
+          { name: "📦 Total Preset", value: `${waPresets.length}`, inline: true },
+          ...(author !== "-" ? [{ name: "👤 Creator", value: author, inline: true }] : []),
+          { name: "🎁 Daftar Link Preset", value: formatPresetList(waPresets), inline: false },
+          ...(messageUrl ? [{ name: "💬 Pesan Saluran", value: messageUrl, inline: false }] : []),
+          { name: "🎯 Video Target", value: inputUrl, inline: false },
+        ],
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  // 2. Channel Telegram (jika ada preset dari saluran Telegram)
+  const tgPresets = presets.filter(
+    (p) => p.source === "telegram" || String(p.source || "").toLowerCase().includes("telegram"),
+  );
+  if (tgPresets.length) {
+    const chUrl =
+      chInfo.url ||
+      shareLinks.find(
+        (s: any) =>
+          typeof s.url === "string" &&
+          (s.url.includes("t.me/") || s.url.includes("telegram.me/")),
+      )?.url ||
+      otherLinks.find(
+        (s: any) =>
+          typeof s.url === "string" &&
+          (s.url.includes("t.me/") || s.url.includes("telegram.me/")),
+      )?.url ||
+      "";
+    const chName = chInfo.name || "Channel Telegram";
+    const messageUrl = chInfo.messageUrl || chUrl || "";
+
+    const dedupKey = `tg:${chName || chUrl || inputUrl}`;
+    if (!isDeduplicated(dedupKey, 10 * 60_000)) {
+      sendDiscordEmbed("telegram", {
+        title: "📢 Berhasil Mengambil Preset dari Saluran Telegram!",
+        color: 0x0088cc, // Telegram blue
+        fields: [
+          { name: "🎬 Judul Video", value: videoTitle, inline: false },
+          { name: "📢 Channel", value: chName, inline: true },
+          { name: "📦 Total Preset", value: `${tgPresets.length}`, inline: true },
+          ...(author !== "-" ? [{ name: "👤 Creator", value: author, inline: true }] : []),
+          { name: "🎁 Daftar Link Preset", value: formatPresetList(tgPresets), inline: false },
+          ...(messageUrl ? [{ name: "💬 Pesan Channel", value: messageUrl, inline: false }] : []),
+          { name: "🎯 Video Target", value: inputUrl, inline: false },
+        ],
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  // 3. Preset TikTok / YouTube ke channel Discord preset-from-tiktok-youtube (webhook "tiktok")
+  const dedupKey = `found:${inputUrl}`;
+  if (!isDeduplicated(dedupKey, 10 * 60_000)) {
+    const platform = detectPlatform(inputUrl);
+    sendDiscordEmbed("tiktok", {
+      title: `🎉 Preset Ditemukan! (${platform.name})`,
+      color: platform.color,
+      fields: [
+        { name: "🎬 Judul Video", value: videoTitle, inline: false },
+        { name: "👤 Creator", value: author, inline: true },
+        { name: "📦 Total Preset", value: `${presets.length}`, inline: true },
+        { name: "🏷️ Platform", value: platform.tag, inline: true },
+        { name: "🎁 Daftar Link Preset", value: formatPresetList(presets), inline: false },
+        { name: "🎯 Video Target", value: inputUrl, inline: false },
+      ],
       timestamp: new Date().toISOString(),
     });
   }
