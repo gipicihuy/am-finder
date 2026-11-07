@@ -18,6 +18,18 @@ const TOKEN_FILE = path.join(DATA_DIR, ".admin-token");
 const FLUSH_MS = 5_000;
 const KEY_PREFIX = "amf_";
 const TIMEZONE = "Asia/Jakarta";
+
+// Key buatan sendiri (custom) boleh bebas asal 12-64 karakter aman untuk URL.
+// Key acak bawaan (amf_ + 32 hex) otomatis memenuhi pola ini.
+const KEY_FORMAT = /^[A-Za-z0-9_-]{12,64}$/;
+
+export class ApiKeyError extends Error {
+  code: "invalid_custom_key" | "key_exists";
+  constructor(code: "invalid_custom_key" | "key_exists", message: string) {
+    super(message);
+    this.code = code;
+  }
+}
 const DEFAULT_GLOBAL_DAILY = 3_000;
 
 export type ApiKeyRecord = {
@@ -299,13 +311,29 @@ function publicView(record: ApiKeyRecord): ApiKeyView {
 }
 
 export function createApiKey(input: {
-  name: string;
+  name?: string;
+  customKey?: string | null;
   contact?: string | null;
   dailyLimit?: number | null;
   expiresAt?: number | null;
 }): { key: string; record: ApiKeyView } {
   const s = store();
-  const key = `${KEY_PREFIX}${randomBytes(16).toString("hex")}`;
+  let key: string;
+  if (typeof input.customKey === "string" && input.customKey.trim()) {
+    key = input.customKey.trim();
+    if (!KEY_FORMAT.test(key)) {
+      throw new ApiKeyError(
+        "invalid_custom_key",
+        "key custom harus 12-64 karakter: huruf, angka, _ atau -",
+      );
+    }
+    const digest = hashKey(key);
+    if (s.keys.some((record) => record.hash === digest)) {
+      throw new ApiKeyError("key_exists", "key itu sudah dipakai");
+    }
+  } else {
+    key = `${KEY_PREFIX}${randomBytes(16).toString("hex")}`;
+  }
   const record: ApiKeyRecord = {
     id: randomBytes(8).toString("hex"),
     name: String(input.name || "").trim().slice(0, 80) || "API key",
@@ -331,8 +359,13 @@ export function createApiKey(input: {
   return { key, record: publicView(record) };
 }
 
-export function listApiKeys(): ApiKeyView[] {
-  return store().keys.map(publicView);
+export function listApiKeys(): (ApiKeyView & { usedToday: number })[] {
+  const s = store();
+  ensureDay(s);
+  return s.keys.map((record) => ({
+    ...publicView(record),
+    usedToday: s.usage.perKey[record.id] || 0,
+  }));
 }
 
 export type ApiKeyPatch = {
@@ -392,7 +425,7 @@ export function authenticateApiKey(headers: Headers, queryKey?: string | null): 
   if (!raw) {
     return { ok: false, status: 401, code: "missing_key", error: "API key wajib dikirim" };
   }
-  if (!/^amf_[A-Za-z0-9_-]{32}$/.test(raw)) {
+  if (!KEY_FORMAT.test(raw)) {
     return { ok: false, status: 401, code: "invalid_key", error: "API key tidak valid" };
   }
 

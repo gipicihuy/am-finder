@@ -105,6 +105,21 @@ node scripts/apikey.mjs update <id> --limit unlimited --days never
 node scripts/apikey.mjs revoke <id>
 ```
 
+Alternatif yang lebih ringkas (cocok untuk Termux), `apikey/amfinder.js`, tanpa dependency
+dan tanpa nama user. Token admin diisi sekali lalu disimpan di `~/.amfinder.json`:
+
+```bash
+node apikey/amfinder.js                       # menu interaktif
+node apikey/amfinder.js new                   # key acak, unlimited
+node apikey/amfinder.js new KEY-BUATAN-SENDIRI --limit 100 --days 7
+node apikey/amfinder.js new --free            # 50/hari, 30 hari
+node apikey/amfinder.js list
+node apikey/amfinder.js revoke 2              # nomor dari list
+```
+
+Key custom harus 12-64 karakter (huruf, angka, `_`, `-`) dan unik. Field `key` di
+`POST /api/admin/keys` juga menerimanya; `name` opsional.
+
 Script memanggil endpoint admin (`/api/admin/keys`) dengan
 `AMF_BASE_URL` (default `http://127.0.0.1:3000`); script tidak menulis
 `data/apikeys.json` langsung. Folder `data/` sudah masuk `.gitignore`.

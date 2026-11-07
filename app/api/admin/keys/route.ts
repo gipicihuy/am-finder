@@ -1,5 +1,5 @@
 import { limitHeaders, tooManyRequests } from "../../../../lib/rate-limit";
-import { createApiKey, listApiKeys, verifyAdminToken } from "../../../../lib/api-keys";
+import { ApiKeyError, createApiKey, listApiKeys, verifyAdminToken } from "../../../../lib/api-keys";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,13 +53,9 @@ export async function POST(request: Request) {
   }
   const data = body as Record<string, unknown>;
 
+  // name opsional. key opsional: kalau diisi dipakai sebagai key custom.
   const name = typeof data.name === "string" ? data.name.trim() : "";
-  if (!name) {
-    return Response.json(
-      { ok: false, error: "name wajib diisi" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+  const customKey = typeof data.key === "string" && data.key.trim() ? data.key.trim() : null;
 
   const limitValue = readLimit(
     Object.prototype.hasOwnProperty.call(data, "dailyLimit") ? data.dailyLimit : data.limit,
@@ -82,12 +78,27 @@ export async function POST(request: Request) {
   const contact =
     typeof data.contact === "string" && data.contact.trim() ? data.contact.trim() : null;
 
-  const created = createApiKey({
-    name,
-    contact,
-    dailyLimit: limitValue.value,
-    expiresAt: expiresValue.value,
-  });
+  let created: ReturnType<typeof createApiKey>;
+  try {
+    created = createApiKey({
+      name,
+      customKey,
+      contact,
+      dailyLimit: limitValue.value,
+      expiresAt: expiresValue.value,
+    });
+  } catch (error) {
+    if (error instanceof ApiKeyError) {
+      return Response.json(
+        { ok: false, code: error.code, error: error.message },
+        {
+          status: error.code === "key_exists" ? 409 : 400,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+    }
+    throw error;
+  }
 
   // Key asli hanya dikembalikan sekali di respons ini, tidak pernah di log.
   return Response.json(

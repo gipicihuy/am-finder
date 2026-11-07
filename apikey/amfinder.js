@@ -1,39 +1,83 @@
 #!/usr/bin/env node
-/**
- * AM FINDER - API Key Generator & Manager
- * Bisa dijalankan di Termux (Android), VPS, atau PC tanpa perlu install npm module tambahan.
- *
- * Pemakaian interaktif:
- *   $ node apikey/amfinder.js
- *
- * Pemakaian CLI:
- *   $ node apikey/amfinder.js create "Nama" [--limit unlimited|50] [--days never|30]
- *   $ node apikey/amfinder.js list
- *   $ node apikey/amfinder.js revoke <id>
- *   $ node apikey/amfinder.js delete <id>
- */
+// AM Finder - API key manager (Termux / CLI). Tanpa dependency, butuh Node 18+.
+//
+// Pakai:
+//   node amfinder.js                          menu interaktif
+//   node amfinder.js new                      key acak, unlimited, tanpa kedaluwarsa
+//   node amfinder.js new mykey-12345678       key buatan sendiri (12-64 karakter: huruf/angka/_/-)
+//   node amfinder.js new --free               key acak, 50/hari, berlaku 30 hari
+//   node amfinder.js new KEY --limit 100 --days 7
+//   node amfinder.js list                     daftar key (bernomor)
+//   node amfinder.js revoke 2                 cabut key (nomor, id, atau prefix)
+//   node amfinder.js delete 2                 hapus permanen
+//   node amfinder.js token                    ganti token admin yang tersimpan
+//
+// Ditulis sebagai CommonJS supaya jalan di semua versi Node tanpa warning.
+// Token admin TIDAK ditulis di file ini. Urutan: env AMF_ADMIN_TOKEN, lalu
+// ~/.amfinder.json (dibuat otomatis saat pertama dijalankan, permission 600).
 
-const readline = require("node:readline");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const readline = require("node:readline/promises");
+const { stdin, stdout } = require("node:process");
 
+const CONFIG_PATH = path.join(os.homedir(), ".amfinder.json");
 const DEFAULT_BASE_URL = "https://amfinder.web.id";
-const DEFAULT_ADMIN_TOKEN = "90e07b62b9dc2a68fd89daaab2398fd04d0a110432b623b0";
+const FREE_LIMIT = 50;
+const FREE_DAYS = 30;
+const DAY_MS = 86_400_000;
 
-const BASE_URL = (process.env.AMF_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
-const ADMIN_TOKEN = (process.env.AMF_ADMIN_TOKEN || DEFAULT_ADMIN_TOKEN).trim();
+const rl = readline.createInterface({ input: stdin, output: stdout });
+const ask = async (question) => (await rl.question(question)).trim();
 
-async function apiCall(method, endpoint, body) {
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")) || {};
+  } catch {
+    return {};
+  }
+}
+
+function writeConfig(config) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { mode: 0o600 });
+  try {
+    fs.chmodSync(CONFIG_PATH, 0o600);
+  } catch {
+    // sistem file tertentu (mis. FAT) tidak mendukung chmod, abaikan
+  }
+}
+
+async function loadSettings({ resetToken = false } = {}) {
+  const config = readConfig();
+  const baseUrl = (process.env.AMF_BASE_URL || config.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  let token = resetToken ? "" : (process.env.AMF_ADMIN_TOKEN || config.token || "").trim();
+
+  if (!token) {
+    console.log("Token admin belum ada. Isi sekali, nanti disimpan di " + CONFIG_PATH);
+    token = await ask("Token admin: ");
+    if (!token) throw new Error("Token admin wajib diisi.");
+    writeConfig({ ...config, token });
+    console.log("Token tersimpan.\n");
+  }
+  return { baseUrl, token };
+}
+
+let SETTINGS = null;
+
+async function api(method, endpoint, body) {
   let response;
   try {
-    response = await fetch(`${BASE_URL}${endpoint}`, {
+    response = await fetch(`${SETTINGS.baseUrl}${endpoint}`, {
       method,
       headers: {
-        Authorization: `Bearer ${ADMIN_TOKEN}`,
+        Authorization: `Bearer ${SETTINGS.token}`,
         "Content-Type": "application/json",
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {
-    throw new Error(`Gagal terhubung ke server (${BASE_URL}): ${error.message}`);
+    throw new Error(`Tidak bisa terhubung ke ${SETTINGS.baseUrl}: ${error.message}`);
   }
 
   const text = await response.text();
@@ -44,256 +88,215 @@ async function apiCall(method, endpoint, body) {
     data = null;
   }
 
+  if (response.status === 401) {
+    throw new Error("Token admin ditolak server. Jalankan: node amfinder.js token");
+  }
   if (!response.ok) {
-    const msg = data?.error || text || response.statusText;
-    throw new Error(`Server Error (${response.status}): ${msg}`);
+    throw new Error(data?.error || text || `HTTP ${response.status}`);
   }
   return data;
 }
 
-function prompt(question) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-}
-
 function formatDate(epoch) {
-  if (!epoch) return "Selamanya (Never)";
-  try {
-    return (
-      new Date(epoch).toLocaleString("id-ID", {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: "Asia/Jakarta",
-      }) + " WIB"
-    );
-  } catch {
-    return new Date(epoch).toISOString();
-  }
+  if (!epoch) return "selamanya";
+  return (
+    new Date(epoch).toLocaleString("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Jakarta",
+    }) + " WIB"
+  );
 }
 
-async function handleInteractive() {
-  while (true) {
-    console.log("\n" + "═".repeat(45));
-    console.log("   🚀 AM FINDER - API KEY GENERATOR");
-    console.log(`   🌐 Server: ${BASE_URL}`);
-    console.log("═".repeat(45));
-    console.log("[1] Buat API Key Baru (Bebas / Unlimited)");
-    console.log("[2] Buat API Key Custom (Bisa atur limit & durasi)");
-    console.log("[3] Lihat Daftar API Key (List)");
-    console.log("[4] Cabut / Revoke API Key");
-    console.log("[5] Hapus Permanen API Key");
-    console.log("[0] Keluar");
-    console.log("═".repeat(45));
+const limitText = (limit) => (limit === null || limit === undefined ? "unlimited" : `${limit}/hari`);
 
-    const choice = await prompt("Pilih menu [1-5 / 0]: ");
+function parseLimit(value) {
+  if (value === undefined || value === "" || /^(unlimited|u|-)$/i.test(value)) return null;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0) throw new Error("Limit harus angka bulat >= 0, atau 'unlimited'.");
+  return n;
+}
 
-    if (choice === "0") {
-      console.log("👋 Sampai jumpa!");
-      break;
+function parseDays(value) {
+  if (value === undefined || value === "" || /^(never|n|-)$/i.test(value)) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) throw new Error("Hari harus lebih dari 0, atau 'never'.");
+  return Date.now() + Math.floor(n * DAY_MS);
+}
+
+async function createKey({ key, dailyLimit, expiresAt }) {
+  const res = await api("POST", "/api/admin/keys", {
+    key: key || undefined,
+    dailyLimit,
+    expiresAt,
+  });
+
+  const testUrl = `${SETTINGS.baseUrl}/api/public/v1/find?url=LINK_VIDEO&apikey=${res.key}`;
+  console.log("\nKEY BERHASIL DIBUAT");
+  console.log("-".repeat(46));
+  console.log(`Key    : ${res.key}`);
+  console.log(`Limit  : ${limitText(dailyLimit)}`);
+  console.log(`Berlaku: ${formatDate(expiresAt)}`);
+  console.log(`ID     : ${res.data?.id}`);
+  console.log("-".repeat(46));
+  console.log("Contoh tes (ganti LINK_VIDEO):");
+  console.log(testUrl);
+  if (!key) console.log("\nKey acak hanya ditampilkan sekali, simpan sekarang.");
+}
+
+async function fetchKeys() {
+  return (await api("GET", "/api/admin/keys")).keys || [];
+}
+
+async function listKeys() {
+  const keys = await fetchKeys();
+  if (!keys.length) {
+    console.log("Belum ada key.");
+    return;
+  }
+  console.log(`\n${keys.length} key\n`);
+  keys.forEach((k, i) => {
+    const status = k.revoked ? "DICABUT" : k.expiresAt && Date.now() >= k.expiresAt ? "KEDALUWARSA" : "aktif";
+    const used = k.dailyLimit === null ? "unlimited" : `${k.usedToday ?? 0}/${k.dailyLimit} hari ini`;
+    console.log(`[${i + 1}] ${k.prefix}...  ${status}`);
+    console.log(`    ${used} | sampai ${formatDate(k.expiresAt)} | id ${k.id}`);
+  });
+}
+
+// Terima nomor (dari `list`), id lengkap, atau prefix key.
+async function resolveKey(ref) {
+  if (!ref) throw new Error("Sebutkan nomor, id, atau prefix key (lihat: node amfinder.js list).");
+  const keys = await fetchKeys();
+  if (/^\d+$/.test(ref) && Number(ref) >= 1 && Number(ref) <= keys.length) return keys[Number(ref) - 1];
+  const matches = keys.filter((k) => k.id === ref || k.prefix === ref || k.id.startsWith(ref));
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) throw new Error("Referensi ambigu, pakai nomor atau id lengkap.");
+  throw new Error(`Key "${ref}" tidak ditemukan.`);
+}
+
+async function revokeKey(ref) {
+  const k = await resolveKey(ref);
+  await api("PATCH", `/api/admin/keys/${encodeURIComponent(k.id)}`, { revoked: true });
+  console.log(`Key ${k.prefix}... (id ${k.id}) dicabut.`);
+}
+
+async function deleteKey(ref) {
+  const k = await resolveKey(ref);
+  await api("DELETE", `/api/admin/keys/${encodeURIComponent(k.id)}`);
+  console.log(`Key ${k.prefix}... (id ${k.id}) dihapus permanen.`);
+}
+
+function parseNewArgs(params) {
+  let key = null;
+  let limit = null;
+  let expiresAt = null;
+  for (let i = 0; i < params.length; i++) {
+    const arg = params[i];
+    if (arg === "--free") {
+      limit = FREE_LIMIT;
+      expiresAt = Date.now() + FREE_DAYS * DAY_MS;
+    } else if (arg === "--limit") {
+      limit = parseLimit(params[++i]);
+    } else if (arg === "--days") {
+      expiresAt = parseDays(params[++i]);
+    } else if (!arg.startsWith("--") && !key) {
+      key = arg;
+    } else {
+      throw new Error(`Argumen tidak dikenal: ${arg}`);
     }
+  }
+  return { key, dailyLimit: limit, expiresAt };
+}
 
-    if (choice === "1") {
-      const name = await prompt("Masukkan nama / label pemegang key: ");
-      if (!name) {
-        console.log("❌ Nama tidak boleh kosong!");
-        continue;
-      }
-      try {
-        console.log("⏳ Sedang membuat key...");
-        const res = await apiCall("POST", "/api/admin/keys", {
-          name,
-          dailyLimit: null,
-          expiresAt: null,
-        });
-        console.log("\n" + "═".repeat(45));
-        console.log("🎉 API KEY BEBAS BERHASIL DIBUAT!");
-        console.log("═".repeat(45));
-        console.log(`🔑 Key         : ${res.key}`);
-        console.log(`👤 Nama        : ${res.data?.name}`);
-        console.log(`📊 Limit       : Unlimited (Bebas / Tanpa batas)`);
-        console.log(`⏳ Masa Aktif  : Selamanya`);
-        console.log(`🆔 ID Key      : ${res.data?.id}`);
-        console.log("═".repeat(45));
-        console.log("⚠️  CATATAN: Simpan key di atas sekarang, karena hanya dimunculkan sekali!");
-      } catch (err) {
-        console.log(`❌ Gagal: ${err.message}`);
-      }
-    } else if (choice === "2") {
-      const name = await prompt("Masukkan nama / label pemegang key: ");
-      if (!name) {
-        console.log("❌ Nama tidak boleh kosong!");
-        continue;
-      }
-      const limitInput = await prompt("Limit harian (angka, misal: 100 atau tekan enter untuk unlimited): ");
-      let dailyLimit = null;
-      if (limitInput && limitInput.toLowerCase() !== "unlimited") {
-        const num = Number(limitInput);
-        if (Number.isInteger(num) && num >= 0) dailyLimit = num;
-      }
+async function interactive() {
+  for (;;) {
+    console.log("\n=== AM FINDER - API KEY ===");
+    console.log(`Server: ${SETTINGS.baseUrl}`);
+    console.log("1) Buat key");
+    console.log("2) Daftar key");
+    console.log("3) Cabut key");
+    console.log("4) Hapus key");
+    console.log("0) Keluar");
+    const choice = await ask("> ");
 
-      const daysInput = await prompt("Masa aktif hari (angka, misal: 30 atau tekan enter untuk selamanya): ");
-      let expiresAt = null;
-      if (daysInput && daysInput.toLowerCase() !== "never") {
-        const days = Number(daysInput);
-        if (Number.isFinite(days) && days > 0) {
-          expiresAt = Date.now() + Math.floor(days * 86_400_000);
-        }
-      }
-
-      try {
-        console.log("⏳ Sedang membuat key...");
-        const res = await apiCall("POST", "/api/admin/keys", {
-          name,
-          dailyLimit,
-          expiresAt,
-        });
-        console.log("\n" + "═".repeat(45));
-        console.log("🎉 API KEY CUSTOM BERHASIL DIBUAT!");
-        console.log("═".repeat(45));
-        console.log(`🔑 Key         : ${res.key}`);
-        console.log(`👤 Nama        : ${res.data?.name}`);
-        console.log(`📊 Limit       : ${dailyLimit === null ? "Unlimited" : dailyLimit + " /hari"}`);
-        console.log(`⏳ Masa Aktif  : ${formatDate(expiresAt)}`);
-        console.log(`🆔 ID Key      : ${res.data?.id}`);
-        console.log("═".repeat(45));
-        console.log("⚠️  CATATAN: Simpan key di atas sekarang!");
-      } catch (err) {
-        console.log(`❌ Gagal: ${err.message}`);
-      }
-    } else if (choice === "3") {
-      try {
-        console.log("⏳ Mengambil daftar key...");
-        const res = await apiCall("GET", "/api/admin/keys");
-        const list = res.keys || [];
-        if (list.length === 0) {
-          console.log("ℹ️ Belum ada API key yang dibuat.");
-        } else {
-          console.log(`\n📋 Total API Key: ${list.length}`);
-          console.log("═".repeat(60));
-          list.forEach((k, i) => {
-            const status = k.revoked ? "🔴 Dicabut" : "🟢 Aktif";
-            const lim = k.dailyLimit === null ? "Unlimited" : `${k.usedToday || 0}/${k.dailyLimit}`;
-            console.log(`[${i + 1}] ${k.name} | Status: ${status}`);
-            console.log(`    ID      : ${k.id}`);
-            console.log(`    Prefix  : ${k.prefix}...`);
-            console.log(`    Limit   : ${lim}`);
-            console.log(`    Expired : ${formatDate(k.expiresAt)}`);
-            console.log("-".repeat(60));
-          });
-        }
-      } catch (err) {
-        console.log(`❌ Gagal: ${err.message}`);
-      }
-    } else if (choice === "4") {
-      const id = await prompt("Masukkan ID Key yang ingin dicabut (revoke): ");
-      if (!id) continue;
-      try {
-        const res = await apiCall("PATCH", `/api/admin/keys/${encodeURIComponent(id)}`, { revoked: true });
-        console.log(`✅ Sukses mencabut key ${id}!`);
-      } catch (err) {
-        console.log(`❌ Gagal: ${err.message}`);
-      }
-    } else if (choice === "5") {
-      const id = await prompt("Masukkan ID Key yang ingin DIHAPUS PERMANEN: ");
-      if (!id) continue;
-      const confirm = await prompt(`Ketik 'Y' untuk mengonfirmasi hapus ID ${id}: `);
-      if (confirm.toUpperCase() === "Y") {
-        try {
-          await apiCall("DELETE", `/api/admin/keys/${encodeURIComponent(id)}`);
-          console.log(`✅ Sukses menghapus key ${id}!`);
-        } catch (err) {
-          console.log(`❌ Gagal: ${err.message}`);
-        }
+    try {
+      if (choice === "1") {
+        const key = await ask("Key (Enter = acak): ");
+        const limit = parseLimit(await ask("Limit per hari (Enter = unlimited): "));
+        const expiresAt = parseDays(await ask("Berlaku berapa hari (Enter = selamanya): "));
+        await createKey({ key, dailyLimit: limit, expiresAt });
+      } else if (choice === "2") {
+        await listKeys();
+      } else if (choice === "3") {
+        await listKeys();
+        await revokeKey(await ask("Nomor/id key yang dicabut: "));
+      } else if (choice === "4") {
+        await listKeys();
+        const ref = await ask("Nomor/id key yang dihapus: ");
+        if (ref && (await ask("Yakin hapus permanen? (y/N): ")).toLowerCase() === "y") await deleteKey(ref);
+      } else if (choice === "0" || choice.toLowerCase() === "q") {
+        return;
       } else {
-        console.log("Dibatalkan.");
+        console.log("Pilihan tidak valid.");
       }
+    } catch (error) {
+      console.log(`Gagal: ${error.message}`);
     }
   }
 }
 
-async function handleCli(args) {
-  const cmd = args[0];
+const HELP = `AM Finder - API key manager
 
-  if (cmd === "list") {
-    const res = await apiCall("GET", "/api/admin/keys");
-    console.log(JSON.stringify(res.keys, null, 2));
-    return;
-  }
-
-  if (cmd === "create") {
-    let name = args[1];
-    let limit = null;
-    let days = null;
-
-    for (let i = 1; i < args.length; i++) {
-      if (args[i] === "--name" && args[i + 1]) name = args[++i];
-      else if (args[i] === "--limit" && args[i + 1]) {
-        const val = args[++i];
-        limit = val === "unlimited" ? null : parseInt(val, 10);
-      } else if (args[i] === "--days" && args[i + 1]) {
-        const val = args[++i];
-        days = val === "never" ? null : Date.now() + Math.floor(parseFloat(val) * 86_400_000);
-      }
-    }
-
-    if (!name || name.startsWith("--")) {
-      name = "Client-" + Math.random().toString(36).slice(2, 7);
-    }
-
-    const res = await apiCall("POST", "/api/admin/keys", {
-      name,
-      dailyLimit: limit,
-      expiresAt: days,
-    });
-    console.log("✅ API Key berhasil dibuat:");
-    console.log(JSON.stringify({ key: res.key, data: res.data }, null, 2));
-    return;
-  }
-
-  if (cmd === "revoke") {
-    const id = args[1];
-    if (!id) throw new Error("ID key wajib diisi: node amfinder.js revoke <id>");
-    const res = await apiCall("PATCH", `/api/admin/keys/${encodeURIComponent(id)}`, { revoked: true });
-    console.log("✅ Key dicabut:", res.data);
-    return;
-  }
-
-  if (cmd === "delete") {
-    const id = args[1];
-    if (!id) throw new Error("ID key wajib diisi: node amfinder.js delete <id>");
-    await apiCall("DELETE", `/api/admin/keys/${encodeURIComponent(id)}`);
-    console.log(`✅ Key ${id} berhasil dihapus.`);
-    return;
-  }
-
-  console.log(`Perintah CLI:
-  node amfinder.js create "Nama" [--limit unlimited|50] [--days never|30]
+  node amfinder.js                     menu interaktif
+  node amfinder.js new [KEY] [--free] [--limit 50|unlimited] [--days 30|never]
   node amfinder.js list
-  node amfinder.js revoke <id>
-  node amfinder.js delete <id>
+  node amfinder.js revoke <nomor|id|prefix>
+  node amfinder.js delete <nomor|id|prefix>
+  node amfinder.js token               ganti token admin tersimpan
 
-Atau jalankan tanpa argumen untuk menu interaktif:
-  node amfinder.js`);
-}
+KEY kosong = acak. KEY buatan sendiri: 12-64 karakter (huruf, angka, _ atau -).
+--free = 50/hari, berlaku 30 hari.`;
 
 async function main() {
-  const args = process.argv.slice(2);
-  if (args.length === 0) {
-    await handleInteractive();
-  } else {
-    await handleCli(args);
+  const [command, ...params] = process.argv.slice(2);
+
+  if (command === "help" || command === "--help" || command === "-h") {
+    console.log(HELP);
+    return;
+  }
+
+  SETTINGS = await loadSettings({ resetToken: command === "token" });
+  if (command === "token") {
+    console.log("Token admin diperbarui.");
+    return;
+  }
+
+  switch (command) {
+    case undefined:
+      await interactive();
+      break;
+    case "new":
+    case "create":
+      await createKey(parseNewArgs(params));
+      break;
+    case "list":
+      await listKeys();
+      break;
+    case "revoke":
+      await revokeKey(params[0]);
+      break;
+    case "delete":
+      await deleteKey(params[0]);
+      break;
+    default:
+      console.log(HELP);
+      process.exitCode = 1;
   }
 }
 
-main().catch((err) => {
-  console.error(`[Error] ${err.message}`);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error(`[Error] ${error.message}`);
+    process.exitCode = 1;
+  })
+  .finally(() => rl.close());
