@@ -13,14 +13,18 @@
 //   node amfinder.js token                    ganti token admin yang tersimpan
 //
 // Ditulis sebagai CommonJS supaya jalan di semua versi Node tanpa warning.
-// Token admin TIDAK ditulis di file ini. Urutan: env AMF_ADMIN_TOKEN, lalu
-// ~/.amfinder.json (dibuat otomatis saat pertama dijalankan, permission 600).
+// Token admin di repo dikosongkan. Urutan: HARDCODED_TOKEN (kalau diisi lokal), env
+// AMF_ADMIN_TOKEN, lalu ~/.amfinder.json (dibuat otomatis saat pertama dijalankan).
 
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const readline = require("node:readline/promises");
 const { stdin, stdout } = require("node:process");
+
+// OPSIONAL: isi token admin di sini kalau mau langsung jalan tanpa ditanya.
+// Isi HANYA di salinan lokal (mis. di Termux) dan JANGAN commit ke repo publik.
+const HARDCODED_TOKEN = "";
 
 const CONFIG_PATH = path.join(os.homedir(), ".amfinder.json");
 const DEFAULT_BASE_URL = "https://amfinder.web.id";
@@ -51,7 +55,7 @@ function writeConfig(config) {
 async function loadSettings({ resetToken = false } = {}) {
   const config = readConfig();
   const baseUrl = (process.env.AMF_BASE_URL || config.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
-  let token = resetToken ? "" : (process.env.AMF_ADMIN_TOKEN || config.token || "").trim();
+  let token = resetToken ? "" : (HARDCODED_TOKEN || process.env.AMF_ADMIN_TOKEN || config.token || "").trim();
 
   if (!token) {
     console.log("Token admin belum ada. Isi sekali, nanti disimpan di " + CONFIG_PATH);
@@ -262,6 +266,11 @@ async function main() {
 
   if (command === "help" || command === "--help" || command === "-h") {
     console.log(HELP);
+    return;
+  }
+
+  if (command === "token" && HARDCODED_TOKEN) {
+    console.log("Token ada di konstanta HARDCODED_TOKEN di file ini. Edit langsung di sana.");
     return;
   }
 
