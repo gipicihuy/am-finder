@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { isPrivateIp } from "./ip";
 import { sendDiscordEmbed } from "./discord";
+import { quickActionUrl } from "./security";
 
 export type BlockEntry = {
   ip: string;
@@ -275,26 +276,40 @@ export function checkAutoBlock(
   if (!res.ok || !res.entry) return false;
 
   // Kirim security embed pemberitahuan auto-block
-  sendDiscordEmbed("security", {
-    title: "🚨 IP Diblokir Otomatis (Auto-Block)",
-    color: 0xff0000,
-    fields: [
-      { name: "🌐 IP", value: `\`${ip}\``, inline: true },
-      { name: "⏱️ Durasi", value: `${ttlMinutes} menit`, inline: true },
-      { name: "Alasan", value: reason, inline: false },
+  const unblockUrl = quickActionUrl("unblock", ip, 0);
+
+  sendDiscordEmbed(
+    "security",
+    {
+      title: "🚨 IP Diblokir Otomatis (Auto-Block)",
+      color: 0xff0000,
+      fields: [
+        { name: "🌐 IP", value: `\`${ip}\``, inline: true },
+        { name: "⏱️ Durasi", value: `${ttlMinutes} menit`, inline: true },
+        { name: "Alasan", value: reason, inline: false },
+        {
+          name: "⚡ Aksi Cepat 1-Klik (Buka Blokir)",
+          value: `👉 [✅ Buka Blokir (Unblock) IP Ini Sekarang](${unblockUrl})\n*(Atau tap tombol hijau di bawah)*`,
+          inline: false,
+        },
+        {
+          name: "Catatan Keamanan",
+          value: "Serangan volumetrik besar harus ditahan di tingkat jaringan (Cloudflare / ufw), bukan hanya di aplikasi.",
+          inline: false,
+        },
+      ],
+      timestamp: new Date().toISOString(),
+    },
+    undefined,
+    [
       {
-        name: "Aksi Cepat (Unblock)",
-        value: `\`\`\`bash\ncurl -X POST https://<domain>/api/admin/unblock -H "Authorization: Bearer $AMF_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{"ip":"${ip}"}'\n\`\`\``,
-        inline: false,
-      },
-      {
-        name: "Catatan Keamanan",
-        value: "Serangan volumetrik besar harus ditahan di tingkat jaringan (Cloudflare / ufw), bukan hanya di aplikasi.",
-        inline: false,
+        type: 1,
+        components: [
+          { type: 2, style: 5, label: "✅ Buka Blokir Sekarang", url: unblockUrl },
+        ],
       },
     ],
-    timestamp: new Date().toISOString(),
-  });
+  );
 
   return true;
 }

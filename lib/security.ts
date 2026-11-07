@@ -1,9 +1,61 @@
+import { createHmac } from "node:crypto";
 import { clientIp, isPrivateIp } from "./ip";
 import { formatTime } from "./track";
 import { isDeduplicated, sendDiscordEmbed, reportServerError, reportBotActivity } from "./discord";
 import { checkAutoBlock } from "./blocklist";
 
 export { reportServerError, reportBotActivity };
+
+function getSecretKey(): string {
+  return (
+    process.env.AMF_ADMIN_TOKEN?.trim() ||
+    process.env.AM_SECURITY_SECRET?.trim() ||
+    "amfinder-security-quick-token"
+  );
+}
+
+export function generateQuickSig(action: "block" | "unblock", ip: string, ttl: number = 0): string {
+  const secret = getSecretKey();
+  return createHmac("sha256", secret)
+    .update(`${action}:${ip}:${ttl}`)
+    .digest("hex")
+    .slice(0, 24);
+}
+
+export function verifyQuickSig(action: "block" | "unblock", ip: string, ttl: number, sig: string): boolean {
+  if (!sig || typeof sig !== "string") return false;
+  const expected = generateQuickSig(action, ip, ttl);
+  return sig === expected;
+}
+
+export function quickActionUrl(action: "block" | "unblock", ip: string, ttl: number = 0): string {
+  const base = process.env.AMF_BASE_URL?.trim() || "https://amfinder.web.id";
+  const sig = generateQuickSig(action, ip, ttl);
+  const q = new URLSearchParams({
+    act: action,
+    ip,
+    sig,
+  });
+  if (ttl > 0) q.set("ttl", String(ttl));
+  return `${base}/api/admin/quick?${q.toString()}`;
+}
+
+export function quickActionComponents(ip: string): unknown[] {
+  const block1h = quickActionUrl("block", ip, 60);
+  const blockPerm = quickActionUrl("block", ip, 0);
+  const unblock = quickActionUrl("unblock", ip, 0);
+
+  return [
+    {
+      type: 1, // ActionRow
+      components: [
+        { type: 2, style: 5, label: "🚫 Blokir 1 Jam", url: block1h },
+        { type: 2, style: 5, label: "🚫 Blokir Selamanya", url: blockPerm },
+        { type: 2, style: 5, label: "✅ Buka Blokir", url: unblock },
+      ],
+    },
+  ];
+}
 
 export const GOOD_BOT =
   /googlebot|bingbot|duckduckbot|slurp|yandexbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|applebot|petalbot|semrushbot|ahrefsbot/i;
@@ -81,29 +133,38 @@ export function onRateLimitPenalty(
   const dedupKey = `sec:penalty:${ip}`;
   if (isDeduplicated(dedupKey, 60_000)) return;
 
-  sendDiscordEmbed("security", {
-    title: "🔥 Indikasi Flood / DDoS Aplikasi",
-    description: `Satu alamat IP telah memicu **penalty rate-limiter** karena volume request yang melewati batas kewajaran.`,
-    color: 0xc0392b, // Dark red
-    fields: [
-      { name: "🌐 IP Penyerang", value: `\`${ip}\``, inline: true },
-      { name: "🎯 Kategori Limiter", value: `\`${scope}\``, inline: true },
-      { name: "📊 Volume Request", value: `${sustained} req (ambang penalty: ${penaltyAt})`, inline: true },
-      { name: "⚡ Penalty Strike", value: `${record.count}x / 10 menit`, inline: true },
-      { name: "🖥️ User Agent", value: `\`${ua.slice(0, 200)}\``, inline: false },
-      {
-        name: "⚡ Aksi Cepat (Blokir IP)",
-        value: `\`\`\`bash\ncurl -X POST https://<domain>/api/admin/block -H "Authorization: Bearer $AMF_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{"ip":"${ip}","reason":"DDoS/Flood kategori ${scope}","ttlMinutes":60}'\n\`\`\``,
-        inline: false,
-      },
-      {
-        name: "🛡️ Catatan Keamanan",
-        value: "Serangan volumetrik besar harus ditahan di tingkat jaringan (Cloudflare / ufw), bukan hanya di aplikasi.",
-        inline: false,
-      },
-    ],
-    timestamp: new Date().toISOString(),
-  });
+  const block1h = quickActionUrl("block", ip, 60);
+  const blockPerm = quickActionUrl("block", ip, 0);
+  const unblock = quickActionUrl("unblock", ip, 0);
+
+  sendDiscordEmbed(
+    "security",
+    {
+      title: "🔥 Indikasi Flood / DDoS Aplikasi",
+      description: `Satu alamat IP telah memicu **penalty rate-limiter** karena volume request yang melewati batas kewajaran.`,
+      color: 0xc0392b, // Dark red
+      fields: [
+        { name: "🌐 IP Penyerang", value: `\`${ip}\``, inline: true },
+        { name: "🎯 Kategori Limiter", value: `\`${scope}\``, inline: true },
+        { name: "📊 Volume Request", value: `${sustained} req (ambang penalty: ${penaltyAt})`, inline: true },
+        { name: "⚡ Penalty Strike", value: `${record.count}x / 10 menit`, inline: true },
+        { name: "🖥️ User Agent", value: `\`${ua.slice(0, 200)}\``, inline: false },
+        {
+          name: "⚡ Aksi Cepat 1-Klik (Tinggal Tap)",
+          value: `👉 [🚫 Blokir 1 Jam](${block1h}) • [🚫 Blokir Selamanya](${blockPerm}) • [✅ Buka Blokir](${unblock})\n*(Atau tap tombol di bawah pesan ini)*`,
+          inline: false,
+        },
+        {
+          name: "🛡️ Catatan Keamanan",
+          value: "Serangan volumetrik besar harus ditahan di tingkat jaringan (Cloudflare / ufw), bukan hanya di aplikasi.",
+          inline: false,
+        },
+      ],
+      timestamp: new Date().toISOString(),
+    },
+    undefined,
+    quickActionComponents(ip),
+  );
 }
 
 /**
@@ -194,29 +255,38 @@ export function reportSecurityAlert(
     );
   }
 
-  sendDiscordEmbed("security", {
-    title: "🚨 AM Finder Security: Skor Scraping Tinggi",
-    color: 0xe74c3c, // Red
-    fields: [
-      { name: "🧠 Skor Risiko", value: `**${input.score}** / 100`, inline: true },
-      { name: "🌐 IP", value: `\`${ip}\``, inline: true },
-      { name: "🕵️ Device ID", value: `\`${input.did || "-"}\``, inline: true },
-      { name: "📄 Path", value: `\`${input.path || "-"}\``, inline: true },
-      { name: "🧩 Alasan Terdeteksi", value: input.reasons.join(", ") || "-", inline: false },
-      { name: "🖥️ User Agent", value: `\`${ua}\``, inline: false },
-      {
-        name: "⚡ Aksi Cepat (Blokir IP)",
-        value: `\`\`\`bash\ncurl -X POST https://<domain>/api/admin/block -H "Authorization: Bearer $AMF_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{"ip":"${ip}","reason":"Scraping tripwire (skor ${input.score})","ttlMinutes":60}'\n\`\`\``,
-        inline: false,
-      },
-      {
-        name: "🛡️ Catatan Keamanan",
-        value: "Serangan volumetrik besar harus ditahan di tingkat jaringan (Cloudflare / ufw), bukan hanya di aplikasi.",
-        inline: false,
-      },
-    ],
-    timestamp: new Date().toISOString(),
-  });
+  const block1h = quickActionUrl("block", ip, 60);
+  const blockPerm = quickActionUrl("block", ip, 0);
+  const unblock = quickActionUrl("unblock", ip, 0);
+
+  sendDiscordEmbed(
+    "security",
+    {
+      title: "🚨 AM Finder Security: Skor Scraping Tinggi",
+      color: 0xe74c3c, // Red
+      fields: [
+        { name: "🧠 Skor Risiko", value: `**${input.score}** / 100`, inline: true },
+        { name: "🌐 IP", value: `\`${ip}\``, inline: true },
+        { name: "🕵️ Device ID", value: `\`${input.did || "-"}\``, inline: true },
+        { name: "📄 Path", value: `\`${input.path || "-"}\``, inline: true },
+        { name: "🧩 Alasan Terdeteksi", value: input.reasons.join(", ") || "-", inline: false },
+        { name: "🖥️ User Agent", value: `\`${ua}\``, inline: false },
+        {
+          name: "⚡ Aksi Cepat 1-Klik (Tinggal Tap)",
+          value: `👉 [🚫 Blokir 1 Jam](${block1h}) • [🚫 Blokir Selamanya](${blockPerm}) • [✅ Buka Blokir](${unblock})\n*(Atau tap tombol di bawah pesan ini)*`,
+          inline: false,
+        },
+        {
+          name: "🛡️ Catatan Keamanan",
+          value: "Serangan volumetrik besar harus ditahan di tingkat jaringan (Cloudflare / ufw), bukan hanya di aplikasi.",
+          inline: false,
+        },
+      ],
+      timestamp: new Date().toISOString(),
+    },
+    undefined,
+    quickActionComponents(ip),
+  );
 }
 
 /**

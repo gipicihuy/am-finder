@@ -29,22 +29,29 @@ Sistem notifikasi dan alert terpusat ke Discord Webhook (dan Telegram khusus kun
 
 | Variabel Environment | Saluran / Tujuan | Keterangan |
 | --- | --- | --- |
-| `DISCORD_WEBHOOK_TIKTOK` | Webhook Pencarian TikTok | Log pencarian baru via URL video TikTok lengkap dengan info visitor |
+| `DISCORD_WEBHOOK_TIKTOK` / `DISCORD_WEBHOOK_TIKTOK_YOUTUBE` | Webhook Pencarian TikTok & YouTube | Log pencarian baru via URL video TikTok / YouTube lengkap dengan deteksi platform dan info visitor |
 | `DISCORD_WEBHOOK_SEARCH` | Webhook Pencarian Keyword | Log pencarian baru via kata kunci / query |
 | `DISCORD_WEBHOOK_WHATSAPP` | Webhook Saluran WA | Notifikasi saat preset berhasil diekstrak dari Saluran WhatsApp (dedupe 10m) |
 | `DISCORD_WEBHOOK_TELEGRAM` | Webhook Saluran Telegram | Notifikasi saat preset berhasil diekstrak dari Channel Telegram (dedupe 10m) |
 | `DISCORD_WEBHOOK_ERROR` | Webhook Server Error | Tangkapan error server & scraper (throttle 60s per error identik) |
 | `DISCORD_WEBHOOK_ACTIVITY` | Webhook Aktivitas Bot | Deteksi bot ringan, crawler verified, UA scraper, dan handshake gagal |
-| `DISCORD_WEBHOOK_SECURITY` | Webhook Security Alert | Alert flood/DDoS, lonjakan trafik global (RPS), dan tripwire scraping |
+| `DISCORD_WEBHOOK_SECURITY` | Webhook Security Alert | Alert flood/DDoS, lonjakan trafik global (RPS), dan tripwire scraping dengan tombol aksi 1-klik |
 | `TELEGRAM_BOT_TOKEN` | Bot Telegram | Token bot Telegram khusus beacon kunjungan biasa (`kind: visit`) |
 | `TELEGRAM_CHAT_ID` | Chat Telegram | ID chat penerima log kunjungan |
 
-### Konfigurasi Keamanan & Blokir IP
+### Konfigurasi Keamanan, Auto-Block & Quick-Action 1-Klik
+
+Alert security di Discord menyertakan **tombol aksi 1-klik** dan tautan bertanda tangan kriptografis (`sig`). Admin dapat langsung menekan tombol/link di Discord (HP atau PC) untuk:
+- `[🚫 Blokir 1 Jam]`
+- `[🚫 Blokir Selamanya]`
+- `[✅ Buka Blokir (Unblock)]`
+
+Tanpa perlu mengetik curl atau membuka terminal.
 
 | Variabel | Default | Keterangan |
 | --- | --- | --- |
 | `SECURITY_GLOBAL_RPS` | `60` | Ambang lonjakan request/detik seluruh server untuk memicu alert security |
-| `AUTO_BLOCK` | `0` | Set `1` untuk mengaktifkan pemblokiran IP otomatis bila penyerang memicu strike berulang / tripwire kritis |
+| `AUTO_BLOCK` | `1` | Set `1` untuk mengaktifkan pemblokiran IP otomatis bila penyerang memicu strike berulang / tripwire kritis |
 | `AUTO_BLOCK_MINUTES` | `60` | Durasi pemblokiran otomatis dalam satuan menit |
 
 ### Endpoint Admin IP Blocklist

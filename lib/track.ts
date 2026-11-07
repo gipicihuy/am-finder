@@ -208,8 +208,18 @@ export async function sendLog(
   }
 }
 
+export function detectPlatform(url: string): { name: string; tag: string; color: number } {
+  if (/(?:youtube\.com|youtu\.be|youtube-nocookie\.com)/i.test(url)) {
+    return { name: "YouTube", tag: "▶️ YouTube", color: 0xff0000 };
+  }
+  if (/(?:tiktok\.com|tt\.site)/i.test(url)) {
+    return { name: "TikTok", tag: "🎵 TikTok", color: 0x25f4ee };
+  }
+  return { name: "TikTok / YouTube", tag: "🎬 Video", color: 0x00d2d3 };
+}
+
 /**
- * Kirim log pencarian ke Discord webhook ("tiktok" untuk URL pencarian, "search" untuk keyword).
+ * Kirim log pencarian ke Discord webhook ("tiktok" untuk URL pencarian TikTok/YouTube, "search" untuk keyword).
  */
 export async function logSearchToDiscord(
   channel: "tiktok" | "search",
@@ -221,11 +231,12 @@ export async function logSearchToDiscord(
 
   if (channel === "tiktok") {
     const link = extra.link || "-";
-    console.log(`[track] search (tiktok) ip=${info.ip} city=${info.city} link=${link}`);
+    const platform = detectPlatform(link);
+    console.log(`[track] search (${platform.name.toLowerCase()}) ip=${info.ip} city=${info.city} link=${link}`);
     sendDiscordEmbed("tiktok", {
-      title: "🔎 Pencarian Baru (URL TikTok)",
-      description: `🔗 **Link Target**\n\`${link}\`\n\n${visitorDesc}`,
-      color: 0x25f4ee, // TikTok cyan
+      title: `🔎 Pencarian Baru (URL ${platform.name})`,
+      description: `🔗 **Link Target (${platform.name})**\n\`${link}\`\n\n${visitorDesc}`,
+      color: platform.color,
       timestamp: new Date().toISOString(),
     });
   } else {

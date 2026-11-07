@@ -34,6 +34,7 @@ export type DiscordPayload = {
   username?: string;
   avatar_url?: string;
   embeds?: DiscordEmbed[];
+  components?: unknown[];
 };
 
 // Batasan payload Discord API
@@ -146,6 +147,13 @@ function cleanEmbed(embed: DiscordEmbed): DiscordEmbed {
 }
 
 function getWebhookUrl(channel: DiscordChannel): string | null {
+  if (channel === "tiktok") {
+    const url =
+      process.env.DISCORD_WEBHOOK_TIKTOK_YOUTUBE?.trim() ||
+      process.env.DISCORD_WEBHOOK_VIDEO?.trim() ||
+      process.env.DISCORD_WEBHOOK_TIKTOK?.trim();
+    if (url && url.startsWith("https://discord.com/api/webhooks/")) return url;
+  }
   const envKey = `DISCORD_WEBHOOK_${channel.toUpperCase()}`;
   const url = process.env[envKey]?.trim();
   if (!url || !url.startsWith("https://discord.com/api/webhooks/")) return null;
@@ -158,12 +166,15 @@ async function executePost(
   payload: DiscordPayload,
 ): Promise<{ ok: boolean; status: number; retryAfterMs?: number }> {
   try {
-    const body = {
+    const body: Record<string, unknown> = {
       ...payload,
       content: truncate(payload.content, MAX_CONTENT) || undefined,
       embeds: payload.embeds?.map(cleanEmbed),
       allowed_mentions: { parse: [] },
     };
+    if (Array.isArray(payload.components) && payload.components.length > 0) {
+      body.components = payload.components;
+    }
 
     const res = await fetch(url, {
       method: "POST",
@@ -276,10 +287,12 @@ export function sendDiscordEmbed(
   channel: DiscordChannel,
   embed: DiscordEmbed,
   content?: string,
+  components?: unknown[],
 ): void {
   sendDiscord(channel, {
     content,
     embeds: [embed],
+    components,
   });
 }
 
