@@ -9,6 +9,8 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { clientIp } from "./ip";
+import { isBlocked, recordBlockedHit } from "./blocklist";
+import { reportBotActivity, reportSecurityAlert, trackBotnetPattern } from "./security";
 
 const CHALLENGE_TTL_MS = 90_000;
 const TICKET_TTL_MS = 120_000;
@@ -268,8 +270,14 @@ export function verifyHandshake(
   const bsig = typeof input.bsig === "string" ? input.bsig.toLowerCase() : "";
   const clientScore = typeof input.score === "number" ? input.score : 0;
 
-  if (!/^[a-f0-9]{24}$/i.test(cid) || did.length < 8 || did.length > 160) return { ok: false };
-  if (!/^[a-f0-9]{64}$/i.test(proof)) return { ok: false };
+  if (!/^[a-f0-9]{24}$/i.test(cid) || did.length < 8 || did.length > 160) {
+    reportBotActivity(clientIp(headers), "Handshake Parameter Tidak Valid", { path: "/api/v/handshake" });
+    return { ok: false };
+  }
+  if (!/^[a-f0-9]{64}$/i.test(proof)) {
+    reportBotActivity(clientIp(headers), "Proof PoW Tidak Valid", { path: "/api/v/handshake" });
+    return { ok: false };
+  }
   if (!/^[a-f0-9]{64}$/i.test(bsig)) return { ok: false };
 
   const s = store();
@@ -377,6 +385,12 @@ export function issuePoisonTicket(
     ua: headers.get("user-agent") || "-",
   });
 
+  reportBotActivity(clientIp(headers), "Honeypot Route Dipanggil", {
+    ua: headers.get("user-agent") || "-",
+    path: "/api/v/2b51359f",
+    score: 99,
+  });
+
   void sendSecurityAlert(headers, {
     score: 99,
     reasons: flag.reasons,
@@ -480,12 +494,20 @@ function verifyTicket(token: string, headers: Headers): { ok: true; ticket: Tick
 }
 
 export function scoreHeaders(headers: Headers): number {
+  const ip = clientIp(headers);
   const ua = headers.get("user-agent") || "";
-  if (GOOD_BOT.test(ua)) return 0;
+  if (GOOD_BOT.test(ua)) {
+    reportBotActivity(ip, "Good Bot Terverifikasi", { ua, score: 0 });
+    return 0;
+  }
 
   let score = 0;
   if (!ua) score += 30;
-  if (BAD_UA.test(ua)) score += 50;
+  if (BAD_UA.test(ua)) {
+    score += 50;
+    reportBotActivity(ip, "Scraper User-Agent", { ua, score: 50 });
+    trackBotnetPattern(ip, ua);
+  }
 
   // UA palsu / setengah browser: ngaku AppleWebKit tapi versi Chrome, Safari, atau Firefox tidak ada
   // (persis seperti yang dipakai skrip axios penyerang)
@@ -569,53 +591,21 @@ export function markSuspicious(
   return score;
 }
 
-function escapeMarkdown(value: string): string {
-  return value.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, "\\$&");
-}
-
 export async function sendSecurityAlert(
   headers: Headers,
   input: { score: number; reasons: string[]; did?: string; path?: string },
 ): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return;
-
-  const key = `alert:${clientIp(headers)}`;
-  const s = store();
-  const now = Date.now();
-  if ((s.alerts.get(key) || 0) > now) return;
-  s.alerts.set(key, now + 30_000);
-
-  const ua = (headers.get("user-agent") || "-").slice(0, 180);
-  const text = [
-    "🚨 *AM Finder Security*",
-    "",
-    `🧠 *Score* › ${input.score}`,
-    `🌐 *IP* › \`${escapeMarkdown(clientIp(headers))}\``,
-    `🕵️ *Device* › \`${escapeMarkdown(input.did || "-")}\``,
-    `📄 *Path* › \`${escapeMarkdown(input.path || "-")}\``,
-    `🧩 *Reason* › ${escapeMarkdown(input.reasons.join(", ") || "-")}`,
-    `🖥 *UA* › ${escapeMarkdown(ua)}`,
-  ].join("\n");
-
-  try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-      }),
-      signal: AbortSignal.timeout(4_000),
-    });
-  } catch {
-  }
+  // Pindahkan notifikasi keamanan ke Discord webhook channel "security"
+  reportSecurityAlert(headers, input);
 }
 
 export function guardRequest(request: Request): GuardResult {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return { ok: false, status: 403, error: "forbidden" };
+  }
+
   const url = new URL(request.url);
   const token =
     url.searchParams.get("t") ||

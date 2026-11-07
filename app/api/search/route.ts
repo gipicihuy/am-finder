@@ -22,6 +22,7 @@ import { getLocale } from "../../../lib/locale-server";
 import { apiText } from "../../../lib/api-text";
 import { guardRequest, poisonResponse } from "../../../lib/anti-scrape";
 import { clientIp } from "../../../lib/ip";
+import { isBlocked, recordBlockedHit } from "../../../lib/blocklist";
 import { reportServerError } from "../../../lib/discord";
 
 export const runtime = "nodejs";
@@ -113,6 +114,15 @@ function runVideo(
 }
 
 export async function GET(request: Request) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const locale = await getLocale();
   const guard = guardRequest(request);
   if (!guard.ok) {

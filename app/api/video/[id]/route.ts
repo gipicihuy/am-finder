@@ -6,6 +6,9 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { Readable } from "node:stream";
 import { contentDisposition, cleanSoundTitle } from "@/lib/audio";
+import { clientIp } from "@/lib/ip";
+import { isBlocked, recordBlockedHit } from "@/lib/blocklist";
+import { reportServerError } from "@/lib/discord";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -130,6 +133,15 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const { id } = await context.params;
   const isTiktokId = /^\d{15,20}$/.test(id);
   const isYtId = /^[\w-]{11}$/.test(id);
@@ -179,7 +191,8 @@ export async function GET(
   let ytResult: { filePath: string; title: string };
   try {
     ytResult = await ensureYoutubeVideo(id);
-  } catch {
+  } catch (err) {
+    reportServerError("/api/video", err, request);
     return new Response("Failed to download video", { status: 502 });
   }
 

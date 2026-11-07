@@ -1,4 +1,5 @@
 import { clientIp } from "./ip";
+import { onRateLimitPenalty, recordGlobalHit } from "./security";
 
 // Rate limiter in-memory, tiga lapis:
 //   1. burst      — jendela pendek, biar pemakaian normal (klik, scroll) tetap lega
@@ -103,7 +104,12 @@ function cooldownFor(strikes: number, baseMs: number): number {
 
 export type LimitResult = { ok: boolean; retryAfterSec: number };
 
-export function checkLimit(key: string, cfg: ScopeConfig, now = Date.now()): LimitResult {
+export function checkLimit(
+  key: string,
+  cfg: ScopeConfig,
+  now = Date.now(),
+  ua = "-",
+): LimitResult {
   const s = store();
   if (s.entries.size > MAX_KEYS || now - s.lastPrune > 60_000) prune(s, now);
 
@@ -147,6 +153,18 @@ export function checkLimit(key: string, cfg: ScopeConfig, now = Date.now()): Lim
     e.lastStrikeAt = now;
     const cooldown = cooldownFor(e.strikes, cfg.penaltyMs);
     e.blockedUntil = now + cooldown;
+
+    const colon = key.indexOf(":");
+    const scope = colon > -1 ? key.slice(0, colon) : "general";
+    const target = colon > -1 ? key.slice(colon + 1) : key;
+    if (!target.startsWith("amf_")) {
+      try {
+        onRateLimitPenalty(target, scope, e.sustained, cfg.penaltyAt, ua);
+      } catch {
+        /* abaikan error telemetry */
+      }
+    }
+
     e.sustained = 0;
     e.sustainedAt = now + cfg.sustainedMs;
     e.burst = 0;
@@ -180,7 +198,10 @@ export function limitByKey(key: string, scope: Scope): LimitResult {
 // Versi yang nerima Headers langsung — dipakai generateMetadata, yang cuma punya
 // Headers dari next/headers dan nggak punya objek Request.
 export function limitHeaders(headers: Headers, scope: Scope): LimitResult {
-  return checkLimit(`${scope}:${clientIp(headers)}`, SCOPES[scope]);
+  const ip = clientIp(headers);
+  const ua = headers.get("user-agent") || "-";
+  recordGlobalHit(ip);
+  return checkLimit(`${scope}:${ip}`, SCOPES[scope], Date.now(), ua);
 }
 
 export function tooManyRequests(retryAfterSec: number, message = "kebanyakan permintaan, coba lagi sebentar lagi"): Response {

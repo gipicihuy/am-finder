@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { issuePoisonTicket } from "../../../../lib/anti-scrape";
+import { clientIp } from "../../../../lib/ip";
+import { isBlocked, recordBlockedHit } from "../../../../lib/blocklist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +21,15 @@ function noStore(data: unknown, status = 200): Response {
 }
 
 export async function POST(request: Request) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   let body: Record<string, unknown> = {};
   try {
     body = (await request.json()) as Record<string, unknown>;

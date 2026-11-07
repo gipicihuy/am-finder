@@ -17,6 +17,8 @@ import {
 } from "../../../../../lib/find-core";
 import { quotaBlockedMs } from "../../../../../lib/tikwm-quota.js";
 import { SearchBusyError, normalizeQuery, searchCandidates } from "../../../../../lib/search-core";
+import { clientIp } from "../../../../../lib/ip";
+import { isBlocked, recordBlockedHit } from "../../../../../lib/blocklist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -129,6 +131,15 @@ async function handleSearch(
 }
 
 export async function GET(request: Request) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const requestUrl = new URL(request.url);
   const auth = authenticateApiKey(request.headers, requestUrl.searchParams.get("apikey"));
   if (!auth.ok) {

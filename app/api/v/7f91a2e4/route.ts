@@ -1,5 +1,7 @@
 import { issueChallenge, verifyHandshake } from "../../../../lib/anti-scrape";
 import { limitByIp, tooManyRequests } from "../../../../lib/rate-limit";
+import { clientIp } from "../../../../lib/ip";
+import { isBlocked, recordBlockedHit } from "../../../../lib/blocklist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +35,12 @@ function sameSiteOrigin(request: Request): boolean {
 }
 
 export async function POST(request: Request) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return noStore({ ok: false, error: "forbidden" }, 403);
+  }
+
   let body: Record<string, unknown> = {};
   try {
     body = (await request.json()) as Record<string, unknown>;

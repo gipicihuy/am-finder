@@ -11,6 +11,8 @@ import { getLocale } from "@/lib/locale-server";
 import { apiText } from "@/lib/api-text";
 import { clientIp } from "@/lib/ip";
 import { limitByIp, tooManyRequests } from "@/lib/rate-limit";
+import { isBlocked, recordBlockedHit } from "@/lib/blocklist";
+import { reportServerError } from "@/lib/discord";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -466,6 +468,15 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const { id } = await context.params;
   const locale = await getLocale();
   const isTiktokId = /^\d{15,20}$/.test(id);
@@ -482,9 +493,8 @@ export async function GET(
     return audioError(404, apiText(locale, "audioGone"));
   }
 
-  const ip = clientIp(request.headers) || "-";
   try {
-    await acquire(ip, request.signal);
+    await acquire(ip || "-", request.signal);
   } catch (error) {
     const reason = error instanceof Error ? error.message : "";
     if (reason === "busy-ip") {

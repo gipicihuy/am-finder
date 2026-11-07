@@ -7,5 +7,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { ensureAdminToken } = await import("./lib/api-keys");
     ensureAdminToken();
+    const { ensureBlocklist } = await import("./lib/blocklist");
+    ensureBlocklist();
   }
 }

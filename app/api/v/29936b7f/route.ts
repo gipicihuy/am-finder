@@ -1,10 +1,21 @@
 import { markSuspicious, scoreHeaders } from "../../../../lib/anti-scrape";
 import { limitByIp, tooManyRequests } from "../../../../lib/rate-limit";
+import { clientIp } from "../../../../lib/ip";
+import { isBlocked, recordBlockedHit } from "../../../../lib/blocklist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const ip = clientIp(request.headers);
+  if (isBlocked(ip)) {
+    recordBlockedHit(ip);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const limit = limitByIp(request, "security");
   if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
 
