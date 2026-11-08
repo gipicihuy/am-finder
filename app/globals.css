@@ -802,25 +802,14 @@ html[data-theme="light"] body::before {
 }
 
 .meta-grid {
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  border-top: 1px solid var(--border);
+  gap: 20px 22px;
 }
 
 .meta-item {
   min-width: 0;
-  padding: 16px 0;
-}
-
-.meta-item:nth-child(even) {
-  padding-left: 20px;
-  border-left: 1px solid var(--border);
-}
-
-.meta-item:nth-child(n + 3) {
-  border-top: 1px solid var(--border);
 }
 
 .meta-item dd.meta-num {
@@ -5209,4 +5198,9 @@ html[data-theme="light"] .history-pill.is-missing {
   color: var(--accent);
   color: color-mix(in srgb, var(--accent) 55%, var(--foreground));
   overflow-wrap: anywhere;
+}
+
+.meta-desc .meta-tag {
+  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 55%, var(--foreground));
 }

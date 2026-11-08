@@ -387,10 +387,25 @@ function StatIcon({ name }: { name: "account" | "comments" | "views" | "likes" }
   );
 }
 
-// Caption: hashtag di akhir dipisah ke baris sendiri, pemisah "||" diredupkan.
+// Caption: semua hashtag diwarnai di mana pun posisinya; kumpulan hashtag di
+// paling akhir dipisah ke baris sendiri. Pemisah "||" diredupkan.
+const HASHTAG = /#[\p{L}\p{N}_]+/gu;
+
+function withTags(text: string) {
+  return text.split(/(#[\p{L}\p{N}_]+)/u).map((chunk, i) =>
+    i % 2 === 1 ? (
+      <span key={i} className="meta-tag">
+        {chunk}
+      </span>
+    ) : (
+      chunk
+    ),
+  );
+}
+
 function Caption({ text }: { text: string }) {
-  const m = text.match(/(?:\s*#[^\s#]+)+\s*$/u);
-  const tags = m ? m[0].trim().split(/\s+/) : [];
+  const m = text.match(/(?:\s*#[\p{L}\p{N}_]+)+\s*$/u);
+  const tags = m ? (m[0].match(HASHTAG) ?? []) : [];
   const body = (m ? text.slice(0, m.index) : text).trim();
   const parts = body.split("||");
   return (
@@ -399,7 +414,7 @@ function Caption({ text }: { text: string }) {
         <p className="meta-desc">
           {parts.map((part, i) => (
             <span key={i}>
-              {part}
+              {withTags(part)}
               {i < parts.length - 1 ? <span className="cap-sep" aria-hidden="true">||</span> : null}
             </span>
           ))}
