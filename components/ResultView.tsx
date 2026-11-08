@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
 import { isYoutubeLink, youtubeId } from "@/lib/tiktok-link";
@@ -351,6 +351,65 @@ function formatTime(seconds: number): string {
   return `${m}:${sec}`;
 }
 
+type VideoKind = "portrait" | "square" | "landscape";
+
+// Rasio video menentukan ukuran & tata letak thumbnail:
+// 9:16 -> sempit & tinggi, 1:1 -> sedang, 16:9 / 4:3 -> lebar penuh di atas info.
+function videoKind(width?: number, height?: number): VideoKind {
+  if (!width || !height) return "portrait";
+  const r = width / height;
+  if (r >= 1.15) return "landscape";
+  if (r > 0.9) return "square";
+  return "portrait";
+}
+
+function StatIcon({ name }: { name: "account" | "comments" | "views" | "likes" }) {
+  const paths = {
+    account: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
+    comments: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />,
+    views: (
+      <>
+        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
+    likes: <path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z" />,
+  } as const;
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
+// Caption: hashtag di akhir dipisah ke baris sendiri, pemisah "||" diredupkan.
+function Caption({ text }: { text: string }) {
+  const m = text.match(/(?:\s*#[^\s#]+)+\s*$/u);
+  const tags = m ? m[0].trim().split(/\s+/) : [];
+  const body = (m ? text.slice(0, m.index) : text).trim();
+  const parts = body.split("||");
+  return (
+    <>
+      {body ? (
+        <p className="meta-desc">
+          {parts.map((part, i) => (
+            <span key={i}>
+              {part}
+              {i < parts.length - 1 ? <span className="cap-sep" aria-hidden="true">||</span> : null}
+            </span>
+          ))}
+        </p>
+      ) : null}
+      {tags.length ? <p className="meta-tags">{tags.join(" ")}</p> : null}
+    </>
+  );
+}
+
 function VideoPreview({
   src,
   poster,
@@ -561,6 +620,9 @@ function VideoPreview({
   if (!src && !poster) return null;
 
   const ratio = width && height ? `${width} / ${height}` : "9 / 16";
+  const kind = videoKind(width, height);
+  const vr = width && height ? width / height : 9 / 16;
+  const boxStyle = { aspectRatio: ratio, "--vr": vr } as CSSProperties;
 
   return (
     <>
@@ -568,12 +630,12 @@ function VideoPreview({
         <div className={`preview-backdrop${closing ? " is-closing" : ""}`} onClick={requestClose} />
       ) : null}
       {expanded ? (
-        <div className="video-preview video-preview-ghost" ref={ghostRef} style={{ aspectRatio: ratio }} aria-hidden="true" />
+        <div className={`video-preview video-preview-ghost vr-${kind}`} ref={ghostRef} style={boxStyle} aria-hidden="true" />
       ) : null}
       <div
-        className={`video-preview${expanded ? " is-open" : ""}${closing ? " is-closing" : ""}`}
+        className={`video-preview vr-${kind}${expanded ? " is-open" : ""}${closing ? " is-closing" : ""}`}
         ref={boxRef}
-        style={{ aspectRatio: ratio }}
+        style={boxStyle}
       >
       {expanded ? (
         <button type="button" className="video-close" onClick={requestClose} aria-label={ui.result.close}>
@@ -940,7 +1002,7 @@ export function ResultView({ result }: { result: FindResult }) {
     <>
       {result.video ? (
       <section className="video-meta" aria-label={ui.result.contentInfo}>
-        <div className="content-head">
+        <div className={`content-head is-${videoKind(result.video?.width, result.video?.height)}`}>
         <VideoPreview
           src={playUrl}
           poster={cover}
@@ -949,10 +1011,10 @@ export function ResultView({ result }: { result: FindResult }) {
           allowMotion={allowMotion}
         />
         <div className="content-main">
-        {description ? <p className="meta-desc">{description}</p> : null}
+        {description ? <Caption text={description} /> : null}
         <dl className="meta-grid">
             <div className="meta-item">
-              <dt>{ui.result.account}</dt>
+              <dt><StatIcon name="account" />{ui.result.account}</dt>
               <dd className="meta-account">
                 {avatar ? <img className="meta-avatar" src={avatar} alt="" loading="lazy" /> : null}
                 <span>{result.author || ui.result.noAccount}</span>
@@ -960,20 +1022,20 @@ export function ResultView({ result }: { result: FindResult }) {
             </div>
           {comments ? (
             <div className="meta-item">
-              <dt>{ui.result.comments}</dt>
-              <dd>{comments}</dd>
+              <dt><StatIcon name="comments" />{ui.result.comments}</dt>
+              <dd className="meta-num">{comments}</dd>
             </div>
           ) : null}
           {views ? (
             <div className="meta-item">
-              <dt>{ui.result.views}</dt>
-              <dd>{views}</dd>
+              <dt><StatIcon name="views" />{ui.result.views}</dt>
+              <dd className="meta-num">{views}</dd>
             </div>
           ) : null}
           {likes ? (
             <div className="meta-item">
-              <dt>{ui.result.likes}</dt>
-              <dd>{likes}</dd>
+              <dt><StatIcon name="likes" />{ui.result.likes}</dt>
+              <dd className="meta-num">{likes}</dd>
             </div>
           ) : null}
         </dl>

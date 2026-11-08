@@ -802,19 +802,48 @@ html[data-theme="light"] body::before {
 }
 
 .meta-grid {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 22px;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+
+.meta-item {
+  min-width: 0;
+  padding: 16px 0;
+}
+
+.meta-item:nth-child(even) {
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+
+.meta-item:nth-child(n + 3) {
+  border-top: 1px solid var(--border);
+}
+
+.meta-item dd.meta-num {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
 .meta-item dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.meta-item dt svg {
+  flex: none;
 }
 
 .meta-item dd {
@@ -1045,8 +1074,10 @@ html[data-theme="light"] body::before {
 }
 
 .video-preview {
+  --vr: 0.5625;
+  --vh: 380px;
   position: relative;
-  width: clamp(160px, 36vw, 210px);
+  width: min(100%, calc(var(--vh) * var(--vr)));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -1060,14 +1091,27 @@ html[data-theme="light"] body::before {
   z-index: 60;
 }
 
+.video-preview.vr-square {
+  --vh: 280px;
+}
+
+.video-preview.vr-landscape {
+  --vh: 250px;
+}
+
+/* landscape (16:9, 4:3): thumbnail lebar di atas, info di bawahnya */
+.content-head.is-landscape {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .video-preview.is-open {
   position: fixed;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: auto;
-  height: min(82vh, 620px);
-  max-width: 94vw;
+  width: min(94vw, calc(min(82vh, 620px) * var(--vr)));
+  height: auto;
   z-index: 61;
   border-color: var(--border);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
@@ -1892,7 +1936,6 @@ html[data-theme="light"] body::before {
   }
 
   .video-preview:not(.is-open) {
-    width: min(58vw, 220px);
     margin: 0 auto;
   }
 }
@@ -5152,4 +5195,18 @@ html[data-theme="light"] .history-pill.is-missing {
 .preset-row .btn-open .btn-ico {
   width: 18px;
   height: 18px;
+}
+
+.meta-desc .cap-sep {
+  margin: 0 0.4em;
+  opacity: 0.45;
+}
+
+.meta-tags {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 55%, var(--foreground));
+  overflow-wrap: anywhere;
 }
