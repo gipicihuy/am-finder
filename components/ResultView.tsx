@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
 import { soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
 import { isYoutubeLink, youtubeId } from "@/lib/tiktok-link";
@@ -469,12 +469,14 @@ function VideoPreview({
   width,
   height,
   allowMotion,
+  onMeasure,
 }: {
   src?: string;
   poster?: string;
   width?: number;
   height?: number;
   allowMotion: boolean;
+  onMeasure?: (width: number, height: number) => void;
 }) {
   const ui = useUi();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -707,6 +709,10 @@ function VideoPreview({
           playsInline
           disableRemotePlayback
           preload="metadata"
+          onLoadedMetadata={(event) => {
+            const v = event.currentTarget;
+            if (v.videoWidth && v.videoHeight) onMeasure?.(v.videoWidth, v.videoHeight);
+          }}
           aria-label={expanded ? (playing ? ui.result.pause : ui.result.play) : ui.result.openPreview}
           tabIndex={0}
           onClick={handleVideoClick}
@@ -727,7 +733,17 @@ function VideoPreview({
           }}
         />
       ) : (
-        <img src={poster} alt="" loading="lazy" title={ui.result.openPreview} onClick={openPreview} />
+        <img
+          src={poster}
+          alt=""
+          loading="lazy"
+          title={ui.result.openPreview}
+          onClick={openPreview}
+          onLoad={(event) => {
+            const img = event.currentTarget;
+            if (img.naturalWidth && img.naturalHeight) onMeasure?.(img.naturalWidth, img.naturalHeight);
+          }}
+        />
       )}
       {src ? (
         <>
@@ -810,6 +826,45 @@ function RatioFrame({ ratio }: { ratio?: string }) {
         {ratio || "XML"}
       </text>
     </svg>
+  );
+}
+
+// Ukuran dari data TikTok kadang kosong/keliru (video landscape terbaca potret),
+// jadi rasio preview mengikuti ukuran asli video setelah metadata terbaca.
+function VideoHead({
+  src,
+  poster,
+  width,
+  height,
+  allowMotion,
+  children,
+}: {
+  src?: string;
+  poster?: string;
+  width?: number;
+  height?: number;
+  allowMotion: boolean;
+  children: ReactNode;
+}) {
+  const [measured, setMeasured] = useState<{ key: string; w: number; h: number } | null>(null);
+  const key = src || poster || "";
+  const m = measured && measured.key === key ? measured : null;
+  const w = m?.w ?? width;
+  const h = m?.h ?? height;
+  return (
+    <div className={`content-head is-${videoKind(w, h)}`}>
+      <VideoPreview
+        src={src}
+        poster={poster}
+        width={w}
+        height={h}
+        allowMotion={allowMotion}
+        onMeasure={(mw, mh) =>
+          setMeasured((prev) => (prev && prev.key === key && prev.w === mw && prev.h === mh ? prev : { key, w: mw, h: mh }))
+        }
+      />
+      {children}
+    </div>
   );
 }
 
@@ -1056,14 +1111,13 @@ export function ResultView({ result }: { result: FindResult }) {
     <>
       {result.video ? (
       <section className="video-meta" aria-label={ui.result.contentInfo}>
-        <div className={`content-head is-${videoKind(result.video?.width, result.video?.height)}`}>
-        <VideoPreview
+        <VideoHead
           src={playUrl}
           poster={cover}
           width={result.video?.width}
           height={result.video?.height}
           allowMotion={allowMotion}
-        />
+        >
         <div className="content-main">
         {description ? <Caption text={description} /> : null}
         <dl className="meta-grid">
@@ -1109,7 +1163,7 @@ export function ResultView({ result }: { result: FindResult }) {
           ) : null}
         </dl>
         </div>
-        </div>
+        </VideoHead>
         {hasSound ? (
           <div className="sound-info">
             <div className="sound-row">
