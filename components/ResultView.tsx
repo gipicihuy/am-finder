@@ -363,7 +363,7 @@ function videoKind(width?: number, height?: number): VideoKind {
   return "portrait";
 }
 
-function StatIcon({ name }: { name: "account" | "comments" | "views" | "likes" }) {
+function StatIcon({ name, size = 14 }: { name: "account" | "comments" | "views" | "likes"; size?: number }) {
   const paths = {
     account: (
       <>
@@ -381,7 +381,7 @@ function StatIcon({ name }: { name: "account" | "comments" | "views" | "likes" }
     likes: <path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z" />,
   } as const;
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {paths[name]}
     </svg>
   );
@@ -1029,27 +1029,42 @@ export function ResultView({ result }: { result: FindResult }) {
         {description ? <Caption text={description} /> : null}
         <dl className="meta-grid">
             <div className="meta-item">
-              <dt><StatIcon name="account" />{ui.result.account}</dt>
+              <dt>
+                {avatar ? (
+                  <img className="meta-chip meta-chip-img" src={avatar} alt="" loading="lazy" />
+                ) : (
+                  <span className="meta-chip" aria-hidden="true"><StatIcon name="account" size={20} /></span>
+                )}
+                <span className="meta-label">{ui.result.account}</span>
+              </dt>
               <dd className="meta-account">
-                {avatar ? <img className="meta-avatar" src={avatar} alt="" loading="lazy" /> : null}
                 <span>{result.author || ui.result.noAccount}</span>
               </dd>
             </div>
           {comments ? (
             <div className="meta-item">
-              <dt><StatIcon name="comments" />{ui.result.comments}</dt>
+              <dt>
+                <span className="meta-chip" aria-hidden="true"><StatIcon name="comments" size={20} /></span>
+                <span className="meta-label">{ui.result.comments}</span>
+              </dt>
               <dd className="meta-num">{comments}</dd>
             </div>
           ) : null}
           {views ? (
             <div className="meta-item">
-              <dt><StatIcon name="views" />{ui.result.views}</dt>
+              <dt>
+                <span className="meta-chip" aria-hidden="true"><StatIcon name="views" size={20} /></span>
+                <span className="meta-label">{ui.result.views}</span>
+              </dt>
               <dd className="meta-num">{views}</dd>
             </div>
           ) : null}
           {likes ? (
             <div className="meta-item">
-              <dt><StatIcon name="likes" />{ui.result.likes}</dt>
+              <dt>
+                <span className="meta-chip" aria-hidden="true"><StatIcon name="likes" size={20} /></span>
+                <span className="meta-label">{ui.result.likes}</span>
+              </dt>
               <dd className="meta-num">{likes}</dd>
             </div>
           ) : null}

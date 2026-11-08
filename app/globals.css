@@ -802,37 +802,60 @@ html[data-theme="light"] body::before {
 }
 
 .meta-grid {
-  margin: 18px 0 0;
+  margin: 20px 0 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px 22px;
+  gap: 22px 20px;
 }
 
+/* chip ikon bulat di kiri, label + nilai bertumpuk di kanan */
 .meta-item {
   min-width: 0;
-}
-
-.meta-item dd.meta-num {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: 14px;
+  row-gap: 4px;
 }
 
 .meta-item dt {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
+  display: contents;
 }
 
-.meta-item dt svg {
-  flex: none;
+.meta-chip {
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
+.meta-chip-img {
+  object-fit: cover;
+  background: none;
+}
+
+.meta-label {
+  align-self: end;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.meta-item dd.meta-num {
+  align-self: start;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .meta-item dd {
@@ -845,9 +868,10 @@ html[data-theme="light"] body::before {
 }
 
 .meta-account {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  align-self: start;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .meta-avatar {
