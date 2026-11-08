@@ -812,7 +812,7 @@ html[data-theme="light"] body::before {
 .meta-item {
   min-width: 0;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-content: center;
   column-gap: 14px;
@@ -826,8 +826,8 @@ html[data-theme="light"] body::before {
 .meta-chip {
   grid-row: 1 / span 2;
   align-self: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -852,7 +852,7 @@ html[data-theme="light"] body::before {
 
 .meta-item dd.meta-num {
   align-self: start;
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 700;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;

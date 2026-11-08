@@ -1072,7 +1072,7 @@ export function ResultView({ result }: { result: FindResult }) {
                 {avatar ? (
                   <img className="meta-chip meta-chip-img" src={avatar} alt="" loading="lazy" />
                 ) : (
-                  <span className="meta-chip" aria-hidden="true"><StatIcon name="account" size={20} /></span>
+                  <span className="meta-chip" aria-hidden="true"><StatIcon name="account" size={18} /></span>
                 )}
                 <span className="meta-label">{ui.result.account}</span>
               </dt>
@@ -1083,7 +1083,7 @@ export function ResultView({ result }: { result: FindResult }) {
           {comments ? (
             <div className="meta-item">
               <dt>
-                <span className="meta-chip" aria-hidden="true"><StatIcon name="comments" size={20} /></span>
+                <span className="meta-chip" aria-hidden="true"><StatIcon name="comments" size={18} /></span>
                 <span className="meta-label">{ui.result.comments}</span>
               </dt>
               <dd className="meta-num">{comments}</dd>
@@ -1092,7 +1092,7 @@ export function ResultView({ result }: { result: FindResult }) {
           {views ? (
             <div className="meta-item">
               <dt>
-                <span className="meta-chip" aria-hidden="true"><StatIcon name="views" size={20} /></span>
+                <span className="meta-chip" aria-hidden="true"><StatIcon name="views" size={18} /></span>
                 <span className="meta-label">{ui.result.views}</span>
               </dt>
               <dd className="meta-num">{views}</dd>
@@ -1101,7 +1101,7 @@ export function ResultView({ result }: { result: FindResult }) {
           {likes ? (
             <div className="meta-item">
               <dt>
-                <span className="meta-chip" aria-hidden="true"><StatIcon name="likes" size={20} /></span>
+                <span className="meta-chip" aria-hidden="true"><StatIcon name="likes" size={18} /></span>
                 <span className="meta-label">{ui.result.likes}</span>
               </dt>
               <dd className="meta-num">{likes}</dd>
