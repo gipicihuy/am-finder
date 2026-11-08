@@ -376,7 +376,7 @@ function normName(s?: string | null): string {
 function isOwnSound(
   music: { author?: string; cover?: string | null } | null | undefined,
   avatar: string | null | undefined,
-  names: Array<string | undefined>,
+  names: Array<string | null | undefined>,
 ): boolean {
   if (!music) return false;
   const a = imageKey(avatar);
