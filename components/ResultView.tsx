@@ -351,6 +351,30 @@ function formatTime(seconds: number): string {
   return `${m}:${sec}`;
 }
 
+// Sound "asli" memakai foto akun sebagai cover, jadi cover disembunyikan agar
+// foto yang sama tidak tampil dua kali (akun + sound).
+const ORIGINAL_SOUND_TITLE =
+  /^\s*(suara asli|original (sound|audio)|originalton|son original|sonido original|som original|suono originale|оригинальный звук|原声|原創音訊|オリジナル楽曲)/i;
+
+function imageKey(url?: string | null): string {
+  if (!url) return "";
+  try {
+    const u = new URL(url, "https://x.invalid");
+    // host CDN berganti-ganti (p16/p19/p77...), jadi bandingkan path sebelum ukuran "~tplv".
+    return u.pathname.split("~")[0];
+  } catch {
+    return url.split("?")[0].split("~")[0];
+  }
+}
+
+function isOriginalSound(music: { original?: boolean; cover?: string | null; title?: string } | null | undefined, avatar?: string | null): boolean {
+  if (!music) return false;
+  if (music.original === true) return true;
+  if (music.title && ORIGINAL_SOUND_TITLE.test(music.title)) return true;
+  const a = imageKey(avatar);
+  return Boolean(a && a.length > 1 && a === imageKey(music.cover));
+}
+
 type VideoKind = "portrait" | "square" | "landscape";
 
 // Rasio video menentukan ukuran & tata letak thumbnail:
@@ -844,6 +868,7 @@ export function ResultView({ result }: { result: FindResult }) {
   const canDownloadAudio = Boolean(videoId && (soundAudio || videoAudio || isYt));
   const soundCover = soundCoverUrl(music?.cover) || (isYt ? cover : null);
   const hasSound = Boolean(soundTitle || soundAuthor || soundLink || canDownloadAudio);
+  const showSoundCover = Boolean(soundCover) && !coverFailed && !(!isYt && isOriginalSound(music, avatar));
 
   async function handleDownload() {
     if (!canDownloadAudio || !videoId || audioBusy) return;
@@ -1075,13 +1100,13 @@ export function ResultView({ result }: { result: FindResult }) {
           <div className="sound-info">
             <div className="sound-row">
               <span
-                className={`sound-icon${soundCover && !coverFailed ? " has-cover" : ""}`}
+                className={`sound-icon${showSoundCover ? " has-cover" : ""}`}
                 aria-hidden="true"
               >
-                {soundCover && !coverFailed ? (
+                {showSoundCover ? (
                   <img
                     className="sound-cover"
-                    src={soundCover}
+                    src={soundCover ?? undefined}
                     alt=""
                     loading="lazy"
                     decoding="async"

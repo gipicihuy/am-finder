@@ -906,18 +906,20 @@ html[data-theme="light"] body::before {
   flex: none;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   box-sizing: border-box;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
   color: var(--accent);
 }
 
 /* Dengan cover: foto tampil utuh, ikon not pindah jadi lencana di pojok kanan bawah. */
 .sound-icon.has-cover {
+  width: 54px;
+  height: 54px;
   border: 0;
+  border-radius: 10px;
   background: none;
 }
 
