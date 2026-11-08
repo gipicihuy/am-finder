@@ -351,11 +351,9 @@ function formatTime(seconds: number): string {
   return `${m}:${sec}`;
 }
 
-// Sound "asli" memakai foto akun sebagai cover, jadi cover disembunyikan agar
-// foto yang sama tidak tampil dua kali (akun + sound).
-const ORIGINAL_SOUND_TITLE =
-  /^\s*(suara asli|original (sound|audio)|originalton|son original|sonido original|som original|suono originale|оригинальный звук|原声|原創音訊|オリジナル楽曲)/i;
-
+// Cover sound disembunyikan HANYA bila sound itu milik akun pengunggah video ini
+// (cover-nya foto akun yang sama, jadi tampil dua kali). Sound dari akun/lagu
+// lain, termasuk "suara asli" milik orang lain, tetap menampilkan covernya.
 function imageKey(url?: string | null): string {
   if (!url) return "";
   try {
@@ -367,12 +365,28 @@ function imageKey(url?: string | null): string {
   }
 }
 
-function isOriginalSound(music: { original?: boolean; cover?: string | null; title?: string } | null | undefined, avatar?: string | null): boolean {
+function normName(s?: string | null): string {
+  return (s ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+function isOwnSound(
+  music: { author?: string; cover?: string | null } | null | undefined,
+  avatar: string | null | undefined,
+  names: Array<string | undefined>,
+): boolean {
   if (!music) return false;
-  if (music.original === true) return true;
-  if (music.title && ORIGINAL_SOUND_TITLE.test(music.title)) return true;
   const a = imageKey(avatar);
-  return Boolean(a && a.length > 1 && a === imageKey(music.cover));
+  if (a.length > 1 && a === imageKey(music.cover)) return true;
+  const author = normName(music.author);
+  if (author.length < 3) return false;
+  return names.some((n) => {
+    const x = normName(n);
+    return x.length >= 3 && (x === author || x.includes(author) || author.includes(x));
+  });
 }
 
 type VideoKind = "portrait" | "square" | "landscape";
@@ -868,7 +882,7 @@ export function ResultView({ result }: { result: FindResult }) {
   const canDownloadAudio = Boolean(videoId && (soundAudio || videoAudio || isYt));
   const soundCover = soundCoverUrl(music?.cover) || (isYt ? cover : null);
   const hasSound = Boolean(soundTitle || soundAuthor || soundLink || canDownloadAudio);
-  const showSoundCover = Boolean(soundCover) && !coverFailed && !(!isYt && isOriginalSound(music, avatar));
+  const showSoundCover = Boolean(soundCover) && !coverFailed && !(!isYt && isOwnSound(music, avatar, [result.author, result.authorDetail?.nickname, result.authorDetail?.uniqueId]));
 
   async function handleDownload() {
     if (!canDownloadAudio || !videoId || audioBusy) return;
