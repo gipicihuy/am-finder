@@ -335,8 +335,12 @@ export function notifyPresetSources(row: Record<string, unknown>, inputUrl: stri
   const shareLinks = Array.isArray(row.shareLinks) ? (row.shareLinks as Record<string, any>[]) : [];
   const otherLinks = Array.isArray(row.otherLinks) ? (row.otherLinks as Record<string, any>[]) : [];
 
+  const videoId = String(row.videoId || "").trim();
+  const videoKey = videoId || inputUrl;
+
   // 1. Saluran WhatsApp (jika ada preset dari saluran WA)
-  const waPresets = presets.filter((p) => p.source === "saluran WA" || p.source === "saluran");
+  const isWaSource = (s?: string) => /saluran\s*wa|whatsapp/i.test(String(s || ""));
+  const waPresets = presets.filter((p) => isWaSource(p.source));
   if (waPresets.length) {
     const chUrl =
       chInfo.url ||
@@ -347,8 +351,9 @@ export function notifyPresetSources(row: Record<string, unknown>, inputUrl: stri
     const chName = chInfo.name || (chCode ? `Channel ${chCode}` : "Saluran WhatsApp");
     const messageUrl = chInfo.messageUrl || (chCode ? `https://whatsapp.com/channel/${chCode}` : "");
 
-    const dedupKey = `wa:${chCode || chUrl || inputUrl}`;
-    if (!isDeduplicated(dedupKey, 10 * 60_000)) {
+    // Dedup unik per video + channel (TTL 60 detik)
+    const dedupKey = `wa:${videoKey}:${chCode || "channel"}`;
+    if (!isDeduplicated(dedupKey, 60_000)) {
       sendDiscordEmbed("whatsapp", {
         title: "📢 Berhasil Mengambil Preset dari Saluran WhatsApp!",
         color: 0x25d366, // WhatsApp green
@@ -368,9 +373,8 @@ export function notifyPresetSources(row: Record<string, unknown>, inputUrl: stri
   }
 
   // 2. Channel Telegram (jika ada preset dari saluran Telegram)
-  const tgPresets = presets.filter(
-    (p) => p.source === "telegram" || String(p.source || "").toLowerCase().includes("telegram"),
-  );
+  const isTgSource = (s?: string) => /telegram|t\.me/i.test(String(s || ""));
+  const tgPresets = presets.filter((p) => isTgSource(p.source));
   if (tgPresets.length) {
     const chUrl =
       chInfo.url ||
@@ -388,8 +392,9 @@ export function notifyPresetSources(row: Record<string, unknown>, inputUrl: stri
     const chName = chInfo.name || "Channel Telegram";
     const messageUrl = chInfo.messageUrl || chUrl || "";
 
-    const dedupKey = `tg:${chName || chUrl || inputUrl}`;
-    if (!isDeduplicated(dedupKey, 10 * 60_000)) {
+    // Dedup unik per video + channel (TTL 60 detik)
+    const dedupKey = `tg:${videoKey}:${chName || "channel"}`;
+    if (!isDeduplicated(dedupKey, 60_000)) {
       sendDiscordEmbed("telegram", {
         title: "📢 Berhasil Mengambil Preset dari Saluran Telegram!",
         color: 0x0088cc, // Telegram blue
@@ -408,8 +413,8 @@ export function notifyPresetSources(row: Record<string, unknown>, inputUrl: stri
   }
 
   // 3. Preset TikTok / YouTube ke channel Discord preset-from-tiktok-youtube (webhook "tiktok")
-  const dedupKey = `found:${inputUrl}`;
-  if (!isDeduplicated(dedupKey, 10 * 60_000)) {
+  const dedupKey = `found:${videoKey}`;
+  if (!isDeduplicated(dedupKey, 60_000)) {
     const platform = detectPlatform(inputUrl);
     sendDiscordEmbed("tiktok", {
       title: `🎉 Preset Ditemukan! (${platform.name})`,

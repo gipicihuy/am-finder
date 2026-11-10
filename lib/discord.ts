@@ -147,15 +147,35 @@ function cleanEmbed(embed: DiscordEmbed): DiscordEmbed {
 }
 
 function getWebhookUrl(channel: DiscordChannel): string | null {
-  if (channel === "tiktok") {
-    const url =
-      process.env.DISCORD_WEBHOOK_TIKTOK_YOUTUBE?.trim() ||
-      process.env.DISCORD_WEBHOOK_VIDEO?.trim() ||
-      process.env.DISCORD_WEBHOOK_TIKTOK?.trim();
-    if (url && url.startsWith("https://discord.com/api/webhooks/")) return url;
+  let url: string | undefined;
+  switch (channel) {
+    case "tiktok":
+      url =
+        process.env.DISCORD_WEBHOOK_TIKTOK_YOUTUBE?.trim() ||
+        process.env.DISCORD_WEBHOOK_VIDEO?.trim() ||
+        process.env.DISCORD_WEBHOOK_TIKTOK?.trim();
+      break;
+    case "whatsapp":
+      url = process.env.DISCORD_WEBHOOK_WHATSAPP?.trim();
+      break;
+    case "telegram":
+      url = process.env.DISCORD_WEBHOOK_TELEGRAM?.trim();
+      break;
+    case "search":
+      url = process.env.DISCORD_WEBHOOK_SEARCH?.trim();
+      break;
+    case "error":
+      url = process.env.DISCORD_WEBHOOK_ERROR?.trim();
+      break;
+    case "activity":
+      url = process.env.DISCORD_WEBHOOK_ACTIVITY?.trim();
+      break;
+    case "security":
+      url = process.env.DISCORD_WEBHOOK_SECURITY?.trim();
+      break;
+    default:
+      url = process.env[`DISCORD_WEBHOOK_${String(channel).toUpperCase()}`]?.trim();
   }
-  const envKey = `DISCORD_WEBHOOK_${channel.toUpperCase()}`;
-  const url = process.env[envKey]?.trim();
   if (!url || !url.startsWith("https://discord.com/api/webhooks/")) return null;
   return url;
 }
@@ -180,7 +200,7 @@ async function executePost(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (res.status === 429) {
@@ -234,8 +254,8 @@ async function drainQueue(url: string, state: WebhookState): Promise<void> {
       state.count += 1;
       const res = await executePost(item.url, item.channel, item.payload);
 
-      if (res.status === 429 && item.attempt === 0) {
-        // Retry max 1x setelah delay retryAfter
+      if ((!res.ok || res.status === 429) && item.attempt < 2) {
+        // Retry max 2x setelah jeda singkat
         item.attempt += 1;
         state.queue.unshift(item);
         const wait = Math.min(res.retryAfterMs || 1500, 5000);
