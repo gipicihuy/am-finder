@@ -207,6 +207,8 @@
     "thisVideo": "video ini",
     "videoFallback": "Video TikTok",
     "noCaption": "Tanpa keterangan",
+    "noPresetTag": "Tanpa preset",
+    "commentsOffTag": "Komentar dimatikan",
     "showMore": "Tampilkan lebih banyak",
     "backLabel": "Kembali ke daftar video",
     "back": "Kembali",
@@ -223,7 +225,6 @@
     "found": "{count} preset ditemukan",
     "foundOne": "1 preset ditemukan",
     "view": "Lihat",
-    "missing": "Preset tidak ditemukan, otomatis kembali ke hasil pencarian",
     "waLabel": "Saluran WhatsApp AM Finder",
     "waTitle": "Join saluran wa AM Finder",
     "waBody": "Agar mendapatkan info update terbaru"

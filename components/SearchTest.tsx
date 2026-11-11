@@ -6,7 +6,6 @@ import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { FoundToast } from "@/components/FoundToast";
-import { NoticeToast } from "@/components/NoticeToast";
 import { ArrowRuleOrnament, GridIcon, ListIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
@@ -212,7 +211,6 @@ export default function SearchTest({
   const sugIndexLoading = useRef<Promise<void> | null>(null);
   const [cands, setCands] = useState<Candidate[]>([]);
   const [candLimit, setCandLimit] = useState(3);
-  const [missNotice, setMissNotice] = useState<{ id: number; text: string } | null>(null);
   const [view, setView] = useState<"list" | "grid">("list");
   const [lastUrl, setLastUrl] = useState("");
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -907,14 +905,28 @@ export default function SearchTest({
   useEffect(() => {
     if (!openUrl || current?.state !== "done" || !current.result) return;
     if ((current.result.presetLinks?.length ?? 0) > 0) return;
-    const commentsDisabled = current.result.checked?.commentsDisabled === true;
-    const text = commentsDisabled
-      ? ui.states.commentsDisabled
-      : ui.toast.missing;
-    setMissNotice({ id: Date.now(), text });
     closeVideo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openUrl, current?.state]);
+
+  function missTag(url: string): string {
+    const d = details[url];
+    if (d?.state !== "done" || !d.result) return "";
+    if ((d.result.presetLinks?.length ?? 0) > 0) return "";
+    return d.result.checked?.commentsDisabled === true ? ui.search.commentsOffTag : ui.search.noPresetTag;
+  }
+
+  const missPill: React.CSSProperties = {
+    alignSelf: "flex-start",
+    display: "inline-block",
+    marginTop: 6,
+    padding: "2px 8px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#E0A030",
+    background: "rgba(224, 160, 48, 0.14)",
+  };
   const suggestQuery = q.trim();
   const suggestPanel =
     sugOpen && suggests.length > 0 ? (
@@ -1137,8 +1149,12 @@ export default function SearchTest({
                   }}
                   type="button"
                   aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
-                  onClick={() => openVideo(c.url)}
+                  aria-disabled={missTag(c.url) ? true : undefined}
+                  onClick={() => {
+                    if (!missTag(c.url)) openVideo(c.url);
+                  }}
                   style={{
+                    opacity: missTag(c.url) ? 0.6 : 1,
                     viewTransitionName: vtName(c.url),
                     display: "flex",
                     flexDirection: "column",
@@ -1171,6 +1187,7 @@ export default function SearchTest({
                   >
                     {c.snippet || ui.search.noCaption}
                   </span>
+                  {missTag(c.url) ? <span style={missPill}>{missTag(c.url)}</span> : null}
                 </button>
               ) : (
                 <button
@@ -1180,8 +1197,12 @@ export default function SearchTest({
                   }}
                   type="button"
                   aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
-                  onClick={() => openVideo(c.url)}
+                  aria-disabled={missTag(c.url) ? true : undefined}
+                  onClick={() => {
+                    if (!missTag(c.url)) openVideo(c.url);
+                  }}
                   style={{
+                    opacity: missTag(c.url) ? 0.6 : 1,
                     viewTransitionName: vtName(c.url),
                     display: "flex",
                     alignItems: "center",
@@ -1216,6 +1237,7 @@ export default function SearchTest({
                     >
                       {c.snippet || ui.search.noCaption}
                     </span>
+                    {missTag(c.url) ? <span style={missPill}>{missTag(c.url)}</span> : null}
                   </span>
                   <ChevronRight />
                 </button>
@@ -1290,14 +1312,6 @@ export default function SearchTest({
             <FoundToast count={current.result?.presetLinks?.length ?? 0} />
           ) : null}
         </>
-      )}
-
-      {missNotice && (
-        <NoticeToast
-          key={missNotice.id}
-          text={missNotice.text}
-          onDone={() => setMissNotice(null)}
-        />
       )}
     </div>
   );

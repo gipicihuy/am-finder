@@ -207,6 +207,8 @@
     "thisVideo": "此视频",
     "videoFallback": "TikTok 视频",
     "noCaption": "无描述",
+    "noPresetTag": "无预设",
+    "commentsOffTag": "评论已关闭",
     "showMore": "显示更多",
     "backLabel": "返回视频列表",
     "back": "返回",
@@ -223,7 +225,6 @@
     "found": "找到 {count} 个预设",
     "foundOne": "找到 1 个预设",
     "view": "查看",
-    "missing": "未找到预设，已自动返回搜索结果",
     "waLabel": "AM Finder WhatsApp 频道",
     "waTitle": "加入 AM Finder WhatsApp 频道",
     "waBody": "获取最新动态"

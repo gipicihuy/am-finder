@@ -2115,21 +2115,6 @@ html[data-theme="light"] body::before {
   animation: found-toast-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.found-toast-warn {
-  border-left-color: #ffb020;
-  background: #3a2a14;
-  color: #ffe9c2;
-  white-space: normal;
-}
-
-.found-toast-warn:hover {
-  background: #45321a;
-}
-
-.found-toast-warn .found-toast-action {
-  color: #ffb020;
-}
-
 .found-toast:hover {
   background: #21443c;
 }
