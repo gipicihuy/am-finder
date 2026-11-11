@@ -223,6 +223,9 @@
     "found": "{count} preset ditemukan",
     "foundOne": "1 preset ditemukan",
     "view": "Lihat",
+    "missing": "Preset tidak ditemukan, otomatis kembali ke hasil pencarian",
+    "updateAvailable": "Pembaruan baru tersedia",
+    "updateReload": "Muat ulang",
     "waLabel": "Saluran WhatsApp AM Finder",
     "waTitle": "Join saluran wa AM Finder",
     "waBody": "Agar mendapatkan info update terbaru"

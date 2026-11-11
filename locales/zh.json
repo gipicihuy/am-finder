@@ -223,6 +223,9 @@
     "found": "找到 {count} 个预设",
     "foundOne": "找到 1 个预设",
     "view": "查看",
+    "missing": "未找到预设，已自动返回搜索结果",
+    "updateAvailable": "有新版本可用",
+    "updateReload": "重新加载",
     "waLabel": "AM Finder WhatsApp 频道",
     "waTitle": "加入 AM Finder WhatsApp 频道",
     "waBody": "获取最新动态"

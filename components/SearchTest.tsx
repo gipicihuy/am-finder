@@ -6,6 +6,7 @@ import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { FoundToast } from "@/components/FoundToast";
+import { NoticeToast } from "@/components/NoticeToast";
 import { ArrowRuleOrnament, GridIcon, ListIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
@@ -211,6 +212,7 @@ export default function SearchTest({
   const sugIndexLoading = useRef<Promise<void> | null>(null);
   const [cands, setCands] = useState<Candidate[]>([]);
   const [candLimit, setCandLimit] = useState(3);
+  const [missNotice, setMissNotice] = useState<{ id: number; text: string } | null>(null);
   const [view, setView] = useState<"list" | "grid">("list");
   const [lastUrl, setLastUrl] = useState("");
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -512,7 +514,7 @@ export default function SearchTest({
       sugSuppressRef.current = (saved.q || "").trim();
       setQ(saved.q || "");
       setSearchedQuery(saved.query || "");
-      setCandLimit(saved.limit || 3);
+      setCandLimit(Math.max(saved.limit || 3, saved.cands.length));
       setLastUrl(saved.last || "");
       const last: string = saved.last || "";
       const y: number = saved.y || 0;
@@ -741,7 +743,7 @@ export default function SearchTest({
       }
       setCands(items);
       setLastUrl("");
-      const limit = view === "grid" ? 4 : 3;
+      const limit = items.length;
       setCandLimit(limit);
       setSearchedQuery(query);
       setDetails({});
@@ -901,6 +903,18 @@ export default function SearchTest({
 
   const current = openUrl ? details[openUrl] : undefined;
   const candidate = cands.find((c) => c.url === openUrl);
+
+  useEffect(() => {
+    if (!openUrl || current?.state !== "done" || !current.result) return;
+    if ((current.result.presetLinks?.length ?? 0) > 0) return;
+    const commentsDisabled = current.result.checked?.commentsDisabled === true;
+    const text = commentsDisabled
+      ? ui.states.commentsDisabled
+      : ui.toast.missing;
+    setMissNotice({ id: Date.now(), text });
+    closeVideo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openUrl, current?.state]);
   const suggestQuery = q.trim();
   const suggestPanel =
     sugOpen && suggests.length > 0 ? (
@@ -1276,6 +1290,14 @@ export default function SearchTest({
             <FoundToast count={current.result?.presetLinks?.length ?? 0} />
           ) : null}
         </>
+      )}
+
+      {missNotice && (
+        <NoticeToast
+          key={missNotice.id}
+          text={missNotice.text}
+          onDone={() => setMissNotice(null)}
+        />
       )}
     </div>
   );

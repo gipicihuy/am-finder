@@ -223,6 +223,9 @@
     "found": "{count} presets found",
     "foundOne": "1 preset found",
     "view": "View",
+    "missing": "Preset not found, returning to search results",
+    "updateAvailable": "A new update is available",
+    "updateReload": "Reload",
     "waLabel": "AM Finder WhatsApp channel",
     "waTitle": "Join the AM Finder WhatsApp channel",
     "waBody": "Get the latest updates"
