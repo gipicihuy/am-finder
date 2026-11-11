@@ -3,7 +3,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SupportModal } from "@/components/SupportModal";
 import { WaChannelToast } from "@/components/WaChannelToast";
-import { UpdateNotice } from "@/components/UpdateNotice";
 import { PremiumPromo } from "@/components/PremiumPromo";
 import { AntiScrapeGuard } from "@/components/AntiScrapeGuard";
 import { LocaleProvider } from "@/components/LocaleProvider";
@@ -119,7 +118,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <SiteFooter />
           <SupportModal />
           <WaChannelToast />
-          <UpdateNotice />
           <PremiumPromo />
           <AntiScrapeGuard />
         </LocaleProvider>
