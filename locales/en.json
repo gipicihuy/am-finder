@@ -209,7 +209,7 @@
     "noCaption": "No caption",
     "noPresetTag": "Not found",
     "missModalTitle": "Preset not found",
-    "missModalText": "We couldn't find a preset link in this video. The creator may not have included it, or it may be somewhere else. Try another video from the list.",
+    "missModalText": "No preset link was found in this video's caption or comments. Try picking another video!",
     "commentsOffTag": "Comments off",
     "showMore": "Show more",
     "backLabel": "Back to video list",

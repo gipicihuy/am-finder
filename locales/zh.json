@@ -209,7 +209,7 @@
     "noCaption": "无描述",
     "noPresetTag": "未找到",
     "missModalTitle": "未找到预设",
-    "missModalText": "在此视频中未找到预设链接。创作者可能没有附上，或链接在其他位置。请试试列表中的其他视频。",
+    "missModalText": "在此视频的文案和评论中都没有找到预设链接。试试选择其他视频吧！",
     "commentsOffTag": "评论已关闭",
     "showMore": "显示更多",
     "backLabel": "返回视频列表",
