@@ -185,9 +185,12 @@ function CandThumb({
   isActive,
   isPlaying,
   isMuted,
+  userMutedChoice,
   onToggleMute,
   onPlaying,
+  onEnded,
   onError,
+  onVolumeChange,
   videoRef,
   unmuteLabel,
   muteLabel,
@@ -200,9 +203,12 @@ function CandThumb({
   isActive?: boolean;
   isPlaying?: boolean;
   isMuted?: boolean;
+  userMutedChoice?: boolean | null;
   onToggleMute?: () => void;
   onPlaying?: () => void;
+  onEnded?: () => void;
   onError?: () => void;
+  onVolumeChange?: (muted: boolean) => void;
   videoRef?: React.RefObject<HTMLVideoElement | null>;
   unmuteLabel?: string;
   muteLabel?: string;
@@ -254,14 +260,24 @@ function CandThumb({
         <video
           ref={videoRef}
           src={playUrl}
-          muted={isMuted}
-          loop
           playsInline
           autoPlay
           onLoadedMetadata={(e) => {
-            e.currentTarget.muted = isMuted ?? true;
+            const v = e.currentTarget;
+            const shouldMute = userMutedChoice === true;
+            v.muted = shouldMute;
+            v.play().catch(() => {
+              if (!shouldMute) {
+                v.muted = true;
+                v.play().catch(() => {});
+              }
+            });
+          }}
+          onVolumeChange={(e) => {
+            onVolumeChange?.(e.currentTarget.muted);
           }}
           onPlaying={onPlaying}
+          onEnded={onEnded}
           onError={onError}
           style={{
             position: "absolute",
@@ -380,14 +396,17 @@ export default function SearchTest({
 
   const [activePlayUrl, setActivePlayUrl] = useState<string>("");
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
 
   const activePlayUrlRef = useRef("");
   const isVideoPlayingRef = useRef(false);
-  const isMutedRef = useRef(true);
+  const isMutedRef = useRef(false);
+  const userMutedChoiceRef = useRef<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
   const failedUrlsRef = useRef<Set<string>>(new Set());
   const viewRef = useRef<"list" | "grid">(view);
   const candsRef = useRef<Candidate[]>(cands);
@@ -445,26 +464,48 @@ export default function SearchTest({
     return true;
   };
 
-  const evaluateFocus = () => {
-    if (!canAutoPlay()) {
-      if (videoRef.current && !videoRef.current.paused) {
-        videoRef.current.pause();
-      }
-      return;
-    }
+  const isCardInZone = (url: string): boolean => {
+    if (!url) return false;
+    const c = candsRef.current.find((item) => item.url === url);
+    if (!c || !c.playUrl || isUrlExpired(c.playUrl)) return false;
+    if (missTag(url)) return false;
+    if (failedUrlsRef.current.has(url)) return false;
+
+    const el = cardRefs.current[url];
+    if (!el || el.offsetParent === null) return false;
+
+    const rect = el.getBoundingClientRect();
+    if (rect.height <= 0 || rect.width <= 0) return false;
 
     const vh = window.innerHeight || document.documentElement.clientHeight;
-    if (vh <= 0) return;
+    if (vh <= 0) return false;
+
+    const visibleTop = Math.max(0, rect.top);
+    const visibleBottom = Math.min(vh, rect.bottom);
+    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+    if (visibleHeight / rect.height < 0.75) return false;
+
+    const midY = rect.top + rect.height / 2;
+    if (midY < 0.15 * vh || midY > 0.65 * vh) return false;
+
+    return true;
+  };
+
+  type QualifyingCard = {
+    url: string;
+    rect: DOMRect;
+    midY: number;
+  };
+
+  const getQualifyingCardsInZone = (): QualifyingCard[] => {
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    if (vh <= 0) return [];
 
     const displayed = candsRef.current.slice(0, candLimitRef.current);
-    type Qualifying = {
-      url: string;
-      rect: DOMRect;
-      midY: number;
-    };
-    const qualifying: Qualifying[] = [];
+    const list: QualifyingCard[] = [];
 
-    for (const c of displayed) {
+    for (let i = 0; i < displayed.length; i++) {
+      const c = displayed[i];
       if (!c.playUrl || isUrlExpired(c.playUrl)) continue;
       if (missTag(c.url)) continue;
       if (failedUrlsRef.current.has(c.url)) continue;
@@ -478,24 +519,45 @@ export default function SearchTest({
       const visibleTop = Math.max(0, rect.top);
       const visibleBottom = Math.min(vh, rect.bottom);
       const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-      const visibleRatio = visibleHeight / rect.height;
-
-      if (visibleRatio < 0.75) continue;
+      if (visibleHeight / rect.height < 0.75) continue;
 
       const midY = rect.top + rect.height / 2;
       if (midY < 0.15 * vh || midY > 0.65 * vh) continue;
 
-      qualifying.push({ url: c.url, rect, midY });
+      list.push({ url: c.url, rect, midY });
     }
 
+    return list;
+  };
+
+  const evaluateFocus = () => {
+    if (!canAutoPlay()) {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      return;
+    }
+
+    if (activePlayUrlRef.current && isCardInZone(activePlayUrlRef.current)) {
+      if (videoRef.current && videoRef.current.paused) {
+        videoRef.current.play().catch(() => {});
+      }
+      return;
+    }
+
+    const qualifying = getQualifyingCardsInZone();
     if (qualifying.length === 0) {
       if (activePlayUrlRef.current) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
         setActivePlayUrl("");
         setIsVideoPlaying(false);
       }
       return;
     }
 
+    const vh = window.innerHeight || document.documentElement.clientHeight;
     const targetY = 0.40 * vh;
     qualifying.sort((a, b) => {
       const distA = Math.abs(a.midY - targetY);
@@ -517,12 +579,86 @@ export default function SearchTest({
     }
   };
 
+  const advanceNextCard = () => {
+    if (maxPlayTimerRef.current) {
+      clearTimeout(maxPlayTimerRef.current);
+      maxPlayTimerRef.current = null;
+    }
+
+    if (!canAutoPlay()) {
+      if (activePlayUrlRef.current) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+        setActivePlayUrl("");
+        setIsVideoPlaying(false);
+      }
+      return;
+    }
+
+    const qualifying = getQualifyingCardsInZone();
+    if (qualifying.length === 0) {
+      if (activePlayUrlRef.current) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+        setActivePlayUrl("");
+        setIsVideoPlaying(false);
+      }
+      return;
+    }
+
+    qualifying.sort((a, b) => {
+      if (Math.abs(a.rect.top - b.rect.top) > 10) {
+        return a.rect.top - b.rect.top;
+      }
+      return a.rect.left - b.rect.left;
+    });
+
+    const currentUrl = activePlayUrlRef.current;
+    if (qualifying.length === 1 && qualifying[0].url === currentUrl) {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+        if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
+        maxPlayTimerRef.current = setTimeout(() => {
+          advanceNextCard();
+        }, 15000);
+      }
+      return;
+    }
+
+    const currentIndex = qualifying.findIndex((q) => q.url === currentUrl);
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % qualifying.length : 0;
+    const nextUrl = qualifying[nextIndex].url;
+
+    if (nextUrl === currentUrl) {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+        if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
+        maxPlayTimerRef.current = setTimeout(() => {
+          advanceNextCard();
+        }, 15000);
+      }
+    } else {
+      setActivePlayUrl(nextUrl);
+      setIsVideoPlaying(false);
+    }
+  };
+
   const handleVideoPlaying = () => {
     if (playTimeoutRef.current) {
       clearTimeout(playTimeoutRef.current);
       playTimeoutRef.current = null;
     }
     setIsVideoPlaying(true);
+    if (maxPlayTimerRef.current) {
+      clearTimeout(maxPlayTimerRef.current);
+    }
+    maxPlayTimerRef.current = setTimeout(() => {
+      advanceNextCard();
+    }, 15000);
   };
 
   const handleVideoError = (failedUrl: string) => {
@@ -530,38 +666,36 @@ export default function SearchTest({
       clearTimeout(playTimeoutRef.current);
       playTimeoutRef.current = null;
     }
+    if (maxPlayTimerRef.current) {
+      clearTimeout(maxPlayTimerRef.current);
+      maxPlayTimerRef.current = null;
+    }
     failedUrlsRef.current.add(failedUrl);
     if (activePlayUrlRef.current === failedUrl) {
       setActivePlayUrl("");
       setIsVideoPlaying(false);
     }
     requestAnimationFrame(() => {
-      evaluateFocus();
+      advanceNextCard();
     });
   };
 
   const handleToggleMute = () => {
-    const next = !isMuted;
-    if (!next) {
-      if (videoRef.current) {
-        videoRef.current.muted = false;
-        videoRef.current.play().then(() => {
-          setIsMuted(false);
-        }).catch(() => {
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(() => {});
-          }
+    if (!videoRef.current) return;
+    const currentMuted = videoRef.current.muted;
+    const targetMuted = !currentMuted;
+    userMutedChoiceRef.current = targetMuted;
+    videoRef.current.muted = targetMuted;
+    setIsMuted(targetMuted);
+    if (!targetMuted) {
+      videoRef.current.play().catch(() => {
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          userMutedChoiceRef.current = true;
           setIsMuted(true);
-        });
-      } else {
-        setIsMuted(false);
-      }
-    } else {
-      if (videoRef.current) {
-        videoRef.current.muted = true;
-      }
-      setIsMuted(true);
+          videoRef.current.play().catch(() => {});
+        }
+      });
     }
   };
 
@@ -569,6 +703,10 @@ export default function SearchTest({
     if (playTimeoutRef.current) {
       clearTimeout(playTimeoutRef.current);
       playTimeoutRef.current = null;
+    }
+    if (maxPlayTimerRef.current) {
+      clearTimeout(maxPlayTimerRef.current);
+      maxPlayTimerRef.current = null;
     }
     setIsVideoPlaying(false);
 
@@ -577,9 +715,17 @@ export default function SearchTest({
       playTimeoutRef.current = setTimeout(() => {
         handleVideoError(currentUrl);
       }, 8000);
+
+      const shouldMute = userMutedChoiceRef.current === true;
+      setIsMuted(shouldMute);
       if (videoRef.current) {
-        videoRef.current.muted = isMutedRef.current;
-        videoRef.current.play().catch(() => {});
+        videoRef.current.muted = shouldMute;
+        videoRef.current.play().catch((err: unknown) => {
+          if (!shouldMute && videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          }
+        });
       }
     }
 
@@ -588,15 +734,45 @@ export default function SearchTest({
         clearTimeout(playTimeoutRef.current);
         playTimeoutRef.current = null;
       }
+      if (maxPlayTimerRef.current) {
+        clearTimeout(maxPlayTimerRef.current);
+        maxPlayTimerRef.current = null;
+      }
     };
   }, [activePlayUrl]);
 
   useEffect(() => {
+    const checkActiveCardDuringScroll = () => {
+      scrollRafRef.current = null;
+      if (!canAutoPlay()) {
+        if (activePlayUrlRef.current) {
+          if (videoRef.current && !videoRef.current.paused) {
+            videoRef.current.pause();
+          }
+          setActivePlayUrl("");
+          setIsVideoPlaying(false);
+        }
+        return;
+      }
+      const currentUrl = activePlayUrlRef.current;
+      if (currentUrl) {
+        if (!isCardInZone(currentUrl)) {
+          if (videoRef.current && !videoRef.current.paused) {
+            videoRef.current.pause();
+          }
+          setActivePlayUrl("");
+          setIsVideoPlaying(false);
+        }
+      }
+    };
+
     const onScroll = () => {
       if (viewRef.current !== "grid") return;
-      if (videoRef.current && !videoRef.current.paused) {
-        videoRef.current.pause();
+
+      if (scrollRafRef.current === null) {
+        scrollRafRef.current = requestAnimationFrame(checkActiveCardDuringScroll);
       }
+
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
       scrollTimerRef.current = setTimeout(() => {
         evaluateFocus();
@@ -606,6 +782,10 @@ export default function SearchTest({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     };
   }, []);
@@ -667,7 +847,7 @@ export default function SearchTest({
       setActivePlayUrl("");
       setIsVideoPlaying(false);
     } else {
-      setIsMuted(true);
+      setIsMuted(userMutedChoiceRef.current ?? false);
       if (canAutoPlay()) {
         evaluateFocus();
       }
@@ -1122,6 +1302,9 @@ export default function SearchTest({
     setActivePlayUrl("");
     setIsVideoPlaying(false);
     failedUrlsRef.current.clear();
+    userMutedChoiceRef.current = null;
+    setIsMuted(false);
+    isMutedRef.current = false;
     snapRef.current = { q: "", query: "", cands: [], limit: 3, last: "" };
     try {
       sessionStorage.removeItem(STATE_KEY);
@@ -1226,6 +1409,9 @@ export default function SearchTest({
         return;
       }
       failedUrlsRef.current.clear();
+      userMutedChoiceRef.current = null;
+      setIsMuted(false);
+      isMutedRef.current = false;
       setCands(items);
       setLastUrl("");
       const limit = items.length;
@@ -1372,7 +1558,7 @@ export default function SearchTest({
   }
 
   function closeVideo() {
-    setIsMuted(true);
+    setIsMuted(userMutedChoiceRef.current ?? false);
     // tombol Kembali: mundur satu entri riwayat (popstate yang menutup detail)
     if (window.history.state?.amfDetail) {
       window.history.back();
@@ -1392,7 +1578,7 @@ export default function SearchTest({
       return next;
     });
     setOpenUrl("");
-    setIsMuted(true);
+    setIsMuted(userMutedChoiceRef.current ?? false);
   }
   doCloseRef.current = doClose;
 
@@ -1686,9 +1872,12 @@ export default function SearchTest({
                       isActive={isGrid && activePlayUrl === c.url}
                       isPlaying={isVideoPlaying}
                       isMuted={isMuted}
+                      userMutedChoice={userMutedChoiceRef.current}
                       onToggleMute={handleToggleMute}
                       onPlaying={handleVideoPlaying}
+                      onEnded={advanceNextCard}
                       onError={() => handleVideoError(c.url)}
+                      onVolumeChange={(muted) => setIsMuted(muted)}
                       videoRef={videoRef}
                       unmuteLabel={ui.search.unmuteVideo}
                       muteLabel={ui.search.muteVideo}
