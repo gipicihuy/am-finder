@@ -5261,27 +5261,26 @@ html[data-theme="light"] .history-pill.is-missing {
   animation: notice-pop 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.notice-modal::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: #e0a030;
+.notice-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 44px 10px 0;
 }
 
 .notice-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  margin-bottom: 16px;
-  border-radius: 16px;
-  background: rgba(224, 160, 48, 0.14);
-  color: #e0a030;
+  flex: none;
+  display: inline-flex;
+  margin-top: 0.05em;
+  color: #ff5f6d;
+}
+
+html[data-theme="light"] .notice-icon {
+  color: #c62839;
 }
 
 .notice-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.025em;
