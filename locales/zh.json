@@ -208,6 +208,8 @@
     "videoFallback": "TikTok 视频",
     "noCaption": "无描述",
     "noPresetTag": "未找到",
+    "missModalTitle": "未找到预设",
+    "missModalText": "在此视频中未找到预设链接。创作者可能没有附上，或链接在其他位置。请试试列表中的其他视频。",
     "commentsOffTag": "评论已关闭",
     "showMore": "显示更多",
     "backLabel": "返回视频列表",

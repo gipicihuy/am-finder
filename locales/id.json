@@ -208,6 +208,8 @@
     "videoFallback": "Video TikTok",
     "noCaption": "Tanpa keterangan",
     "noPresetTag": "Tidak ditemukan",
+    "missModalTitle": "Preset tidak ditemukan",
+    "missModalText": "Link preset tidak ditemukan di video ini. Bisa jadi kreator belum mencantumkannya, atau tautannya ada di tempat lain. Coba video lain dari daftar.",
     "commentsOffTag": "Komentar dimatikan",
     "showMore": "Tampilkan lebih banyak",
     "backLabel": "Kembali ke daftar video",

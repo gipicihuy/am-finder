@@ -911,7 +911,7 @@ export default function SearchTest({
     setMissNotice(
       commentsDisabled
         ? { title: ui.search.commentsOffTag, text: ui.states.commentsDisabled }
-        : { title: ui.search.noPresetTag, text: ui.states.notFound },
+        : { title: ui.search.missModalTitle, text: ui.search.missModalText },
     );
     closeVideo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
