@@ -345,6 +345,8 @@ type SearchTestProps = {
   onQueryChange?: (query: string) => void;
 };
 
+const MAX_PLAY_MS = 6000;
+
 function isUrlExpired(url?: string): boolean {
   if (!url) return false;
   const m = url.match(/[?&]x-expires=(\d+)/);
@@ -405,6 +407,7 @@ export default function SearchTest({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPlayedAtRef = useRef<Map<string, number>>(new Map());
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRafRef = useRef<number | null>(null);
   const failedUrlsRef = useRef<Set<string>>(new Set());
@@ -435,6 +438,7 @@ export default function SearchTest({
 
   useEffect(() => {
     candsRef.current = cands;
+    lastPlayedAtRef.current.clear();
   }, [cands]);
 
   useEffect(() => {
@@ -559,16 +563,24 @@ export default function SearchTest({
 
     const vh = window.innerHeight || document.documentElement.clientHeight;
     const targetY = 0.40 * vh;
-    qualifying.sort((a, b) => {
-      const distA = Math.abs(a.midY - targetY);
-      const distB = Math.abs(b.midY - targetY);
-      if (Math.abs(distA - distB) < 10) {
-        return a.rect.left - b.rect.left;
-      }
-      return distA - distB;
+    let minDist = Infinity;
+    for (const q of qualifying) {
+      const d = Math.abs(q.midY - targetY);
+      if (d < minDist) minDist = d;
+    }
+
+    const bestRowCards = qualifying.filter(
+      (q) => Math.abs(Math.abs(q.midY - targetY) - minDist) < 10,
+    );
+
+    bestRowCards.sort((a, b) => {
+      const timeA = lastPlayedAtRef.current.get(a.url) ?? 0;
+      const timeB = lastPlayedAtRef.current.get(b.url) ?? 0;
+      if (timeA !== timeB) return timeA - timeB;
+      return a.rect.left - b.rect.left;
     });
 
-    const winner = qualifying[0].url;
+    const winner = bestRowCards[0].url;
     if (winner === activePlayUrlRef.current) {
       if (videoRef.current && videoRef.current.paused) {
         videoRef.current.play().catch(() => {});
@@ -608,13 +620,6 @@ export default function SearchTest({
       return;
     }
 
-    qualifying.sort((a, b) => {
-      if (Math.abs(a.rect.top - b.rect.top) > 10) {
-        return a.rect.top - b.rect.top;
-      }
-      return a.rect.left - b.rect.left;
-    });
-
     const currentUrl = activePlayUrlRef.current;
     if (qualifying.length === 1 && qualifying[0].url === currentUrl) {
       if (videoRef.current) {
@@ -623,14 +628,55 @@ export default function SearchTest({
         if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
         maxPlayTimerRef.current = setTimeout(() => {
           advanceNextCard();
-        }, 15000);
+        }, MAX_PLAY_MS);
       }
       return;
     }
 
-    const currentIndex = qualifying.findIndex((q) => q.url === currentUrl);
-    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % qualifying.length : 0;
-    const nextUrl = qualifying[nextIndex].url;
+    qualifying.sort((a, b) => {
+      if (Math.abs(a.rect.top - b.rect.top) > 10) {
+        return a.rect.top - b.rect.top;
+      }
+      return a.rect.left - b.rect.left;
+    });
+
+    const candidates = qualifying.filter((q) => q.url !== currentUrl);
+    if (candidates.length === 0) {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+        if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
+        maxPlayTimerRef.current = setTimeout(() => {
+          advanceNextCard();
+        }, MAX_PLAY_MS);
+      }
+      return;
+    }
+
+    let minTime = Infinity;
+    for (const c of candidates) {
+      const t = lastPlayedAtRef.current.get(c.url) ?? 0;
+      if (t < minTime) minTime = t;
+    }
+
+    const tied = candidates.filter(
+      (c) => (lastPlayedAtRef.current.get(c.url) ?? 0) === minTime,
+    );
+
+    let nextUrl = tied[0].url;
+    if (tied.length > 1) {
+      const currentIndex = qualifying.findIndex((q) => q.url === currentUrl);
+      const orderedAfterCurrent = [
+        ...qualifying.slice(currentIndex + 1),
+        ...qualifying.slice(0, Math.max(0, currentIndex)),
+      ];
+      const match = orderedAfterCurrent.find((q) =>
+        tied.some((t) => t.url === q.url),
+      );
+      if (match) {
+        nextUrl = match.url;
+      }
+    }
 
     if (nextUrl === currentUrl) {
       if (videoRef.current) {
@@ -639,7 +685,7 @@ export default function SearchTest({
         if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
         maxPlayTimerRef.current = setTimeout(() => {
           advanceNextCard();
-        }, 15000);
+        }, MAX_PLAY_MS);
       }
     } else {
       setActivePlayUrl(nextUrl);
@@ -653,12 +699,15 @@ export default function SearchTest({
       playTimeoutRef.current = null;
     }
     setIsVideoPlaying(true);
+    if (activePlayUrlRef.current) {
+      lastPlayedAtRef.current.set(activePlayUrlRef.current, Date.now());
+    }
     if (maxPlayTimerRef.current) {
       clearTimeout(maxPlayTimerRef.current);
     }
     maxPlayTimerRef.current = setTimeout(() => {
       advanceNextCard();
-    }, 15000);
+    }, MAX_PLAY_MS);
   };
 
   const handleVideoError = (failedUrl: string) => {
@@ -1303,6 +1352,7 @@ export default function SearchTest({
     setIsVideoPlaying(false);
     failedUrlsRef.current.clear();
     userMutedChoiceRef.current = null;
+    lastPlayedAtRef.current.clear();
     setIsMuted(false);
     isMutedRef.current = false;
     snapRef.current = { q: "", query: "", cands: [], limit: 3, last: "" };
@@ -1410,6 +1460,7 @@ export default function SearchTest({
       }
       failedUrlsRef.current.clear();
       userMutedChoiceRef.current = null;
+      lastPlayedAtRef.current.clear();
       setIsMuted(false);
       isMutedRef.current = false;
       setCands(items);
