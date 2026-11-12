@@ -45,9 +45,8 @@ export function NoticeModal({ title, text, onClose }: Props) {
         <div className="notice-head">
           <span className="notice-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.6-3.6" />
-              <path d="M8.6 8.6l4.8 4.8M13.4 8.6l-4.8 4.8" />
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9 9l6 6M15 9l-6 6" />
             </svg>
           </span>
           <h2 className="notice-title">{title}</h2>
