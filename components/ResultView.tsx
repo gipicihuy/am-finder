@@ -1081,7 +1081,13 @@ export function ResultView({ result }: { result: FindResult }) {
   if (presets.length === 0) {
     return (
       <div className="state state-miss" role="status">
-        <strong>❌ {commentsDisabled ? ui.states.commentsDisabled : missText}</strong>
+        <strong className="state-miss-title">
+          <svg className="state-miss-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M9 9l6 6M15 9l-6 6" />
+          </svg>
+          <span>{commentsDisabled ? ui.states.commentsDisabled : missText}</span>
+        </strong>
         {shares.length ? (
           <div className="miss-sources">
             <p className="miss-sources-title">{ui.states.shareSources}</p>

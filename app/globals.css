@@ -665,6 +665,19 @@ html[data-theme="light"] body::before {
 .state-miss strong {
   color: var(--danger-text-strong);
 }
+.state-miss-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.state-miss-icon {
+  flex: none;
+  margin-top: 1px;
+  color: #ff5f6d;
+}
+html[data-theme="light"] .state-miss-icon {
+  color: #c62839;
+}
 
 .miss-sources {
   margin-top: 10px;
