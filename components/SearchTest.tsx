@@ -345,8 +345,6 @@ type SearchTestProps = {
   onQueryChange?: (query: string) => void;
 };
 
-const MAX_PLAY_MS = 6000;
-
 function isUrlExpired(url?: string): boolean {
   if (!url) return false;
   const m = url.match(/[?&]x-expires=(\d+)/);
@@ -406,7 +404,6 @@ export default function SearchTest({
   const userMutedChoiceRef = useRef<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const maxPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPlayedAtRef = useRef<Map<string, number>>(new Map());
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRafRef = useRef<number | null>(null);
@@ -592,11 +589,6 @@ export default function SearchTest({
   };
 
   const advanceNextCard = () => {
-    if (maxPlayTimerRef.current) {
-      clearTimeout(maxPlayTimerRef.current);
-      maxPlayTimerRef.current = null;
-    }
-
     if (!canAutoPlay()) {
       if (activePlayUrlRef.current) {
         if (videoRef.current && !videoRef.current.paused) {
@@ -625,10 +617,6 @@ export default function SearchTest({
       if (videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch(() => {});
-        if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
-        maxPlayTimerRef.current = setTimeout(() => {
-          advanceNextCard();
-        }, MAX_PLAY_MS);
       }
       return;
     }
@@ -645,10 +633,6 @@ export default function SearchTest({
       if (videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch(() => {});
-        if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
-        maxPlayTimerRef.current = setTimeout(() => {
-          advanceNextCard();
-        }, MAX_PLAY_MS);
       }
       return;
     }
@@ -682,10 +666,6 @@ export default function SearchTest({
       if (videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch(() => {});
-        if (maxPlayTimerRef.current) clearTimeout(maxPlayTimerRef.current);
-        maxPlayTimerRef.current = setTimeout(() => {
-          advanceNextCard();
-        }, MAX_PLAY_MS);
       }
     } else {
       setActivePlayUrl(nextUrl);
@@ -702,22 +682,12 @@ export default function SearchTest({
     if (activePlayUrlRef.current) {
       lastPlayedAtRef.current.set(activePlayUrlRef.current, Date.now());
     }
-    if (maxPlayTimerRef.current) {
-      clearTimeout(maxPlayTimerRef.current);
-    }
-    maxPlayTimerRef.current = setTimeout(() => {
-      advanceNextCard();
-    }, MAX_PLAY_MS);
   };
 
   const handleVideoError = (failedUrl: string) => {
     if (playTimeoutRef.current) {
       clearTimeout(playTimeoutRef.current);
       playTimeoutRef.current = null;
-    }
-    if (maxPlayTimerRef.current) {
-      clearTimeout(maxPlayTimerRef.current);
-      maxPlayTimerRef.current = null;
     }
     failedUrlsRef.current.add(failedUrl);
     if (activePlayUrlRef.current === failedUrl) {
@@ -753,10 +723,6 @@ export default function SearchTest({
       clearTimeout(playTimeoutRef.current);
       playTimeoutRef.current = null;
     }
-    if (maxPlayTimerRef.current) {
-      clearTimeout(maxPlayTimerRef.current);
-      maxPlayTimerRef.current = null;
-    }
     setIsVideoPlaying(false);
 
     if (activePlayUrl) {
@@ -782,10 +748,6 @@ export default function SearchTest({
       if (playTimeoutRef.current) {
         clearTimeout(playTimeoutRef.current);
         playTimeoutRef.current = null;
-      }
-      if (maxPlayTimerRef.current) {
-        clearTimeout(maxPlayTimerRef.current);
-        maxPlayTimerRef.current = null;
       }
     };
   }, [activePlayUrl]);

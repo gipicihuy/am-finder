@@ -5388,7 +5388,7 @@ html[data-theme="light"] .notice-icon {
 .cand-thumb.is-grid {
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 9 / 16;
   border-radius: 0;
 }
 
