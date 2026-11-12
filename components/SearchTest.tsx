@@ -104,22 +104,50 @@ function MicIcon() {
   );
 }
 
-// Foto profil kreator. Kalau tidak ada atau gagal dimuat (URL TikTok bisa kedaluwarsa),
-// tampilkan huruf awal username.
+// Foto profil kreator. Menggunakan server proxy (/api/avatar) untuk mencegah
+// blokir hotlink / CORS dan URL bertanda tangan yang cepat kedaluwarsa.
+// Kalau tidak ada atau gagal dimuat, tampilkan huruf awal username sebagai fallback.
 function CandAvatar({ src, handle }: { src?: string; handle: string }) {
+  const [imgSrc, setImgSrc] = useState<string>("");
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (!src) {
+      setImgSrc("");
+      setFailed(false);
+      return;
+    }
+    const proxied =
+      src.startsWith("/") || src.startsWith("data:")
+        ? src
+        : `/api/avatar?u=${encodeURIComponent(src)}`;
+    setImgSrc(proxied);
     setFailed(false);
   }, [src]);
+
+  const handleError = () => {
+    if (src && imgSrc !== src && !src.startsWith("/")) {
+      // Coba fallback ke URL asli langsung jika proxy terkendala
+      setImgSrc(src);
+    } else {
+      setFailed(true);
+    }
+  };
 
   const initial = handle.replace(/^@/, "").charAt(0).toUpperCase() || "?";
 
   return (
     <span className="cand-avatar" aria-hidden="true">
-      {src && !failed ? (
+      {imgSrc && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+        <img
+          src={imgSrc}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={handleError}
+        />
       ) : (
         initial
       )}
