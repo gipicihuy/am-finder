@@ -1,7 +1,7 @@
 "use client";
 
 import { isVideoLink, presetPathOf } from "@/lib/tiktok-link";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
@@ -1068,10 +1068,13 @@ export default function SearchTest({
     }
   }
 
-  function onSuggestBlur() {
+  function onSuggestBlur(event?: FocusEvent<HTMLInputElement>) {
+    // Fokus pindah ke dalam panel saran (mis. item tombol): jangan tutup.
+    const next = event?.relatedTarget as Element | null;
+    if (next && typeof next.closest === "function" && next.closest(".suggest-panel")) return;
     sugFocusedRef.current = false;
     if (sugBlurTimer.current) clearTimeout(sugBlurTimer.current);
-    sugBlurTimer.current = setTimeout(() => setSugOpen(false), 80);
+    sugBlurTimer.current = setTimeout(() => setSugOpen(false), 120);
   }
 
   // Beritahu induk (Finder) kata kunci terkini supaya saat pindah tab, alamat
@@ -1643,7 +1646,14 @@ export default function SearchTest({
   const suggestQuery = q.trim();
   const suggestPanel =
     sugOpen && suggests.length > 0 ? (
-      <div className="suggest-panel" role="listbox" aria-label={ui.search.suggestionsLabel}>
+      <div
+        className="suggest-panel"
+        role="listbox"
+        aria-label={ui.search.suggestionsLabel}
+        // Klik/tap di area panel mana pun (padding, jarak antar item, scrollbar) tidak boleh
+        // mencuri fokus dari input, kalau tidak panel langsung menutup sebelum item terpilih.
+        onMouseDown={(event) => event.preventDefault()}
+      >
         {suggests.map((item, index) => {
           const at = item.toLowerCase().indexOf(suggestQuery.toLowerCase());
           const label =
