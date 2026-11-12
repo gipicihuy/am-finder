@@ -1,7 +1,7 @@
 "use client";
 
 import { isVideoLink, presetPathOf } from "@/lib/tiktok-link";
-import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
@@ -1006,7 +1006,7 @@ export default function SearchTest({
     const local = localSuggest(query);
     if (local.length) {
       setSuggests(local);
-      setSugOpen(sugFocusedRef.current);
+      setSugOpen((prev) => sugFocusedRef.current || prev);
       setSugActive(-1);
     } else {
       setSuggests([]);
@@ -1030,7 +1030,7 @@ export default function SearchTest({
               if (!merged.includes(item)) merged.push(item);
             }
             setSuggests(merged.slice(0, 8));
-            setSugOpen(merged.length > 0 && sugFocusedRef.current);
+            setSugOpen((prev) => merged.length > 0 && (sugFocusedRef.current || prev));
             setSugActive(-1);
           })
           .catch(() => {
@@ -1068,13 +1068,12 @@ export default function SearchTest({
     }
   }
 
-  function onSuggestBlur(event?: FocusEvent<HTMLInputElement>) {
-    // Fokus pindah ke dalam panel saran (mis. item tombol): jangan tutup.
-    const next = event?.relatedTarget as Element | null;
-    if (next && typeof next.closest === "function" && next.closest(".suggest-panel")) return;
+  function onSuggestBlur() {
+    // Blur (mis. tap area lain untuk menutup keyboard) TIDAK menutup panel saran.
+    // Panel hanya menutup lewat: pilih saran, tombol hapus, Escape, mulai pencarian,
+    // atau kata kunci yang tidak punya saran lagi.
     sugFocusedRef.current = false;
     if (sugBlurTimer.current) clearTimeout(sugBlurTimer.current);
-    sugBlurTimer.current = setTimeout(() => setSugOpen(false), 120);
   }
 
   // Beritahu induk (Finder) kata kunci terkini supaya saat pindah tab, alamat
