@@ -1593,21 +1593,20 @@ html[data-theme="light"] .state-miss-icon {
 .view-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 3px;
-  border: 1px solid var(--border, var(--surface-3));
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--surface);
 }
 
 .view-toggle-btn {
   display: grid;
   place-items: center;
-  width: 40px;
+  width: 38px;
   height: 32px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: 6px;
   background: none;
   color: var(--muted);
   cursor: pointer;
@@ -1619,7 +1618,7 @@ html[data-theme="light"] .state-miss-icon {
 }
 
 .view-toggle-btn[aria-pressed="true"] {
-  background: var(--accent-soft);
+  background: var(--surface-2);
   color: var(--accent);
 }
 
@@ -5372,4 +5371,139 @@ html[data-theme="light"] .notice-icon {
   .notice-modal {
     animation: none;
   }
+}
+
+/* Daftar video hasil pencarian: list = baris datar, grid = kartu menyatu */
+.cand-thumb {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 54px;
+  height: 72px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.cand-thumb.is-grid {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  border-radius: 0;
+}
+
+.cand-name {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cand-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.cand-row,
+.cand-tile {
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cand-row.is-missing,
+.cand-tile.is-missing {
+  opacity: 0.6;
+}
+
+.cand-row:focus-visible,
+.cand-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cand-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc(100% + 24px);
+  margin: 0 -12px;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  transition: background-color 0.15s ease;
+}
+
+.cand-row .cand-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.cand-row > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.cand-row:hover {
+  background: var(--surface);
+}
+
+.cand-row.is-last {
+  background: var(--surface);
+  border-bottom-color: transparent;
+  border-radius: 8px;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.cand-row.is-last > svg {
+  color: var(--accent);
+}
+
+.cand-deck.is-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cand-tile {
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--surface);
+  transition: background-color 0.15s ease;
+}
+
+.cand-tile .cand-body {
+  display: block;
+  padding: 10px 12px 12px;
+}
+
+.cand-tile .cand-name {
+  font-size: 16px;
+}
+
+.cand-tile .cand-desc {
+  font-size: 12px;
+}
+
+.cand-tile.is-last {
+  background: var(--accent-soft);
+}
+
+.cand-tile.is-last .cand-name {
+  color: var(--accent);
 }

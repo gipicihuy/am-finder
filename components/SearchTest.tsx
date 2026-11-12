@@ -63,7 +63,7 @@ const ChevronRight = () => (
     height="20"
     viewBox="0 0 20 20"
     fill="none"
-    stroke={MUTED}
+    stroke="currentColor"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -131,20 +131,7 @@ function CandThumb({
   };
 
   return (
-    <span
-      style={{
-        viewTransitionName: thumbName(url),
-        position: "relative",
-        width: isGrid ? "100%" : 64,
-        height: isGrid ? undefined : 86,
-        aspectRatio: isGrid ? "9 / 16" : undefined,
-        flexShrink: isGrid ? undefined : 0,
-        borderRadius: 10,
-        background: BG,
-        border: `1px solid ${BORDER}`,
-        overflow: "hidden",
-      }}
-    >
+    <span className={isGrid ? "cand-thumb is-grid" : "cand-thumb"} style={{ viewTransitionName: thumbName(url) }}>
       {src && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -1147,110 +1134,40 @@ export default function SearchTest({
               </div>
               <div
                 ref={deckRef}
-                className="cand-deck"
-                style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 } : undefined}
+                className={view === "grid" ? "cand-deck is-grid" : "cand-deck"}
               >
-              {cands.slice(0, candLimit).map((c) => view === "grid" ? (
-                <button
-                  key={c.url}
-                  ref={(el) => {
-                    cardRefs.current[c.url] = el;
-                  }}
-                  type="button"
-                  aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
-                  aria-disabled={missTag(c.url) ? true : undefined}
-                  onClick={() => {
-                    if (!missTag(c.url)) openVideo(c.url);
-                  }}
-                  style={{
-                    opacity: missTag(c.url) ? 0.6 : 1,
-                    viewTransitionName: vtName(c.url),
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    minWidth: 0,
-                    textAlign: "left",
-                    padding: 8,
-                    background: SURFACE,
-                    border: `1px solid ${c.url === lastUrl ? ACCENT : BORDER}`,
-                    borderRadius: 14,
-                    color: "inherit",
-                    font: "inherit",
-                    cursor: "pointer",
-                  }}
-                >
-                  <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} isGrid />
-                  <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {c.handle || ui.search.videoFallback}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: MUTED,
-                      lineHeight: 1.4,
-                      overflow: "hidden",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
+              {cands.slice(0, candLimit).map((c) => {
+                const miss = missTag(c.url);
+                const isGrid = view === "grid";
+                const cls = [isGrid ? "cand-tile" : "cand-row", c.url === lastUrl ? "is-last" : "", miss ? "is-missing" : ""]
+                  .filter(Boolean)
+                  .join(" ");
+
+                return (
+                  <button
+                    key={c.url}
+                    ref={(el) => {
+                      cardRefs.current[c.url] = el;
                     }}
+                    type="button"
+                    className={cls}
+                    aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
+                    aria-disabled={miss ? true : undefined}
+                    onClick={() => {
+                      if (!miss) openVideo(c.url);
+                    }}
+                    style={{ viewTransitionName: vtName(c.url) }}
                   >
-                    {c.snippet || ui.search.noCaption}
-                  </span>
-                  {missTag(c.url) ? <span style={missPill}>{missTag(c.url)}</span> : null}
-                </button>
-              ) : (
-                <button
-                  key={c.url}
-                  ref={(el) => {
-                    cardRefs.current[c.url] = el;
-                  }}
-                  type="button"
-                  aria-label={format(ui.search.checkFrom, { name: c.handle || ui.search.thisVideo })}
-                  aria-disabled={missTag(c.url) ? true : undefined}
-                  onClick={() => {
-                    if (!missTag(c.url)) openVideo(c.url);
-                  }}
-                  style={{
-                    opacity: missTag(c.url) ? 0.6 : 1,
-                    viewTransitionName: vtName(c.url),
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    width: "100%",
-                    textAlign: "left",
-                    padding: 12,
-                    marginBottom: 10,
-                    background: SURFACE,
-                    border: `1px solid ${c.url === lastUrl ? ACCENT : BORDER}`,
-                    borderRadius: 16,
-                    color: "inherit",
-                    font: "inherit",
-                    cursor: "pointer",
-                  }}
-                >
-                  <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} />
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", fontSize: 15, fontWeight: 700, marginBottom: 5 }}>
-                      {c.handle || ui.search.videoFallback}
+                    <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} isGrid={isGrid} />
+                    <span className="cand-body">
+                      <span className="cand-name">{c.handle || ui.search.videoFallback}</span>
+                      <span className="cand-desc">{c.snippet || ui.search.noCaption}</span>
+                      {miss ? <span style={missPill}>{miss}</span> : null}
                     </span>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        color: MUTED,
-                        lineHeight: 1.45,
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {c.snippet || ui.search.noCaption}
-                    </span>
-                    {missTag(c.url) ? <span style={missPill}>{missTag(c.url)}</span> : null}
-                  </span>
-                  <ChevronRight />
-                </button>
-              ))}
+                    {isGrid ? null : <ChevronRight />}
+                  </button>
+                );
+              })}
               </div>
               {cands.length > candLimit && (
                 <button
