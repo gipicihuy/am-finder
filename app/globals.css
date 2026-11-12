@@ -5392,27 +5392,6 @@ html[data-theme="light"] .notice-icon {
   border-radius: 0;
 }
 
-.cand-thumb-btn {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.65);
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.cand-thumb-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 .cand-name {
   display: flex;
   align-items: center;
