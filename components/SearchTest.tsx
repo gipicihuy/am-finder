@@ -6,6 +6,7 @@ import type { FindResult } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { FoundToast } from "@/components/FoundToast";
+import { NoticeModal } from "@/components/NoticeModal";
 import { ArrowRuleOrnament, GridIcon, ListIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
@@ -211,6 +212,7 @@ export default function SearchTest({
   const sugIndexLoading = useRef<Promise<void> | null>(null);
   const [cands, setCands] = useState<Candidate[]>([]);
   const [candLimit, setCandLimit] = useState(3);
+  const [missNotice, setMissNotice] = useState<{ title: string; text: string } | null>(null);
   const [view, setView] = useState<"list" | "grid">("list");
   const [lastUrl, setLastUrl] = useState("");
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -905,6 +907,12 @@ export default function SearchTest({
   useEffect(() => {
     if (!openUrl || current?.state !== "done" || !current.result) return;
     if ((current.result.presetLinks?.length ?? 0) > 0) return;
+    const commentsDisabled = current.result.checked?.commentsDisabled === true;
+    setMissNotice(
+      commentsDisabled
+        ? { title: ui.search.commentsOffTag, text: ui.states.commentsDisabled }
+        : { title: ui.search.noPresetTag, text: ui.states.notFound },
+    );
     closeVideo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openUrl, current?.state]);
@@ -970,6 +978,7 @@ export default function SearchTest({
           : { maxWidth: 520, margin: "0 auto", padding: "24px 16px 64px", color: FG }
       }
     >
+      {missNotice ? <NoticeModal title={missNotice.title} text={missNotice.text} onClose={() => setMissNotice(null)} /> : null}
       {!openUrl && (
         <>
           {!embedded && (
