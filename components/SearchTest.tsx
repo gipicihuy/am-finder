@@ -34,6 +34,7 @@ type Candidate = {
   thumb?: string;
   thumbFallback?: string;
   avatar?: string;
+  playUrl?: string;
 };
 
 type Detail = {
@@ -90,6 +91,26 @@ function PlayIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M9 6.5v11l8-5.5z" />
+    </svg>
+  );
+}
+
+function SpeakerMutedIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+      <line x1="23" y1="9" x2="17" y2="15" />
+      <line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
+  );
+}
+
+function SpeakerIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
     </svg>
   );
 }
@@ -160,11 +181,31 @@ function CandThumb({
   thumb,
   fallback,
   isGrid,
+  playUrl,
+  isActive,
+  isPlaying,
+  isMuted,
+  onToggleMute,
+  onPlaying,
+  onError,
+  videoRef,
+  unmuteLabel,
+  muteLabel,
 }: {
   url: string;
   thumb?: string;
   fallback?: string;
   isGrid?: boolean;
+  playUrl?: string;
+  isActive?: boolean;
+  isPlaying?: boolean;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
+  onPlaying?: () => void;
+  onError?: () => void;
+  videoRef?: React.RefObject<HTMLVideoElement | null>;
+  unmuteLabel?: string;
+  muteLabel?: string;
 }) {
   const [src, setSrc] = useState(thumb || fallback || "");
   const [failed, setFailed] = useState(false);
@@ -185,7 +226,6 @@ function CandThumb({
   return (
     <span className={isGrid ? "cand-thumb is-grid" : "cand-thumb"} style={{ viewTransitionName: thumbName(url) }}>
       {src && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt=""
@@ -210,6 +250,68 @@ function CandThumb({
           <PlayIcon />
         </span>
       )}
+      {isActive && isGrid && playUrl ? (
+        <video
+          ref={videoRef}
+          src={playUrl}
+          muted={isMuted}
+          loop
+          playsInline
+          autoPlay
+          onLoadedMetadata={(e) => {
+            e.currentTarget.muted = isMuted ?? true;
+          }}
+          onPlaying={onPlaying}
+          onError={onError}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: isPlaying ? 1 : 0,
+            transition: "opacity 0.15s ease",
+            zIndex: 1,
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
+      {isActive && isGrid && isPlaying ? (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={isMuted ? unmuteLabel : muteLabel}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleMute?.();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleMute?.();
+            }
+          }}
+          style={{
+            position: "absolute",
+            right: 8,
+            bottom: 8,
+            zIndex: 3,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            color: "#ffffff",
+            cursor: "pointer",
+          }}
+        >
+          {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -226,6 +328,13 @@ type SearchTestProps = {
   /** Dipanggil tiap kata kunci berubah, supaya induk bisa menuliskannya di alamat. */
   onQueryChange?: (query: string) => void;
 };
+
+function isUrlExpired(url?: string): boolean {
+  if (!url) return false;
+  const m = url.match(/[?&]x-expires=(\d+)/);
+  if (!m) return false;
+  return Number(m[1]) * 1000 <= Date.now() + 60_000;
+}
 
 export default function SearchTest({
   embedded = false,
@@ -268,6 +377,310 @@ export default function SearchTest({
   const checkRef = useRef<EventSource | null>(null);
   const searchRunRef = useRef(0);
   const checkRunRef = useRef(0);
+
+  const [activePlayUrl, setActivePlayUrl] = useState<string>("");
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+
+  const activePlayUrlRef = useRef("");
+  const isVideoPlayingRef = useRef(false);
+  const isMutedRef = useRef(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const failedUrlsRef = useRef<Set<string>>(new Set());
+  const viewRef = useRef<"list" | "grid">(view);
+  const candsRef = useRef<Candidate[]>(cands);
+  const candLimitRef = useRef(candLimit);
+  const missNoticeRef = useRef(missNotice);
+  const detailsRef = useRef(details);
+
+  useEffect(() => {
+    activePlayUrlRef.current = activePlayUrl;
+  }, [activePlayUrl]);
+
+  useEffect(() => {
+    isVideoPlayingRef.current = isVideoPlaying;
+  }, [isVideoPlaying]);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  useEffect(() => {
+    candsRef.current = cands;
+  }, [cands]);
+
+  useEffect(() => {
+    candLimitRef.current = candLimit;
+  }, [candLimit]);
+
+  useEffect(() => {
+    missNoticeRef.current = missNotice;
+  }, [missNotice]);
+
+  useEffect(() => {
+    detailsRef.current = details;
+  }, [details]);
+
+  const canAutoPlay = () => {
+    if (typeof window === "undefined") return false;
+    if (viewRef.current !== "grid") return false;
+    if (openUrlRef.current) return false;
+    if (missNoticeRef.current !== null) return false;
+    if (document.hidden) return false;
+    const panel = document.getElementById("panel-search");
+    if (panel && panel.hidden) return false;
+    if (deckRef.current && deckRef.current.closest("[hidden]")) return false;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
+    if (Boolean(nav.connection?.saveData)) return false;
+    return true;
+  };
+
+  const evaluateFocus = () => {
+    if (!canAutoPlay()) {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      return;
+    }
+
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    if (vh <= 0) return;
+
+    const displayed = candsRef.current.slice(0, candLimitRef.current);
+    type Qualifying = {
+      url: string;
+      rect: DOMRect;
+      midY: number;
+    };
+    const qualifying: Qualifying[] = [];
+
+    for (const c of displayed) {
+      if (!c.playUrl || isUrlExpired(c.playUrl)) continue;
+      if (missTag(c.url)) continue;
+      if (failedUrlsRef.current.has(c.url)) continue;
+
+      const el = cardRefs.current[c.url];
+      if (!el || el.offsetParent === null) continue;
+
+      const rect = el.getBoundingClientRect();
+      if (rect.height <= 0 || rect.width <= 0) continue;
+
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(vh, rect.bottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      const visibleRatio = visibleHeight / rect.height;
+
+      if (visibleRatio < 0.75) continue;
+
+      const midY = rect.top + rect.height / 2;
+      if (midY < 0.15 * vh || midY > 0.65 * vh) continue;
+
+      qualifying.push({ url: c.url, rect, midY });
+    }
+
+    if (qualifying.length === 0) {
+      if (activePlayUrlRef.current) {
+        setActivePlayUrl("");
+        setIsVideoPlaying(false);
+      }
+      return;
+    }
+
+    const targetY = 0.40 * vh;
+    qualifying.sort((a, b) => {
+      const distA = Math.abs(a.midY - targetY);
+      const distB = Math.abs(b.midY - targetY);
+      if (Math.abs(distA - distB) < 10) {
+        return a.rect.left - b.rect.left;
+      }
+      return distA - distB;
+    });
+
+    const winner = qualifying[0].url;
+    if (winner === activePlayUrlRef.current) {
+      if (videoRef.current && videoRef.current.paused) {
+        videoRef.current.play().catch(() => {});
+      }
+    } else {
+      setActivePlayUrl(winner);
+      setIsVideoPlaying(false);
+    }
+  };
+
+  const handleVideoPlaying = () => {
+    if (playTimeoutRef.current) {
+      clearTimeout(playTimeoutRef.current);
+      playTimeoutRef.current = null;
+    }
+    setIsVideoPlaying(true);
+  };
+
+  const handleVideoError = (failedUrl: string) => {
+    if (playTimeoutRef.current) {
+      clearTimeout(playTimeoutRef.current);
+      playTimeoutRef.current = null;
+    }
+    failedUrlsRef.current.add(failedUrl);
+    if (activePlayUrlRef.current === failedUrl) {
+      setActivePlayUrl("");
+      setIsVideoPlaying(false);
+    }
+    requestAnimationFrame(() => {
+      evaluateFocus();
+    });
+  };
+
+  const handleToggleMute = () => {
+    const next = !isMuted;
+    if (!next) {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.play().then(() => {
+          setIsMuted(false);
+        }).catch(() => {
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          }
+          setIsMuted(true);
+        });
+      } else {
+        setIsMuted(false);
+      }
+    } else {
+      if (videoRef.current) {
+        videoRef.current.muted = true;
+      }
+      setIsMuted(true);
+    }
+  };
+
+  useEffect(() => {
+    if (playTimeoutRef.current) {
+      clearTimeout(playTimeoutRef.current);
+      playTimeoutRef.current = null;
+    }
+    setIsVideoPlaying(false);
+
+    if (activePlayUrl) {
+      const currentUrl = activePlayUrl;
+      playTimeoutRef.current = setTimeout(() => {
+        handleVideoError(currentUrl);
+      }, 8000);
+      if (videoRef.current) {
+        videoRef.current.muted = isMutedRef.current;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+
+    return () => {
+      if (playTimeoutRef.current) {
+        clearTimeout(playTimeoutRef.current);
+        playTimeoutRef.current = null;
+      }
+    };
+  }, [activePlayUrl]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (viewRef.current !== "grid") return;
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = setTimeout(() => {
+        evaluateFocus();
+      }, 250);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+      } else {
+        if (canAutoPlay()) {
+          evaluateFocus();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    const panel = document.getElementById("panel-search");
+    if (!panel) return;
+    const observer = new MutationObserver(() => {
+      if (panel.hidden) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+        setActivePlayUrl("");
+        setIsVideoPlaying(false);
+      } else {
+        if (canAutoPlay()) {
+          evaluateFocus();
+        }
+      }
+    });
+    observer.observe(panel, { attributes: true, attributeFilter: ["hidden", "style"] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (missNotice) {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+    } else {
+      if (canAutoPlay()) {
+        evaluateFocus();
+      }
+    }
+  }, [missNotice]);
+
+  useEffect(() => {
+    if (openUrl) {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      setActivePlayUrl("");
+      setIsVideoPlaying(false);
+    } else {
+      setIsMuted(true);
+      if (canAutoPlay()) {
+        evaluateFocus();
+      }
+    }
+  }, [openUrl]);
+
+  useEffect(() => {
+    if (activePlayUrl && missTag(activePlayUrl)) {
+      setActivePlayUrl("");
+      setIsVideoPlaying(false);
+      evaluateFocus();
+    }
+  }, [details]);
 
   const [searchRunRefCurrent, setSearchRunRefCurrent] = useState(0);
   const [searchStartTime, setSearchStartTime] = useState<number | null>(null);
@@ -549,7 +962,15 @@ export default function SearchTest({
         }
         return;
       }
-      setCands(saved.cands);
+      const cleaned = (saved.cands as Candidate[]).map((c) => {
+        if (c.playUrl && isUrlExpired(c.playUrl)) {
+          const next = { ...c };
+          delete next.playUrl;
+          return next;
+        }
+        return c;
+      });
+      setCands(cleaned);
       sugSuppressRef.current = (saved.q || "").trim();
       setQ(saved.q || "");
       setSearchedQuery(saved.query || "");
@@ -563,17 +984,19 @@ export default function SearchTest({
           const el = cardRefs.current[last];
           if (el && el.offsetParent !== null) {
             el.scrollIntoView({ block: "center" });
+            requestAnimationFrame(() => evaluateFocus());
             return;
           }
         } else {
           const section = document.querySelector<HTMLElement>('section[data-results="search"]');
           if (section && section.offsetParent !== null) {
             window.scrollTo({ top: y });
+            requestAnimationFrame(() => evaluateFocus());
             return;
           }
         }
-        // tunggu daftar tampil & panel tab terlihat (maks ~1,5 detik)
         if (++tries < 90) requestAnimationFrame(tick);
+        else requestAnimationFrame(() => evaluateFocus());
       };
       requestAnimationFrame(tick);
     } catch {
@@ -616,6 +1039,7 @@ export default function SearchTest({
 
   function toggleView(next: "list" | "grid") {
     if (next === view) return;
+    viewRef.current = next;
     const apply = () => {
       setView(next);
       // grid tampil per 4 kartu: bulatkan jumlah yang sedang tampil ke atas
@@ -625,6 +1049,24 @@ export default function SearchTest({
       localStorage.setItem(VIEW_KEY, next);
     } catch {
       // abaikan
+    }
+
+    if (next === "grid") {
+      if (window.scrollY > 20) {
+        requestAnimationFrame(() => evaluateFocus());
+      } else {
+        const displayed = candsRef.current.slice(0, candLimitRef.current);
+        const first = displayed.find((c) => c.playUrl && !isUrlExpired(c.playUrl) && !missTag(c.url) && !failedUrlsRef.current.has(c.url));
+        if (first && canAutoPlay()) {
+          setActivePlayUrl(first.url);
+          setIsVideoPlaying(false);
+        } else {
+          requestAnimationFrame(() => evaluateFocus());
+        }
+      }
+    } else {
+      setActivePlayUrl("");
+      setIsVideoPlaying(false);
     }
 
     const reduce =
@@ -677,6 +1119,9 @@ export default function SearchTest({
     setLastUrl("");
     setCandLimit(3);
     setDetails({});
+    setActivePlayUrl("");
+    setIsVideoPlaying(false);
+    failedUrlsRef.current.clear();
     snapRef.current = { q: "", query: "", cands: [], limit: 3, last: "" };
     try {
       sessionStorage.removeItem(STATE_KEY);
@@ -780,12 +1225,27 @@ export default function SearchTest({
         setError(ui.search.errNoVideos);
         return;
       }
+      failedUrlsRef.current.clear();
       setCands(items);
       setLastUrl("");
       const limit = items.length;
       setCandLimit(limit);
       setSearchedQuery(query);
       setDetails({});
+      if (view === "grid") {
+        if (window.scrollY > 20) {
+          requestAnimationFrame(() => evaluateFocus());
+        } else {
+          const first = items.find((c) => c.playUrl && !isUrlExpired(c.playUrl) && !missTag(c.url));
+          if (first && canAutoPlay()) {
+            setActivePlayUrl(first.url);
+            setIsVideoPlaying(false);
+          } else {
+            setActivePlayUrl("");
+            setIsVideoPlaying(false);
+          }
+        }
+      }
       // Hasil ditulis dulu ke sessionStorage, baru alamatnya diganti — kalau
       // urutannya kebalik, tampilan bisa ke-reset duluan waktu /search dirender ulang.
       snapRef.current = { q: query, query, cands: items, limit, last: "" };
@@ -835,6 +1295,11 @@ export default function SearchTest({
   }, [openUrl]);
 
   async function openVideo(url: string) {
+    if (videoRef.current && !videoRef.current.paused) {
+      videoRef.current.pause();
+    }
+    setActivePlayUrl("");
+    setIsVideoPlaying(false);
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
@@ -907,6 +1372,7 @@ export default function SearchTest({
   }
 
   function closeVideo() {
+    setIsMuted(true);
     // tombol Kembali: mundur satu entri riwayat (popstate yang menutup detail)
     if (window.history.state?.amfDetail) {
       window.history.back();
@@ -926,6 +1392,7 @@ export default function SearchTest({
       return next;
     });
     setOpenUrl("");
+    setIsMuted(true);
   }
   doCloseRef.current = doClose;
 
@@ -1210,7 +1677,22 @@ export default function SearchTest({
                     }}
                     style={{ viewTransitionName: vtName(c.url) }}
                   >
-                    <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} isGrid={isGrid} />
+                    <CandThumb
+                      url={c.url}
+                      thumb={c.thumb}
+                      fallback={c.thumbFallback}
+                      isGrid={isGrid}
+                      playUrl={c.playUrl}
+                      isActive={isGrid && activePlayUrl === c.url}
+                      isPlaying={isVideoPlaying}
+                      isMuted={isMuted}
+                      onToggleMute={handleToggleMute}
+                      onPlaying={handleVideoPlaying}
+                      onError={() => handleVideoError(c.url)}
+                      videoRef={videoRef}
+                      unmuteLabel={ui.search.unmuteVideo}
+                      muteLabel={ui.search.muteVideo}
+                    />
                     <span className="cand-body">
                       <span className="cand-name">
                         <CandAvatar src={c.avatar} handle={c.handle || ""} />

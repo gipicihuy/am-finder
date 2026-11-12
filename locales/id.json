@@ -203,6 +203,8 @@
     "gridView": "Tampilan grid",
     "listView": "Tampilan list",
     "viewMode": "Mode tampilan",
+    "muteVideo": "Bisukan video",
+    "unmuteVideo": "Bunyikan video",
     "checkFrom": "Cek preset dari {name}",
     "thisVideo": "video ini",
     "videoFallback": "Video TikTok",

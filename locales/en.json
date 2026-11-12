@@ -203,6 +203,8 @@
     "gridView": "Grid view",
     "listView": "List view",
     "viewMode": "View mode",
+    "muteVideo": "Mute video",
+    "unmuteVideo": "Unmute video",
     "checkFrom": "Check presets from {name}",
     "thisVideo": "this video",
     "videoFallback": "TikTok video",

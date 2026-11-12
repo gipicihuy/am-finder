@@ -39,6 +39,7 @@ export type Candidate = {
   thumb?: string;
   thumbFallback?: string;
   avatar?: string;
+  playUrl?: string;
 };
 
 export type SearchResult = {
