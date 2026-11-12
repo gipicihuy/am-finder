@@ -115,6 +115,14 @@ function SpeakerIcon() {
   );
 }
 
+function PlaySmallIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ transform: "translateX(1px)" }}>
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
 function MicIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -186,6 +194,10 @@ function CandThumb({
   isPlaying,
   isMuted,
   userMutedChoice,
+  hasMissTag,
+  canAutoPlay,
+  isFailedUrl,
+  onSelectPlay,
   onToggleMute,
   onPlaying,
   onEnded,
@@ -194,6 +206,7 @@ function CandThumb({
   videoRef,
   unmuteLabel,
   muteLabel,
+  playLabel,
 }: {
   url: string;
   thumb?: string;
@@ -204,6 +217,10 @@ function CandThumb({
   isPlaying?: boolean;
   isMuted?: boolean;
   userMutedChoice?: boolean | null;
+  hasMissTag?: boolean;
+  canAutoPlay?: boolean;
+  isFailedUrl?: boolean;
+  onSelectPlay?: () => void;
   onToggleMute?: () => void;
   onPlaying?: () => void;
   onEnded?: () => void;
@@ -212,6 +229,7 @@ function CandThumb({
   videoRef?: React.RefObject<HTMLVideoElement | null>;
   unmuteLabel?: string;
   muteLabel?: string;
+  playLabel?: string;
 }) {
   const [src, setSrc] = useState(thumb || fallback || "");
   const [failed, setFailed] = useState(false);
@@ -228,6 +246,16 @@ function CandThumb({
       setFailed(true);
     }
   };
+
+  const showPlayBtn =
+    Boolean(isGrid) &&
+    !isActive &&
+    Boolean(playUrl) &&
+    !isUrlExpired(playUrl) &&
+    !failed &&
+    !isFailedUrl &&
+    !hasMissTag &&
+    Boolean(canAutoPlay);
 
   return (
     <span className={isGrid ? "cand-thumb is-grid" : "cand-thumb"} style={{ viewTransitionName: thumbName(url) }}>
@@ -296,6 +324,7 @@ function CandThumb({
         <span
           role="button"
           tabIndex={0}
+          className="cand-thumb-btn"
           aria-label={isMuted ? unmuteLabel : muteLabel}
           onClick={(e) => {
             e.preventDefault();
@@ -309,23 +338,30 @@ function CandThumb({
               onToggleMute?.();
             }
           }}
-          style={{
-            position: "absolute",
-            right: 8,
-            bottom: 8,
-            zIndex: 3,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            backgroundColor: "rgba(0, 0, 0, 0.65)",
-            color: "#ffffff",
-            cursor: "pointer",
-          }}
         >
           {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}
+        </span>
+      ) : null}
+      {showPlayBtn ? (
+        <span
+          role="button"
+          tabIndex={0}
+          className="cand-thumb-btn"
+          aria-label={playLabel}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSelectPlay?.();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onSelectPlay?.();
+            }
+          }}
+        >
+          <PlaySmallIcon />
         </span>
       ) : null}
     </span>
@@ -716,6 +752,19 @@ export default function SearchTest({
         }
       });
     }
+  };
+
+  const handleManualPlay = (url: string) => {
+    if (scrollTimerRef.current) {
+      clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = null;
+    }
+    if (videoRef.current && !videoRef.current.paused) {
+      videoRef.current.pause();
+    }
+    activePlayUrlRef.current = url;
+    setActivePlayUrl(url);
+    setIsVideoPlaying(false);
   };
 
   useEffect(() => {
@@ -1886,6 +1935,10 @@ export default function SearchTest({
                       isPlaying={isVideoPlaying}
                       isMuted={isMuted}
                       userMutedChoice={userMutedChoiceRef.current}
+                      hasMissTag={Boolean(miss)}
+                      canAutoPlay={canAutoPlay()}
+                      isFailedUrl={failedUrlsRef.current.has(c.url)}
+                      onSelectPlay={() => handleManualPlay(c.url)}
                       onToggleMute={handleToggleMute}
                       onPlaying={handleVideoPlaying}
                       onEnded={advanceNextCard}
@@ -1894,6 +1947,7 @@ export default function SearchTest({
                       videoRef={videoRef}
                       unmuteLabel={ui.search.unmuteVideo}
                       muteLabel={ui.search.muteVideo}
+                      playLabel={ui.search.playPreview}
                     />
                     <span className="cand-body">
                       <span className="cand-name">
