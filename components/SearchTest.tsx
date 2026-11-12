@@ -33,6 +33,7 @@ type Candidate = {
   snippet?: string;
   thumb?: string;
   thumbFallback?: string;
+  avatar?: string;
 };
 
 type Detail = {
@@ -100,6 +101,29 @@ function MicIcon() {
       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
       <line x1="12" x2="12" y1="19" y2="22" />
     </svg>
+  );
+}
+
+// Foto profil kreator. Kalau tidak ada atau gagal dimuat (URL TikTok bisa kedaluwarsa),
+// tampilkan huruf awal username.
+function CandAvatar({ src, handle }: { src?: string; handle: string }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  const initial = handle.replace(/^@/, "").charAt(0).toUpperCase() || "?";
+
+  return (
+    <span className="cand-avatar" aria-hidden="true">
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : (
+        initial
+      )}
+    </span>
   );
 }
 
@@ -1160,7 +1184,10 @@ export default function SearchTest({
                   >
                     <CandThumb url={c.url} thumb={c.thumb} fallback={c.thumbFallback} isGrid={isGrid} />
                     <span className="cand-body">
-                      <span className="cand-name">{c.handle || ui.search.videoFallback}</span>
+                      <span className="cand-name">
+                        <CandAvatar src={c.avatar} handle={c.handle || ""} />
+                        <span className="cand-handle">{c.handle || ui.search.videoFallback}</span>
+                      </span>
                       <span className="cand-desc">{c.snippet || ui.search.noCaption}</span>
                       {miss ? <span style={missPill}>{miss}</span> : null}
                     </span>
