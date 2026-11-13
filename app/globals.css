@@ -1295,10 +1295,9 @@ html[data-theme="light"] .state-miss-icon {
 }
 
 .result-time {
-  margin-left: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -1789,34 +1788,41 @@ html[data-theme="light"] .state-miss-icon {
 
 .result-count {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
   margin: 0;
-  font-size: 18px;
+  font-size: 15px;
+  font-weight: 400;
   line-height: 1.2;
 }
 
+.result-num {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Jumlah video dan toggle tampilan dalam satu bar. */
 .result-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin: 0 0 12px;
+  padding: 4px 4px 4px 14px;
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 .view-toggle {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 3px;
-  border-radius: 8px;
-  background: var(--surface);
 }
 
 .view-toggle-btn {
   display: grid;
   place-items: center;
   width: 38px;
-  height: 32px;
+  height: 36px;
   padding: 0;
   border: none;
   border-radius: 6px;
@@ -1868,13 +1874,6 @@ html[data-theme="light"] .state-miss-icon {
   ::view-transition-new(*) {
     animation: none !important;
   }
-}
-
-.result-count-ornament {
-  display: inline-flex;
-  color: var(--accent);
-  flex-shrink: 0;
-  line-height: 0;
 }
 
 .section-count {

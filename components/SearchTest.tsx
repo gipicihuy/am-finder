@@ -7,7 +7,7 @@ import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { FoundToast } from "@/components/FoundToast";
 import { NoticeModal } from "@/components/NoticeModal";
-import { ArrowRuleOrnament, GridIcon, ListIcon } from "@/components/Ornament";
+import { GridIcon, ListIcon } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
 const STATE_KEY = "amfinder:search-state";
@@ -1890,11 +1890,10 @@ export default function SearchTest({
             <section aria-label={ui.search.resultsLabel} data-results="search" style={{ marginTop: 26, opacity: searching ? 0.5 : 1 }}>
               <div className="result-head">
                 <h2 className="result-count">
-                  <span className="result-count-ornament" aria-hidden="true">
-                    <ArrowRuleOrnament />
+                  <span>
+                    <span className="result-num">{cands.length}</span> video
                   </span>
-                  {cands.length} video
-                  {searchDuration ? <span className="result-time">({searchDuration})</span> : null}
+                  {searchDuration ? <span className="result-time">{searchDuration}</span> : null}
                 </h2>
                 <div className="view-toggle" role="group" aria-label={ui.search.viewMode}>
                   <button
