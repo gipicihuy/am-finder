@@ -208,6 +208,7 @@
     "suggestionsLabel": "Search suggestions",
     "suggestFill": "Fill into search box",
     "resultsLabel": "Search results",
+    "resultsWord": "Results",
     "gridView": "Grid view",
     "listView": "List view",
     "viewMode": "View mode",

@@ -1891,7 +1891,8 @@ export default function SearchTest({
               <div className="result-head">
                 <h2 className="result-count">
                   <span>
-                    <span className="result-num">{cands.length}</span> video
+                    <span className="result-label">{ui.search.resultsWord}</span>{" "}
+                    <span className="result-num">{cands.length}</span> Video
                   </span>
                   {searchDuration ? <span className="result-time">{searchDuration}</span> : null}
                 </h2>

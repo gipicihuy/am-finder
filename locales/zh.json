@@ -208,6 +208,7 @@
     "suggestionsLabel": "搜索建议",
     "suggestFill": "填入搜索框",
     "resultsLabel": "搜索结果",
+    "resultsWord": "结果",
     "gridView": "网格视图",
     "listView": "列表视图",
     "viewMode": "视图模式",

@@ -1796,6 +1796,9 @@ html[data-theme="light"] .state-miss-icon {
   line-height: 1.2;
 }
 
+.result-label {
+  color: var(--muted);
+}
 .result-num {
   font-weight: 600;
   color: var(--accent);
