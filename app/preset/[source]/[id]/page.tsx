@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Finder } from "@/components/Finder";
 import { SectionOrnament } from "@/components/Ornament";
 import { getOgMeta, isPreviewBot } from "@/lib/og-meta";
+import { getLocale } from "@/lib/locale-server";
+import { getUi } from "@/lib/ui";
 
 // Sengaja force-dynamic: alamat ini bisa sangat banyak (satu per video) dan
 // isinya kerangka yang diisi dari browser. Dibiarkan static, Next bakal coba
@@ -12,7 +14,6 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://amfinder.web.id";
 const SITE_NAME = "AM Preset Finder";
-const OG_DESCRIPTION = "Cari link preset Alight Motion dari video ini";
 // Jaring pengaman kalau fetch metadata gagal: tetap preview ber-brand.
 const FALLBACK_IMAGE = "/og-image.png";
 
@@ -64,9 +65,10 @@ type PageProps = { params: Promise<{ source: string; id: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { source, id } = await params;
   const parsed = parse(source, id);
+  const { meta: m } = getUi(await getLocale());
   const generic = parsed
-    ? `${parsed.source === "youtube" ? "Preset YouTube" : "Preset TikTok"} — ${SITE_NAME}`
-    : "Preset — AM Preset Finder";
+    ? `${parsed.source === "youtube" ? m.presetYouTube : m.presetTikTok} | ${SITE_NAME}`
+    : `${m.presetGeneric} | ${SITE_NAME}`;
   const robots = { index: false as const, follow: false as const };
   if (!parsed) return { title: generic, robots };
 
@@ -82,7 +84,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const title = (meta?.title && clipTitle(meta.title)) || generic;
-  const description = OG_DESCRIPTION;
+  const description = m.presetDescription;
   const url = `${SITE_URL}/preset/${parsed.source}/${parsed.id}`;
   const image = meta?.image || FALLBACK_IMAGE;
   const alt = meta?.title ? clipTitle(meta.title) || title : title;

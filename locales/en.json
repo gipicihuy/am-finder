@@ -1,7 +1,13 @@
 {
   "meta": {
     "title": "AM Preset Finder",
-    "description": "Paste a TikTok or YouTube video link and get the Alight Motion preset links from its description, bio, comments and link in bio."
+    "description": "Paste a TikTok or YouTube video link and get the Alight Motion preset links from its description, bio, comments and link in bio.",
+    "searchTitle": "Find Presets",
+    "searchQueryTitle": "Presets for \"{q}\"",
+    "presetTikTok": "TikTok Preset",
+    "presetYouTube": "YouTube Preset",
+    "presetGeneric": "Preset",
+    "presetDescription": "Find the Alight Motion preset links from this video"
   },
   "lang": {
     "label": "Language",

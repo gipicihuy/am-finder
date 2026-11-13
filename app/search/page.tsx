@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Finder } from "@/components/Finder";
 import { SectionOrnament } from "@/components/Ornament";
+import { format } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale-server";
+import { getUi } from "@/lib/ui";
 
 // Dinamis supaya kata kunci di alamat dibaca waktu dibuka, bukan waktu build.
 // Pencariannya sendiri tetap jalan dari browser — tidak ada panggilan ke
@@ -22,10 +25,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { q } = await searchParams;
   const query = cleanQuery(q);
+  const { meta } = getUi(await getLocale());
   return {
     title: query
-      ? `Preset untuk "${query}" — AM Preset Finder`
-      : "Cari Preset — AM Preset Finder",
+      ? `${format(meta.searchQueryTitle, { q: query })} | AM Preset Finder`
+      : `${meta.searchTitle} | AM Preset Finder`,
     robots: { index: false, follow: false },
   };
 }

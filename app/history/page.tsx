@@ -6,7 +6,7 @@ import { getUi } from "@/lib/ui";
 export async function generateMetadata(): Promise<Metadata> {
   const ui = getUi(await getLocale());
   return {
-    title: `${ui.history.title} — AM Preset Finder`,
+    title: `${ui.history.title} | AM Preset Finder`,
     robots: { index: false, follow: false },
   };
 }

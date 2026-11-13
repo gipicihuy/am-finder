@@ -1,7 +1,13 @@
 {
   "meta": {
     "title": "AM Preset Finder",
-    "description": "粘贴 TikTok 或 YouTube 视频链接，即可从其描述、简介、评论和主页链接中获取 Alight Motion 预设链接。"
+    "description": "粘贴 TikTok 或 YouTube 视频链接，即可从其描述、简介、评论和主页链接中获取 Alight Motion 预设链接。",
+    "searchTitle": "搜索预设",
+    "searchQueryTitle": "“{q}”的预设",
+    "presetTikTok": "TikTok 预设",
+    "presetYouTube": "YouTube 预设",
+    "presetGeneric": "预设",
+    "presetDescription": "从此视频中查找 Alight Motion 预设链接"
   },
   "lang": {
     "label": "语言",

@@ -1,7 +1,13 @@
 {
   "meta": {
     "title": "AM Preset Finder",
-    "description": "Tempel link video TikTok atau YouTube dan dapatkan link preset Alight Motion dari deskripsi, bio, komentar, dan link in bio-nya."
+    "description": "Tempel link video TikTok atau YouTube dan dapatkan link preset Alight Motion dari deskripsi, bio, komentar, dan link in bio-nya.",
+    "searchTitle": "Cari Preset",
+    "searchQueryTitle": "Preset untuk \"{q}\"",
+    "presetTikTok": "Preset TikTok",
+    "presetYouTube": "Preset YouTube",
+    "presetGeneric": "Preset",
+    "presetDescription": "Cari link preset Alight Motion dari video ini"
   },
   "lang": {
     "label": "Bahasa",
