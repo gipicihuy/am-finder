@@ -19,6 +19,7 @@ const INTL_LOCALE: Record<Locale, string> = {
   id: "id-ID",
   en: "en-US",
   zh: "zh-CN",
+  my: "my-MM",
 };
 
 const HISTORY_PAGE_SIZE = 12;
@@ -29,18 +30,21 @@ const CLOCK_FORMAT: Record<Locale, Intl.DateTimeFormat> = {
   id: new Intl.DateTimeFormat(INTL_LOCALE.id, { hour: "2-digit", minute: "2-digit", hour12: false }),
   en: new Intl.DateTimeFormat(INTL_LOCALE.en, { hour: "2-digit", minute: "2-digit", hour12: false }),
   zh: new Intl.DateTimeFormat(INTL_LOCALE.zh, { hour: "2-digit", minute: "2-digit", hour12: false }),
+  my: new Intl.DateTimeFormat(INTL_LOCALE.my, { hour: "2-digit", minute: "2-digit", hour12: false }),
 };
 
 const DATE_FORMAT: Record<Locale, Intl.DateTimeFormat> = {
   id: new Intl.DateTimeFormat(INTL_LOCALE.id, { day: "numeric", month: "short" }),
   en: new Intl.DateTimeFormat(INTL_LOCALE.en, { day: "numeric", month: "short" }),
   zh: new Intl.DateTimeFormat(INTL_LOCALE.zh, { day: "numeric", month: "short" }),
+  my: new Intl.DateTimeFormat(INTL_LOCALE.my, { day: "numeric", month: "short" }),
 };
 
 const DATE_YEAR_FORMAT: Record<Locale, Intl.DateTimeFormat> = {
   id: new Intl.DateTimeFormat(INTL_LOCALE.id, { day: "numeric", month: "short", year: "numeric" }),
   en: new Intl.DateTimeFormat(INTL_LOCALE.en, { day: "numeric", month: "short", year: "numeric" }),
   zh: new Intl.DateTimeFormat(INTL_LOCALE.zh, { day: "numeric", month: "short", year: "numeric" }),
+  my: new Intl.DateTimeFormat(INTL_LOCALE.my, { day: "numeric", month: "short", year: "numeric" }),
 };
 
 function statusOf(entry: HistoryEntry): Status {

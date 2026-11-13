@@ -351,7 +351,7 @@ export async function GET(request: Request) {
         finish();
       })().catch((err) => {
         reportServerError("/api/search", err, request);
-        push("error", { message: "proses pencarian terputus tak terduga" });
+        push("error", { message: apiText(locale, "searchInterrupted") });
         finish();
       });
     },

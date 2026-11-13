@@ -13,7 +13,8 @@
     "label": "Language",
     "id": "Indonesia",
     "en": "English",
-    "zh": "中文"
+    "zh": "中文",
+    "my": "မြန်မာ"
   },
   "common": {
     "close": "Close"
@@ -263,6 +264,8 @@
     "audioRefused": "The audio source refused the request, try again.",
     "audioTooBig": "The audio file is too large.",
     "audioNotAudio": "The source is not an audio file.",
-    "audioRead": "Couldn't read the audio from the source, try again."
+    "audioRead": "Couldn't read the audio from the source, try again.",
+    "searchInterrupted": "The search was interrupted unexpectedly.",
+    "audioYoutubeFailed": "Failed to download the YouTube audio."
   }
 }

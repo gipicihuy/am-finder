@@ -40,6 +40,7 @@ export default async function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { q } = await searchParams;
+  const ui = getUi(await getLocale());
 
   return (
     <>
@@ -47,7 +48,7 @@ export default async function SearchPage({
         <span className="section-ornament" aria-hidden="true">
           <SectionOrnament />
         </span>
-        Find preset links
+        {ui.home.title}
       </h1>
       <Finder initialMode="search" initialQuery={cleanQuery(q)} />
     </>

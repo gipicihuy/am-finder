@@ -530,7 +530,7 @@ export async function GET(
     const ytRes = await youtubeAudioResponse(id, title, abortCtrl.signal, cleanup);
     if (ytRes) return ytRes;
     cleanup();
-    return audioError(500, "Gagal mengunduh audio YouTube");
+    return audioError(500, apiText(locale, "audioYoutubeFailed"));
   }
 
   if (!sound) {

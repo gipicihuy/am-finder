@@ -66,6 +66,20 @@
   --radius-sm: 6px;
 }
 
+/* Aksara Myanmar: AXGC hanya berisi Latin, jadi glyph Burma harus jatuh ke font
+   Myanmar Unicode di perangkat. Latin (merek, URL) tetap pakai AXGC. Selektor
+   :lang() ikut menangkap elemen ber-lang="my" di dalam halaman berbahasa lain,
+   seperti pilihan bahasa di dropdown. */
+:lang(my) {
+  --font-ui: "AXGC", "Noto Sans Myanmar", "Myanmar Text", "Myanmar Sangam MN", "Padauk", "Pyidaungsu";
+  --font-display: "AXGC", "Noto Sans Myanmar", "Myanmar Text", "Myanmar Sangam MN", "Padauk", "Pyidaungsu";
+}
+
+/* Tumpukan tanda vokal/medial aksara Myanmar tinggi, line-height 1.55 memotongnya. */
+body:lang(my) {
+  line-height: 1.8;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -4188,6 +4202,10 @@ html[data-theme="light"] .dt-card.is-winner {
 .lang-option:hover,
 .lang-option[aria-checked="true"] {
   background: var(--surface-2);
+}
+
+.lang-option[lang="my"] {
+  font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
 }
 
 .lang-code {

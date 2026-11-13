@@ -13,7 +13,8 @@
     "label": "语言",
     "id": "Indonesia",
     "en": "English",
-    "zh": "中文"
+    "zh": "中文",
+    "my": "မြန်မာ"
   },
   "common": {
     "close": "关闭"
@@ -263,6 +264,8 @@
     "audioRefused": "音频来源拒绝了请求，请再试一次。",
     "audioTooBig": "音频文件过大。",
     "audioNotAudio": "来源不是音频文件。",
-    "audioRead": "无法读取来源的音频，请再试一次。"
+    "audioRead": "无法读取来源的音频，请再试一次。",
+    "searchInterrupted": "搜索意外中断。",
+    "audioYoutubeFailed": "下载 YouTube 音频失败。"
   }
 }

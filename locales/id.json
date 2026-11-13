@@ -13,7 +13,8 @@
     "label": "Bahasa",
     "id": "Indonesia",
     "en": "English",
-    "zh": "中文"
+    "zh": "中文",
+    "my": "မြန်မာ"
   },
   "common": {
     "close": "Tutup"
@@ -263,6 +264,8 @@
     "audioRefused": "Sumber audio menolak permintaan, coba lagi.",
     "audioTooBig": "File audio terlalu besar.",
     "audioNotAudio": "Sumber bukan file audio.",
-    "audioRead": "Gagal membaca audio dari sumber, coba lagi."
+    "audioRead": "Gagal membaca audio dari sumber, coba lagi.",
+    "searchInterrupted": "Proses pencarian terputus tak terduga.",
+    "audioYoutubeFailed": "Gagal mengunduh audio YouTube."
   }
 }

@@ -1,15 +1,17 @@
-export const LOCALES = ["id", "en", "zh"] as const;
+export const LOCALES = ["id", "en", "zh", "my"] as const;
 
 export const OG_LOCALES: Record<(typeof LOCALES)[number], string> = {
   id: "id_ID",
   en: "en_US",
   zh: "zh_CN",
+  my: "my_MM",
 };
 
 export const LOCALE_CODES: Record<(typeof LOCALES)[number], string> = {
   id: "ID",
   en: "EN",
   zh: "中文",
+  my: "MY",
 };
 
 export type Locale = (typeof LOCALES)[number];
