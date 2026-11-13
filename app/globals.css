@@ -470,11 +470,11 @@ html[data-theme="light"] body::before {
   right: 0;
   top: calc(100% + 10px);
   z-index: 70;
-  padding: 8px;
-  background: var(--surface-2);
-  border: 0;
-  border-radius: 20px;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
   max-height: min(380px, 52vh);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -483,12 +483,12 @@ html[data-theme="light"] body::before {
 .suggest-row {
   display: flex;
   align-items: center;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
 }
 
 .suggest-row:hover,
 .suggest-row[data-active="true"] {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: var(--surface-2);
 }
 
 .suggest-item {
@@ -518,7 +518,7 @@ html[data-theme="light"] body::before {
   display: grid;
   place-items: center;
   color: var(--foreground);
-  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  background: var(--surface-3);
 }
 
 .suggest-text {
@@ -541,7 +541,7 @@ html[data-theme="light"] body::before {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--muted);
   cursor: pointer;

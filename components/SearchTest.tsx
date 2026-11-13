@@ -1053,6 +1053,29 @@ export default function SearchTest({
 
   useEffect(() => () => sugAbort.current?.abort(), []);
 
+  // Tutup panel saran dengan dua langkah: tap pertama di luar (saat input masih fokus)
+  // cuma menutup keyboard dan panel tetap terbuka; tap berikutnya di luar menutup panel.
+  const sugDownFocusedRef = useRef(false);
+  useEffect(() => {
+    if (!sugOpen) return;
+    const onDown = () => {
+      sugDownFocusedRef.current = sugFocusedRef.current;
+    };
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest?.(".suggest-panel") || target?.closest?.("input")) return;
+      if (sugDownFocusedRef.current) return;
+      setSugOpen(false);
+      setSugActive(-1);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, [sugOpen]);
+
   function onSuggestFocus() {
     sugFocusedRef.current = true;
     const query = q.trim();
