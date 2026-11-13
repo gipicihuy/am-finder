@@ -468,6 +468,205 @@ html[data-theme="light"] body::before {
   position: absolute;
   left: 0;
   right: 0;
+  top: calc(100% + 10px);
+  z-index: 70;
+  padding: 8px;
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  max-height: min(380px, 52vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.suggest-row {
+  display: flex;
+  align-items: center;
+  border-radius: 14px;
+}
+
+.suggest-row:hover,
+.suggest-row[data-active="true"] {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.suggest-item {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 6px 9px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggest-chip {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.suggest-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggest-text b {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.suggest-fill {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-right: 2px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.suggest-fill:hover {
+  color: var(--foreground);
+}
+
+.btn-primary {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .search-form {
+    gap: 8px;
+  }
+
+  .search-form .btn-primary {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  display: flex;
+}
+
+.search-input {
+  width: 100%;
+  font: inherit;
+  font-size: 15px;
+  padding: 13px 44px 13px 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--foreground);
+  min-height: 46px;
+}
+
+.search-input::placeholder {
+  color: var(--muted);
+}
+
+.search-input {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.search-input:hover {
+  border-color: var(--border-strong);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.search-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 2;
+}
+
+.clear-btn,
+.mic-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 120ms ease;
+  padding: 0;
+}
+
+.clear-btn:hover,
+.mic-btn:hover {
+  color: var(--foreground);
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+.mic-btn:hover {
+  color: var(--accent);
+}
+
+.mic-btn.is-listening {
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.15);
+  border-color: rgba(255, 71, 87, 0.4);
+  animation: micPulse 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes micPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+  100% { transform: scale(1.08); box-shadow: 0 0 0 5px rgba(255, 71, 87, 0); }
+}
+
+.clear-btn:focus-visible,
+.mic-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Saran pencarian (autocomplete) */
+.suggest-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
   top: calc(100% + 8px);
   z-index: 70;
   padding: 4px;

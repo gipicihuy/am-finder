@@ -1344,6 +1344,19 @@ export default function SearchTest({
     search(value);
   }
 
+  // Panah miring: salin saran ke kolom ketik tanpa langsung mencari, lalu lanjut mengetik.
+  function fillSuggestion(value: string, from: HTMLElement) {
+    sugSuppressRef.current = "";
+    sugFocusedRef.current = true;
+    setSugActive(-1);
+    setQ(value);
+    const input = from.closest(".suggest-panel")?.parentElement?.querySelector("input");
+    if (input) {
+      input.focus();
+      requestAnimationFrame(() => input.setSelectionRange(value.length, value.length));
+    }
+  }
+
   function onSuggestKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (!sugOpen || !suggests.length) return;
     if (event.key === "ArrowDown") {
@@ -1666,19 +1679,37 @@ export default function SearchTest({
               </>
             );
           return (
-            <button
-              key={item}
-              type="button"
-              role="option"
-              aria-selected={index === sugActive}
-              className="suggest-item"
-              data-active={index === sugActive}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => pickSuggestion(item)}
-            >
-              {/* satu span: kalau teks + <b> jadi item flex terpisah, spasi di tepinya hilang */}
-              <span>{label}</span>
-            </button>
+            <div key={item} className="suggest-row" data-active={index === sugActive}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={index === sugActive}
+                className="suggest-item"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => pickSuggestion(item)}
+              >
+                <span className="suggest-chip" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3.6-3.6" />
+                  </svg>
+                </span>
+                {/* satu span: kalau teks + <b> jadi item flex terpisah, spasi di tepinya hilang */}
+                <span className="suggest-text">{label}</span>
+              </button>
+              <button
+                type="button"
+                className="suggest-fill"
+                aria-label={ui.search.suggestFill}
+                title={ui.search.suggestFill}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => fillSuggestion(item, event.currentTarget)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M17 17 7 7M7 17V7h10" />
+                </svg>
+              </button>
+            </div>
           );
         })}
       </div>

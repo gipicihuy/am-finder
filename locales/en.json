@@ -199,6 +199,7 @@
     "keywordLabel": "Search keyword",
     "clear": "Clear",
     "suggestionsLabel": "Search suggestions",
+    "suggestFill": "Fill into search box",
     "resultsLabel": "Search results",
     "gridView": "Grid view",
     "listView": "List view",

@@ -199,6 +199,7 @@
     "keywordLabel": "Kata kunci pencarian",
     "clear": "Hapus",
     "suggestionsLabel": "Saran pencarian",
+    "suggestFill": "Isi ke kolom pencarian",
     "resultsLabel": "Hasil pencarian",
     "gridView": "Tampilan grid",
     "listView": "Tampilan list",
