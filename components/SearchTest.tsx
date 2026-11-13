@@ -16,6 +16,7 @@ import { useUi } from "@/components/LocaleProvider";
 import { format } from "@/lib/i18n";
 import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
+import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 import { rememberHistoryLink, rememberHistoryResult } from "@/lib/history";
 
 const BG = "var(--background)";
@@ -1400,6 +1401,9 @@ export default function SearchTest({
   async function search(override?: string) {
     const query = (override ?? q).trim();
     if (query.length < 3 || searching) return;
+    // Pencarian keyword juga memunculkan toast ajakan gabung saluran WhatsApp
+    // (sebelumnya hanya pencarian URL video lewat Finder).
+    window.dispatchEvent(new Event(SEARCH_STARTED_EVENT));
     const runId = ++searchRunRef.current;
     sugSuppressRef.current = query;
     setSugOpen(false);
