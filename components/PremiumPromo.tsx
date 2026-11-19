@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { shouldSuppressPromo } from "@/lib/promo-paths";
 
 const WA_URL =
-  "https://wa.me/6283182725011?text=" + encodeURIComponent("Halo, saya mau beli Alight Motion Premium 1 tahun (Rp4.900)");
+  "https://wa.me/6283182725011?text=" + encodeURIComponent("Halo, saya mau beli Alight Motion Premium 1 tahun (Rp5.000)");
 const SHOW_DELAY_MS = 2500; // jeda setelah halaman dimuat sebelum bar muncul
 const EXIT_MS = 250; // durasi animasi keluar (samakan dengan CSS)
 
@@ -44,12 +44,12 @@ export function PremiumPromo() {
       <span className="promo-text">
         <span className="promo-head">
           <span className="promo-title">Alight Motion Premium</span>
-          <span className="promo-badge" aria-hidden="true">HEMAT 51%</span>
+          <span className="promo-badge" aria-hidden="true">HEMAT 50%</span>
         </span>
         <span className="promo-sub">
-          <span className="promo-sr">Harga normal Rp10.000, sekarang Rp4.900 per tahun, hemat 51%.</span>
+          <span className="promo-sr">Harga normal Rp10.000, sekarang Rp5.000 per tahun, hemat 50%.</span>
           <span className="promo-price" aria-hidden="true">
-            Rp4.900<span className="promo-per">/tahun</span>
+            Rp5.000<span className="promo-per">/tahun</span>
           </span>
           <s className="promo-old" aria-hidden="true">Rp10.000</s>
         </span>
