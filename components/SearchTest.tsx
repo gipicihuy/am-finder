@@ -2,12 +2,12 @@
 
 import { isVideoLink, presetPathOf } from "@/lib/tiktok-link";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import type { FindResult } from "@/lib/types";
+import type { FindResult, ExplorePresetItem } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import BrandScan from "./BrandScan";
 import { FoundToast } from "@/components/FoundToast";
 import { NoticeModal } from "@/components/NoticeModal";
-import { GridIcon, ListIcon } from "@/components/Ornament";
+import { GridIcon, ListIcon, SectionOrnament } from "@/components/Ornament";
 
 const VIEW_KEY = "amfinder:view";
 const STATE_KEY = "amfinder:search-state";
@@ -94,6 +94,12 @@ function PlayIcon() {
       <path d="M9 6.5v11l8-5.5z" />
     </svg>
   );
+}
+
+function formatNumber(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return String(value);
 }
 
 function SpeakerMutedIcon() {
@@ -390,6 +396,28 @@ export default function SearchTest({
   const [searchedQuery, setSearchedQuery] = useState("");
   const [openUrl, setOpenUrl] = useState("");
   const [details, setDetails] = useState<Record<string, Detail>>({});
+  const [explorePresets, setExplorePresets] = useState<ExplorePresetItem[]>([]);
+  const [exploreLimit, setExploreLimit] = useState(6);
+  const [exploreLoading, setExploreLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setExploreLoading(true);
+    fetch("/api/explore?limit=36")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.ok && Array.isArray(data.items)) {
+          setExplorePresets(data.items);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setExploreLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const searchRef = useRef<EventSource | null>(null);
   const checkRef = useRef<EventSource | null>(null);
   const searchRunRef = useRef(0);
@@ -1877,7 +1905,115 @@ export default function SearchTest({
           )}
 
           {embedded && !searching && !error && !searchedQuery && cands.length === 0 && (
-            <HowSteps title={ui.states.howTitle} steps={ui.states.searchHowSteps} />
+            <>
+              {explorePresets.length > 0 ? (
+                <section className="explore-section" aria-label={ui.search.exploreTitle}>
+                  <div className="section-head explore-head">
+                    <div className="explore-title-wrap">
+                      <h2 className="section-title">
+                        <span className="section-ornament" aria-hidden="true">
+                          <SectionOrnament />
+                        </span>
+                        {ui.search.exploreTitle}
+                      </h2>
+                      <span className="explore-pill">{ui.search.explorePresetsBadge}</span>
+                    </div>
+                    <span className="explore-count">
+                      {explorePresets.length} Preset
+                    </span>
+                  </div>
+                  <p className="explore-sub">{ui.search.exploreSub}</p>
+
+                  <div className="explore-grid">
+                    {explorePresets.slice(0, exploreLimit).map((item) => {
+                      const hasViews = typeof item.views === "number" && item.views > 0;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="explore-card"
+                          onClick={() => openVideo(item.url)}
+                          aria-label={format(ui.search.checkFrom, { name: item.author || ui.search.thisVideo })}
+                        >
+                          <div className="explore-thumb-box">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.thumb}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              className="explore-thumb-img"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="explore-thumb-scrim" />
+
+                            <div className="explore-chip-wrap is-top-left">
+                              <span className={`explore-type-chip is-${item.presetType}`}>
+                                {item.presetType.toUpperCase()}
+                              </span>
+                            </div>
+
+                            {hasViews ? (
+                              <div className="explore-chip-wrap is-top-right">
+                                <span className="explore-stat-chip">
+                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M5 3l14 9-14 9V3z" />
+                                  </svg>
+                                  {formatNumber(item.views!)}
+                                </span>
+                              </div>
+                            ) : null}
+
+                            <div className="explore-chip-wrap is-bottom-left">
+                              <span className="explore-source-chip">
+                                {item.platform}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="explore-card-body">
+                            <span className="explore-author">{item.author || ui.search.videoFallback}</span>
+                            <span className="explore-name" title={item.title}>
+                              {item.title}
+                            </span>
+                            <div className="explore-bottom">
+                              <span className="explore-preset-tag">
+                                {item.presetCount > 1
+                                  ? format(ui.search.explorePresetsCount, { count: item.presetCount })
+                                  : ui.search.explorePresetSingle}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {explorePresets.length > exploreLimit ? (
+                    <div className="explore-more-wrap">
+                      <button
+                        type="button"
+                        className="explore-more-btn"
+                        onClick={() => setExploreLimit((limit) => limit + 6)}
+                      >
+                        <span>{ui.search.exploreMore}</span>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : null}
+                </section>
+              ) : exploreLoading ? (
+                <div className="explore-loading-grid" aria-hidden="true">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="explore-card-skeleton" />
+                  ))}
+                </div>
+              ) : null}
+
+              <HowSteps title={ui.states.howTitle} steps={ui.states.searchHowSteps} />
+            </>
           )}
 
           {embedded && searching && (

@@ -108,3 +108,16 @@ export type RekomenFeed = {
   items: RekomenItem[];
   sources: RekomenSource[];
 };
+
+export type ExplorePresetItem = {
+  id: string;
+  url: string;
+  title: string;
+  author: string;
+  thumb: string;
+  platform: "TikTok" | "YouTube";
+  presetType: string;
+  presetCount: number;
+  views?: number | null;
+  likes?: number | null;
+};

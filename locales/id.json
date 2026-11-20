@@ -210,6 +210,12 @@
   },
   "search": {
     "title": "Cari preset",
+    "exploreTitle": "Jelajahi Preset",
+    "exploreSub": "Pilihan preset Alight Motion terpopuler yang siap langsung kamu pakai.",
+    "exploreMore": "Lihat Lainnya",
+    "explorePresetsCount": "{count} Preset",
+    "explorePresetSingle": "1 Preset",
+    "explorePresetsBadge": "Populer",
     "intro": "Ketik nama lagu atau kata kunci, lalu pilih video untuk mencari link presetnya.",
     "placeholder": "Cari nama lagu atau kata kunci...",
     "keywordLabel": "Kata kunci pencarian",

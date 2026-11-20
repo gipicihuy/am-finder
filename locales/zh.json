@@ -210,6 +210,12 @@
   },
   "search": {
     "title": "查找预设",
+    "exploreTitle": "浏览预设",
+    "exploreSub": "精选热门 Alight Motion 预设，随时可用。",
+    "exploreMore": "查看更多",
+    "explorePresetsCount": "{count} 个预设",
+    "explorePresetSingle": "1 个预设",
+    "explorePresetsBadge": "热门",
     "intro": "输入歌曲名称或关键词，然后选择一个视频来查找其预设链接。",
     "placeholder": "搜索歌曲名称或关键词...",
     "keywordLabel": "搜索关键词",

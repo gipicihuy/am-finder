@@ -210,6 +210,12 @@
   },
   "search": {
     "title": "Find presets",
+    "exploreTitle": "Explore Presets",
+    "exploreSub": "Popular Alight Motion presets ready for your creative edits.",
+    "exploreMore": "Show More",
+    "explorePresetsCount": "{count} Presets",
+    "explorePresetSingle": "1 Preset",
+    "explorePresetsBadge": "Popular",
     "intro": "Type a song name or keyword, then pick a video to find its preset links.",
     "placeholder": "Search a song name or keyword...",
     "keywordLabel": "Search keyword",
