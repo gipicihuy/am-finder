@@ -1979,13 +1979,11 @@ export default function SearchTest({
                         </span>
                         {ui.search.exploreTitle}
                       </h2>
-                      <span className="explore-pill">{ui.search.explorePresetsBadge}</span>
+                      <span className="explore-count" aria-label={`${explorePresets.length} preset`}>
+                        {explorePresets.length}
+                      </span>
                     </div>
-                    <span className="explore-count">
-                      {explorePresets.length} Preset
-                    </span>
                   </div>
-                  <p className="explore-sub">{ui.search.exploreSub}</p>
 
                   <div ref={exploreDeckRef} className="cand-deck is-grid">
                     {explorePresets.slice(0, exploreLimit).map((item) => {

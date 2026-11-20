@@ -6138,10 +6138,10 @@ html[data-theme="light"] .notice-icon {
 
 .explore-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 10px;
 }
@@ -6152,30 +6152,18 @@ html[data-theme="light"] .notice-icon {
   gap: 10px;
 }
 
-.explore-pill {
+.explore-count {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(5, 250, 168, 0.12);
-  color: var(--accent);
-  border: 1px solid rgba(5, 250, 168, 0.28);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.explore-count {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.explore-sub {
-  margin: 0 0 16px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   font-size: 13px;
-  line-height: 1.5;
+  font-weight: 700;
+  letter-spacing: 0;
   color: var(--muted);
+  background: var(--surface);
 }
 
 .cand-preset-chip {
