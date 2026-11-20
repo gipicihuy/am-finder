@@ -269,9 +269,11 @@ function CandThumb({
           src={playUrl}
           playsInline
           autoPlay
+          loop
+          muted={isMuted}
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
-            const shouldMute = userMutedChoice === true;
+            const shouldMute = userMutedChoice !== false;
             v.muted = shouldMute;
             v.play().catch(() => {
               if (!shouldMute) {
@@ -399,6 +401,27 @@ export default function SearchTest({
   const [explorePresets, setExplorePresets] = useState<ExplorePresetItem[]>([]);
   const [exploreLimit, setExploreLimit] = useState(6);
   const [exploreLoading, setExploreLoading] = useState(false);
+  const explorePresetsRef = useRef<ExplorePresetItem[]>([]);
+  const exploreLimitRef = useRef(6);
+  const exploreDeckRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    explorePresetsRef.current = explorePresets;
+    if (candsRef.current.length === 0 && explorePresets.length > 0) {
+      requestAnimationFrame(() => {
+        evaluateFocus();
+      });
+    }
+  }, [explorePresets]);
+
+  useEffect(() => {
+    exploreLimitRef.current = exploreLimit;
+    if (candsRef.current.length === 0 && explorePresetsRef.current.length > 0) {
+      requestAnimationFrame(() => {
+        evaluateFocus();
+      });
+    }
+  }, [exploreLimit]);
 
   useEffect(() => {
     let active = true;
@@ -425,11 +448,11 @@ export default function SearchTest({
 
   const [activePlayUrl, setActivePlayUrl] = useState<string>("");
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   const activePlayUrlRef = useRef("");
   const isVideoPlayingRef = useRef(false);
-  const isMutedRef = useRef(false);
+  const isMutedRef = useRef(true);
   const userMutedChoiceRef = useRef<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -481,13 +504,18 @@ export default function SearchTest({
 
   const canAutoPlay = () => {
     if (typeof window === "undefined") return false;
-    if (viewRef.current !== "grid") return false;
     if (openUrlRef.current) return false;
     if (missNoticeRef.current !== null) return false;
     if (document.hidden) return false;
     const panel = document.getElementById("panel-search");
     if (panel && panel.hidden) return false;
-    if (deckRef.current && deckRef.current.closest("[hidden]")) return false;
+    if (candsRef.current.length > 0) {
+      if (viewRef.current !== "grid") return false;
+      if (deckRef.current && deckRef.current.closest("[hidden]")) return false;
+    } else {
+      if (explorePresetsRef.current.length === 0) return false;
+      if (exploreDeckRef.current && exploreDeckRef.current.closest("[hidden]")) return false;
+    }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
     const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
     if (Boolean(nav.connection?.saveData)) return false;
@@ -496,9 +524,18 @@ export default function SearchTest({
 
   const isCardInZone = (url: string): boolean => {
     if (!url) return false;
-    const c = candsRef.current.find((item) => item.url === url);
-    if (!c || !c.playUrl || isUrlExpired(c.playUrl)) return false;
-    if (missTag(url)) return false;
+    let playUrl: string | undefined;
+    if (candsRef.current.length > 0) {
+      const c = candsRef.current.find((item) => item.url === url);
+      if (!c || !c.playUrl || isUrlExpired(c.playUrl)) return false;
+      if (missTag(url)) return false;
+      playUrl = c.playUrl;
+    } else {
+      const p = explorePresetsRef.current.find((item) => item.url === url);
+      if (!p || !p.playUrl || isUrlExpired(p.playUrl)) return false;
+      playUrl = p.playUrl;
+    }
+    if (!playUrl) return false;
     if (failedUrlsRef.current.has(url)) return false;
 
     const el = cardRefs.current[url];
@@ -531,30 +568,55 @@ export default function SearchTest({
     const vh = window.innerHeight || document.documentElement.clientHeight;
     if (vh <= 0) return [];
 
-    const displayed = candsRef.current.slice(0, candLimitRef.current);
     const list: QualifyingCard[] = [];
 
-    for (let i = 0; i < displayed.length; i++) {
-      const c = displayed[i];
-      if (!c.playUrl || isUrlExpired(c.playUrl)) continue;
-      if (missTag(c.url)) continue;
-      if (failedUrlsRef.current.has(c.url)) continue;
+    if (candsRef.current.length > 0) {
+      const displayed = candsRef.current.slice(0, candLimitRef.current);
+      for (let i = 0; i < displayed.length; i++) {
+        const c = displayed[i];
+        if (!c.playUrl || isUrlExpired(c.playUrl)) continue;
+        if (missTag(c.url)) continue;
+        if (failedUrlsRef.current.has(c.url)) continue;
 
-      const el = cardRefs.current[c.url];
-      if (!el || el.offsetParent === null) continue;
+        const el = cardRefs.current[c.url];
+        if (!el || el.offsetParent === null) continue;
 
-      const rect = el.getBoundingClientRect();
-      if (rect.height <= 0 || rect.width <= 0) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.height <= 0 || rect.width <= 0) continue;
 
-      const visibleTop = Math.max(0, rect.top);
-      const visibleBottom = Math.min(vh, rect.bottom);
-      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-      if (visibleHeight / rect.height < 0.75) continue;
+        const visibleTop = Math.max(0, rect.top);
+        const visibleBottom = Math.min(vh, rect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        if (visibleHeight / rect.height < 0.75) continue;
 
-      const midY = rect.top + rect.height / 2;
-      if (midY < 0.15 * vh || midY > 0.65 * vh) continue;
+        const midY = rect.top + rect.height / 2;
+        if (midY < 0.15 * vh || midY > 0.65 * vh) continue;
 
-      list.push({ url: c.url, rect, midY });
+        list.push({ url: c.url, rect, midY });
+      }
+    } else {
+      const displayed = explorePresetsRef.current.slice(0, exploreLimitRef.current);
+      for (let i = 0; i < displayed.length; i++) {
+        const p = displayed[i];
+        if (!p.playUrl || isUrlExpired(p.playUrl)) continue;
+        if (failedUrlsRef.current.has(p.url)) continue;
+
+        const el = cardRefs.current[p.url];
+        if (!el || el.offsetParent === null) continue;
+
+        const rect = el.getBoundingClientRect();
+        if (rect.height <= 0 || rect.width <= 0) continue;
+
+        const visibleTop = Math.max(0, rect.top);
+        const visibleBottom = Math.min(vh, rect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        if (visibleHeight / rect.height < 0.75) continue;
+
+        const midY = rect.top + rect.height / 2;
+        if (midY < 0.15 * vh || midY > 0.65 * vh) continue;
+
+        list.push({ url: p.url, rect, midY });
+      }
     }
 
     return list;
@@ -807,7 +869,7 @@ export default function SearchTest({
     };
 
     const onScroll = () => {
-      if (viewRef.current !== "grid") return;
+      if (candsRef.current.length > 0 && viewRef.current !== "grid") return;
 
       if (scrollRafRef.current === null) {
         scrollRafRef.current = requestAnimationFrame(checkActiveCardDuringScroll);
@@ -1924,90 +1986,86 @@ export default function SearchTest({
                   </div>
                   <p className="explore-sub">{ui.search.exploreSub}</p>
 
-                  <div className="explore-grid">
+                  <div ref={exploreDeckRef} className="cand-deck is-grid">
                     {explorePresets.slice(0, exploreLimit).map((item) => {
-                      const hasViews = typeof item.views === "number" && item.views > 0;
+                      const isGrid = true;
+                      const cls = [
+                        "cand-tile",
+                        item.url === lastUrl ? "is-last" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+
                       return (
                         <button
-                          key={item.id}
+                          key={item.url}
+                          ref={(el) => {
+                            cardRefs.current[item.url] = el;
+                          }}
                           type="button"
-                          className="explore-card"
+                          className={cls}
+                          aria-label={format(ui.search.checkFrom, {
+                            name: item.author || ui.search.thisVideo,
+                          })}
                           onClick={() => openVideo(item.url)}
-                          aria-label={format(ui.search.checkFrom, { name: item.author || ui.search.thisVideo })}
+                          style={{ viewTransitionName: vtName(item.url) }}
                         >
-                          <div className="explore-thumb-box">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={item.thumb}
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                              className="explore-thumb-img"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="explore-thumb-scrim" />
-
-                            <div className="explore-chip-wrap is-top-left">
-                              <span className={`explore-type-chip is-${item.presetType}`}>
+                          <CandThumb
+                            url={item.url}
+                            thumb={item.thumb}
+                            isGrid={isGrid}
+                            playUrl={item.playUrl}
+                            isActive={isGrid && activePlayUrl === item.url}
+                            isPlaying={isVideoPlaying}
+                            isMuted={isMuted}
+                            userMutedChoice={userMutedChoiceRef.current}
+                            onToggleMute={handleToggleMute}
+                            onPlaying={handleVideoPlaying}
+                            onEnded={advanceNextCard}
+                            onError={() => handleVideoError(item.url)}
+                            onVolumeChange={(muted) => setIsMuted(muted)}
+                            videoRef={videoRef}
+                            unmuteLabel={ui.search.unmuteVideo}
+                            muteLabel={ui.search.muteVideo}
+                          />
+                          <span className="cand-body">
+                            <span className="cand-name">
+                              <CandAvatar src={item.avatar} handle={item.author || ""} />
+                              <span className="cand-handle">
+                                {item.author || ui.search.videoFallback}
+                              </span>
+                            </span>
+                            <span className="cand-desc">{item.title || ui.search.noCaption}</span>
+                            <span className="cand-preset-chip">
+                              <span className={`cand-preset-type is-${item.presetType}`}>
                                 {item.presetType.toUpperCase()}
                               </span>
-                            </div>
-
-                            {hasViews ? (
-                              <div className="explore-chip-wrap is-top-right">
-                                <span className="explore-stat-chip">
-                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                    <path d="M5 3l14 9-14 9V3z" />
-                                  </svg>
-                                  {formatNumber(item.views!)}
-                                </span>
-                              </div>
-                            ) : null}
-
-                            <div className="explore-chip-wrap is-bottom-left">
-                              <span className="explore-source-chip">
-                                {item.platform}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="explore-card-body">
-                            <span className="explore-author">{item.author || ui.search.videoFallback}</span>
-                            <span className="explore-name" title={item.title}>
-                              {item.title}
-                            </span>
-                            <div className="explore-bottom">
-                              <span className="explore-preset-tag">
+                              <span className="cand-preset-count">
                                 {item.presetCount > 1
                                   ? format(ui.search.explorePresetsCount, { count: item.presetCount })
                                   : ui.search.explorePresetSingle}
                               </span>
-                            </div>
-                          </div>
+                            </span>
+                          </span>
                         </button>
                       );
                     })}
                   </div>
 
-                  {explorePresets.length > exploreLimit ? (
-                    <div className="explore-more-wrap">
-                      <button
-                        type="button"
-                        className="explore-more-btn"
-                        onClick={() => setExploreLimit((limit) => limit + 6)}
-                      >
-                        <span>{ui.search.exploreMore}</span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : null}
+                  {explorePresets.length > exploreLimit && (
+                    <button
+                      type="button"
+                      className="btn-show-more"
+                      onClick={() => setExploreLimit((limit) => limit + 6)}
+                    >
+                      {ui.search.showMore}
+                    </button>
+                  )}
                 </section>
               ) : exploreLoading ? (
-                <div className="explore-loading-grid" aria-hidden="true">
+                <div className="cand-deck is-grid" aria-hidden="true">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="explore-card-skeleton" />
+                    <div key={i} className="cand-tile cand-skeleton" />
                   ))}
                 </div>
               ) : null}

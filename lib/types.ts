@@ -114,7 +114,9 @@ export type ExplorePresetItem = {
   url: string;
   title: string;
   author: string;
+  avatar?: string;
   thumb: string;
+  playUrl?: string;
   platform: "TikTok" | "YouTube";
   presetType: string;
   presetCount: number;

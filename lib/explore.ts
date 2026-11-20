@@ -21,6 +21,8 @@ type CachedPresetEntry = {
       title?: string;
       description?: string;
       cover?: string;
+      playUrl?: string;
+      playUrlNoWm?: string;
       stats?: {
         views?: number;
         likes?: number;
@@ -29,6 +31,7 @@ type CachedPresetEntry = {
     authorDetail?: {
       nickname?: string;
       uniqueId?: string;
+      avatar?: string;
     };
   };
 };
@@ -106,12 +109,28 @@ export async function getExplorePresets(limit = 36): Promise<ExplorePresetItem[]
       const likes =
         typeof v.video?.stats?.likes === "number" ? v.video.stats.likes : null;
 
+      const avatar =
+        typeof v.authorDetail?.avatar === "string" &&
+        v.authorDetail.avatar.startsWith("http")
+          ? v.authorDetail.avatar
+          : undefined;
+
+      const playUrl = videoId
+        ? `/api/video/${videoId}`
+        : typeof v.video?.playUrlNoWm === "string" && v.video.playUrlNoWm.startsWith("http")
+          ? v.video.playUrlNoWm
+          : typeof v.video?.playUrl === "string" && v.video.playUrl.startsWith("http")
+            ? v.video.playUrl
+            : undefined;
+
       items.push({
         id: videoId,
         url,
         title: title.slice(0, 75),
         author,
+        avatar,
         thumb,
+        playUrl,
         platform,
         presetType,
         presetCount,
