@@ -270,10 +270,9 @@ function CandThumb({
           playsInline
           autoPlay
           loop
-          muted={isMuted}
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
-            const shouldMute = userMutedChoice !== false;
+            const shouldMute = userMutedChoice === true;
             v.muted = shouldMute;
             v.play().catch(() => {
               if (!shouldMute) {
@@ -448,11 +447,11 @@ export default function SearchTest({
 
   const [activePlayUrl, setActivePlayUrl] = useState<string>("");
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
 
   const activePlayUrlRef = useRef("");
   const isVideoPlayingRef = useRef(false);
-  const isMutedRef = useRef(true);
+  const isMutedRef = useRef(false);
   const userMutedChoiceRef = useRef<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1968,6 +1967,8 @@ export default function SearchTest({
 
           {embedded && !searching && !error && !searchedQuery && cands.length === 0 && (
             <>
+              <HowSteps title={ui.states.howTitle} steps={ui.states.searchHowSteps} />
+
               {explorePresets.length > 0 ? (
                 <section className="explore-section" aria-label={ui.search.exploreTitle}>
                   <div className="section-head explore-head">
@@ -2069,8 +2070,6 @@ export default function SearchTest({
                   ))}
                 </div>
               ) : null}
-
-              <HowSteps title={ui.states.howTitle} steps={ui.states.searchHowSteps} />
             </>
           )}
 
