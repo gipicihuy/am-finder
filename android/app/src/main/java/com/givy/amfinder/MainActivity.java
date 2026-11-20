@@ -272,7 +272,18 @@ public class MainActivity extends Activity {
             return;
         }
         try {
+            if (mime == null || mime.isEmpty()) {
+                if (url.contains("/api/audio/")) mime = "audio/mpeg";
+                else if (url.contains("/api/video/")) mime = "video/mp4";
+            }
             String name = URLUtil.guessFileName(url, disposition, mime);
+            if (name != null && name.endsWith(".bin")) {
+                if (url.contains("/api/audio/")) {
+                    name = name.substring(0, name.length() - 4) + ".mp3";
+                } else if (url.contains("/api/video/")) {
+                    name = name.substring(0, name.length() - 4) + ".mp4";
+                }
+            }
             DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
             req.setTitle(name);
             req.setDescription("AM Finder");

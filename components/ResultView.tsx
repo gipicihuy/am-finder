@@ -278,6 +278,25 @@ function CheckIcon() {
   );
 }
 
+function AlertIcon() {
+  return (
+    <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg className="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 function CopyButton({ url, variant = "text" }: { url: string; variant?: "text" | "icon" }) {
   const ui = useUi();
   const [done, setDone] = useState(false);
@@ -868,10 +887,17 @@ function VideoHead({
   );
 }
 
+type DownloadState =
+  | { status: "idle" }
+  | { status: "downloading"; kind: "audio" | "video" }
+  | { status: "success"; kind: "audio" | "video"; isApk?: boolean }
+  | { status: "error"; kind: "audio" | "video"; message: string };
+
 export function ResultView({ result }: { result: FindResult }) {
   const ui = useUi();
   const [allowMotion, setAllowMotion] = useState(true);
   const [presetLimit, setPresetLimit] = useState(3);
+  const [downloadState, setDownloadState] = useState<DownloadState>({ status: "idle" });
   const [audioBusy, setAudioBusy] = useState(false);
   const [audioError, setAudioError] = useState("");
   const [videoBusy, setVideoBusy] = useState(false);
@@ -879,6 +905,21 @@ export function ResultView({ result }: { result: FindResult }) {
   const [coverFailed, setCoverFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const downloadSeq = useRef(0);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearSuccessTimer = useCallback(() => {
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+  }, []);
+
+  const dismissDownloadState = useCallback(() => {
+    clearSuccessTimer();
+    setDownloadState({ status: "idle" });
+    setAudioError("");
+    setVideoError("");
+  }, [clearSuccessTimer]);
 
   useEffect(() => {
     setAllowMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -887,13 +928,19 @@ export function ResultView({ result }: { result: FindResult }) {
   useEffect(() => {
     setPresetLimit(3);
     downloadSeq.current += 1;
+    clearSuccessTimer();
+    setDownloadState({ status: "idle" });
     setAudioBusy(false);
     setAudioError("");
     setVideoBusy(false);
     setVideoError("");
     setCoverFailed(false);
     setMenuOpen(false);
-  }, [result]);
+  }, [result, clearSuccessTimer]);
+
+  useEffect(() => {
+    return () => clearSuccessTimer();
+  }, [clearSuccessTimer]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -940,18 +987,29 @@ export function ResultView({ result }: { result: FindResult }) {
   const showSoundCover = Boolean(soundCover) && !coverFailed && !(!isYt && isOwnSound(music, avatar, [result.author, result.authorDetail?.nickname, result.authorDetail?.uniqueId]));
 
   async function handleDownload() {
-    if (!canDownloadAudio || !videoId || audioBusy) return;
+    if (!canDownloadAudio || !videoId || downloadState.status === "downloading") return;
+
+    clearSuccessTimer();
+    setMenuOpen(false);
 
     // APK v1.6+: navigasi langsung ke endpoint attachment, DownloadListener
     // native yang menangani unduhan (blob URL tidak bisa diunduh WebView).
     if (isAndroidApp() && hasNativeDownload()) {
+      setDownloadState({ status: "downloading", kind: "audio" });
       window.location.assign(`/api/audio/${encodeURIComponent(videoId)}?dl=1`);
+      successTimerRef.current = setTimeout(() => {
+        setDownloadState({ status: "success", kind: "audio", isApk: true });
+        successTimerRef.current = setTimeout(() => {
+          setDownloadState({ status: "idle" });
+        }, 5500);
+      }, 1000);
       return;
     }
 
     // WebView APK v1.5 belum punya DownloadListener. Buka link CDN di browser
     // (perilaku lama) untuk APK lama.
     if (isAndroidApp() && soundAudio) {
+      setDownloadState({ status: "downloading", kind: "audio" });
       const link = document.createElement("a");
       link.href = soundAudio;
       link.target = "_blank";
@@ -959,6 +1017,12 @@ export function ResultView({ result }: { result: FindResult }) {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      successTimerRef.current = setTimeout(() => {
+        setDownloadState({ status: "success", kind: "audio", isApk: true });
+        successTimerRef.current = setTimeout(() => {
+          setDownloadState({ status: "idle" });
+        }, 5500);
+      }, 1000);
       return;
     }
 
@@ -966,19 +1030,23 @@ export function ResultView({ result }: { result: FindResult }) {
     downloadSeq.current = requestId;
     setAudioBusy(true);
     setAudioError("");
+    setDownloadState({ status: "downloading", kind: "audio" });
     try {
       const res = await fetch(`/api/audio/${encodeURIComponent(videoId)}`, {
         cache: "no-store",
       });
       if (downloadSeq.current !== requestId) return;
       if (!res.ok) {
-        setAudioError(await audioErrorMessage(res, ui));
+        const msg = await audioErrorMessage(res, ui);
+        setAudioError(msg);
+        setDownloadState({ status: "error", kind: "audio", message: msg });
         return;
       }
       const blob = await res.blob();
       if (downloadSeq.current !== requestId) return;
       if (!blob.size) {
         setAudioError(ui.result.audioEmpty);
+        setDownloadState({ status: "error", kind: "audio", message: ui.result.audioEmpty });
         return;
       }
       const type = res.headers.get("content-type") || blob.type || "audio/mpeg";
@@ -994,10 +1062,18 @@ export function ResultView({ result }: { result: FindResult }) {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(href), 30_000);
+
+      setDownloadState({ status: "success", kind: "audio", isApk: false });
+      successTimerRef.current = setTimeout(() => {
+        setDownloadState({ status: "idle" });
+      }, 5000);
     } catch (error) {
       if (downloadSeq.current !== requestId) return;
       if (!(error instanceof DOMException && error.name === "AbortError")) {
         setAudioError(ui.result.audioFailed);
+        setDownloadState({ status: "error", kind: "audio", message: ui.result.audioFailed });
+      } else {
+        setDownloadState({ status: "idle" });
       }
     } finally {
       if (downloadSeq.current === requestId) setAudioBusy(false);
@@ -1007,15 +1083,40 @@ export function ResultView({ result }: { result: FindResult }) {
   const canDownloadVideo = Boolean(videoId && (playUrl || isYt));
 
   async function handleDownloadVideo() {
-    if (!videoId || videoBusy) return;
+    if (!videoId || downloadState.status === "downloading") return;
+
+    clearSuccessTimer();
+    setMenuOpen(false);
+
     if (isAndroidApp() && hasNativeDownload()) {
+      setDownloadState({ status: "downloading", kind: "video" });
       window.location.assign(`/api/video/${encodeURIComponent(videoId)}?dl=1`);
+      successTimerRef.current = setTimeout(() => {
+        setDownloadState({ status: "success", kind: "video", isApk: true });
+        successTimerRef.current = setTimeout(() => {
+          setDownloadState({ status: "idle" });
+        }, 5500);
+      }, 1000);
       return;
     }
+
+    if (isAndroidApp() && !hasNativeDownload() && playUrl) {
+      setDownloadState({ status: "downloading", kind: "video" });
+      window.open(playUrl, "_blank");
+      successTimerRef.current = setTimeout(() => {
+        setDownloadState({ status: "success", kind: "video", isApk: true });
+        successTimerRef.current = setTimeout(() => {
+          setDownloadState({ status: "idle" });
+        }, 5500);
+      }, 1000);
+      return;
+    }
+
     const requestId = downloadSeq.current + 1;
     downloadSeq.current = requestId;
     setVideoBusy(true);
     setVideoError("");
+    setDownloadState({ status: "downloading", kind: "video" });
     try {
       const res = await fetch(`/api/video/${encodeURIComponent(videoId)}?dl=1`, {
         cache: "no-store",
@@ -1023,12 +1124,14 @@ export function ResultView({ result }: { result: FindResult }) {
       if (downloadSeq.current !== requestId) return;
       if (!res.ok) {
         setVideoError(ui.result.videoFailed);
+        setDownloadState({ status: "error", kind: "video", message: ui.result.videoFailed });
         return;
       }
       const blob = await res.blob();
       if (downloadSeq.current !== requestId) return;
       if (!blob.size) {
         setVideoError(ui.result.videoFailed);
+        setDownloadState({ status: "error", kind: "video", message: ui.result.videoFailed });
         return;
       }
       const name =
@@ -1043,15 +1146,21 @@ export function ResultView({ result }: { result: FindResult }) {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(href), 30_000);
+
+      setDownloadState({ status: "success", kind: "video", isApk: false });
+      successTimerRef.current = setTimeout(() => {
+        setDownloadState({ status: "idle" });
+      }, 5000);
     } catch {
       if (downloadSeq.current !== requestId) return;
       setVideoError(ui.result.videoFailed);
+      setDownloadState({ status: "error", kind: "video", message: ui.result.videoFailed });
     } finally {
       if (downloadSeq.current === requestId) setVideoBusy(false);
     }
   }
 
-  const downloadBusy = audioBusy || videoBusy;
+  const downloadBusy = downloadState.status === "downloading" || audioBusy || videoBusy;
   const canDownload = canDownloadAudio || canDownloadVideo;
 
   function handleDownloadClick() {
@@ -1194,8 +1303,14 @@ export function ResultView({ result }: { result: FindResult }) {
               </span>
               <span className="sound-text">
                 <span className="sound-title">{soundTitle || ui.result.soundFallback}</span>
-                <span className="sound-sub">
-                  {soundAuthor && !soundTitle?.includes(soundAuthor) ? soundAuthor : ui.result.soundOfVideo}
+                <span className="sound-sub-wrap">
+                  <span className="sound-sub">
+                    {soundAuthor && !soundTitle?.includes(soundAuthor) ? soundAuthor : ui.result.soundOfVideo}
+                  </span>
+                  <span className="sound-badges" aria-label="Format tersedia">
+                    {canDownloadAudio ? <span className="sound-badge is-mp3">MP3</span> : null}
+                    {canDownloadVideo ? <span className="sound-badge is-mp4">MP4</span> : null}
+                  </span>
                 </span>
               </span>
               {soundLink ? (
@@ -1214,59 +1329,175 @@ export function ResultView({ result }: { result: FindResult }) {
                 <div className="sound-dl">
                   <button
                     type="button"
-                    className="sound-btn is-primary"
+                    className={`sound-btn is-primary${
+                      downloadState.status === "downloading" ? " is-downloading" : ""
+                    }${downloadState.status === "success" ? " is-success" : ""}`}
                     onClick={handleDownloadClick}
-                    disabled={downloadBusy}
-                    aria-busy={downloadBusy}
+                    disabled={downloadState.status === "downloading"}
+                    aria-busy={downloadState.status === "downloading"}
                     aria-haspopup={canDownloadAudio && canDownloadVideo ? "menu" : undefined}
                     aria-expanded={canDownloadAudio && canDownloadVideo ? menuOpen : undefined}
                     aria-label={
-                      audioBusy
-                        ? ui.result.downloadingAudio
-                        : videoBusy
-                          ? ui.result.downloadingVideo
+                      downloadState.status === "downloading"
+                        ? downloadState.kind === "audio"
+                          ? ui.result.downloadingAudio
+                          : ui.result.downloadingVideo
+                        : downloadState.status === "success"
+                          ? ui.result.downloadSuccess
                           : canDownloadAudio && canDownloadVideo
                             ? ui.result.downloadMenu
                             : canDownloadVideo
                               ? ui.result.downloadVideoLong
                               : ui.result.downloadAudioLong
                     }
-                    title={ui.result.downloadMenu}
+                    title={
+                      downloadState.status === "success"
+                        ? ui.result.downloadSuccess
+                        : canDownloadAudio && canDownloadVideo
+                          ? `${ui.result.downloadMenu} (MP3 / MP4)`
+                          : canDownloadVideo
+                            ? ui.result.downloadVideoLong
+                            : ui.result.downloadAudioLong
+                    }
                   >
-                    {downloadBusy ? <span className="spinner" aria-hidden="true" /> : <DownloadIcon />}
+                    {downloadState.status === "downloading" ? (
+                      <span className="spinner" aria-hidden="true" />
+                    ) : downloadState.status === "success" ? (
+                      <CheckIcon />
+                    ) : (
+                      <DownloadIcon />
+                    )}
                   </button>
                   {menuOpen ? (
                     <div className="sound-menu" role="menu" aria-label={ui.result.downloadMenu}>
-                      <button type="button" role="menuitem" className="sound-menu-item" onClick={() => pickDownload("video")}>
-                        <VideoIcon />
-                        <span>{ui.result.downloadVideo}</span>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="sound-menu-item"
+                        onClick={() => pickDownload("video")}
+                      >
+                        <span className="sound-menu-icon is-video">
+                          <VideoIcon />
+                        </span>
+                        <span className="sound-menu-details">
+                          <span className="sound-menu-top">
+                            <span className="sound-menu-name">{ui.result.downloadVideo}</span>
+                            <span className="sound-badge is-mp4">MP4</span>
+                          </span>
+                          <span className="sound-menu-hint">{ui.result.downloadVideoDesc}</span>
+                        </span>
                       </button>
-                      <button type="button" role="menuitem" className="sound-menu-item" onClick={() => pickDownload("audio")}>
-                        <MusicIcon />
-                        <span>{ui.result.downloadMusic}</span>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="sound-menu-item"
+                        onClick={() => pickDownload("audio")}
+                      >
+                        <span className="sound-menu-icon is-audio">
+                          <MusicIcon />
+                        </span>
+                        <span className="sound-menu-details">
+                          <span className="sound-menu-top">
+                            <span className="sound-menu-name">{ui.result.downloadMusic}</span>
+                            <span className="sound-badge is-mp3">MP3</span>
+                          </span>
+                          <span className="sound-menu-hint">{ui.result.downloadAudioDesc}</span>
+                        </span>
                       </button>
                     </div>
                   ) : null}
                 </div>
               ) : null}
             </div>
-            {videoError ? (
-              <p className="sound-error" role="status">
-                {videoError}
-              </p>
-            ) : null}
-            {audioError ? (
-              <p className="sound-error" role="status">
-                {audioError}
-                {soundAudio ? (
-                  <>
-                    {" "}
-                    <a href={soundAudio} target="_blank" rel="noopener noreferrer">
-                      {ui.result.openAudio}
-                    </a>
-                  </>
-                ) : null}
-              </p>
+
+            {downloadState.status !== "idle" ? (
+              <div
+                className={`sound-dl-card is-${downloadState.status} is-${downloadState.kind}`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="sound-dl-card-body">
+                  <div className="sound-dl-card-icon-wrap">
+                    {downloadState.status === "downloading" ? (
+                      downloadState.kind === "audio" ? (
+                        <div className="sound-dl-equalizer" aria-label="Visualizer musik">
+                          <span className="eq-bar bar-1" />
+                          <span className="eq-bar bar-2" />
+                          <span className="eq-bar bar-3" />
+                          <span className="eq-bar bar-4" />
+                        </div>
+                      ) : (
+                        <div className="sound-dl-pulse-icon" aria-label="Video downloading">
+                          <VideoIcon />
+                        </div>
+                      )
+                    ) : downloadState.status === "success" ? (
+                      <div className="sound-dl-check-icon" aria-label="Berhasil">
+                        <CheckIcon />
+                      </div>
+                    ) : (
+                      <div className="sound-dl-error-icon" aria-label="Gagal">
+                        <AlertIcon />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="sound-dl-card-content">
+                    <div className="sound-dl-card-title-row">
+                      <span className="sound-dl-card-title">
+                        {downloadState.status === "downloading"
+                          ? downloadState.kind === "audio"
+                            ? ui.result.downloadingAudio
+                            : ui.result.downloadingVideo
+                          : downloadState.status === "success"
+                            ? ui.result.downloadSuccess
+                            : ui.result.downloadErrorTitle}
+                      </span>
+                      <span className={`sound-badge is-${downloadState.kind}`}>
+                        {downloadState.kind === "audio" ? "MP3" : "MP4"}
+                      </span>
+                    </div>
+
+                    <p className="sound-dl-card-desc">
+                      {downloadState.status === "downloading"
+                        ? isAndroidApp() && hasNativeDownload()
+                          ? ui.result.downloadApkStarting
+                          : ui.result.downloadProgressText
+                        : downloadState.status === "success"
+                          ? downloadState.isApk
+                            ? ui.result.downloadApkNotice
+                            : downloadState.kind === "audio"
+                              ? ui.result.downloadSuccessAudioDesc
+                              : ui.result.downloadSuccessVideoDesc
+                          : downloadState.message}
+                      {downloadState.status === "error" && downloadState.kind === "audio" && soundAudio ? (
+                        <>
+                          {" "}
+                          <a href={soundAudio} target="_blank" rel="noopener noreferrer">
+                            {ui.result.openAudio}
+                          </a>
+                        </>
+                      ) : null}
+                    </p>
+
+                    {downloadState.status === "downloading" ? (
+                      <div className="sound-dl-progress-bar" aria-hidden="true">
+                        <div className="sound-dl-progress-fill" />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="sound-dl-card-close"
+                    onClick={dismissDownloadState}
+                    aria-label={ui.result.close}
+                    title={ui.result.close}
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+              </div>
             ) : null}
           </div>
         ) : null}
