@@ -361,8 +361,8 @@ function PresetLoadingPill({ startTime }: { startTime?: number }) {
       style={{
         position: "absolute",
         left: "50%",
-        top: "calc(env(safe-area-inset-top, 0px) + 14px)",
-        transform: "translateX(-50%)",
+        top: "calc(env(safe-area-inset-top, 0px) + 32px)",
+        transform: "translate(-50%, -50%)",
         padding: "9px 18px 9px 12px",
         borderRadius: 999,
         background: "rgba(12, 12, 13, 0.78)",
