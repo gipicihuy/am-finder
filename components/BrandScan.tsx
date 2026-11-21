@@ -33,6 +33,10 @@ const KEYFRAMES = `
 .bs-dots span:nth-child(3){animation-delay:.36s}
 @keyframes bs-dot{0%,100%{opacity:.15}45%{opacity:1}}
 .bs-status{margin-top:8px;font-size:13px;color:var(--accent);text-align:center}
+.bs-wrap.bs-compact{padding:0}
+.bs-compact .bs-logo{width:30px;height:30px;border-radius:8px}
+.bs-compact .bs-logo svg{width:30px;height:30px}
+.bs-compact .bs-title{font-size:15px}
 .bs-timer{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:6px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent);font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;font-weight:700;letter-spacing:0}
 `;
 
@@ -40,10 +44,13 @@ export default function BrandScan({
   status,
   title,
   startTime,
+  compact = false,
 }: {
   status?: string;
   title?: string;
   startTime?: number;
+  /** Versi kecil buat pill di atas video (logo 30px, tanpa padding). */
+  compact?: boolean;
 }) {
   const ui = useUi();
   const heading = title ?? ui.scan.presets;
@@ -60,7 +67,7 @@ export default function BrandScan({
     return () => clearInterval(timer);
   }, [startTime]);
   return (
-    <div className="bs-wrap" role="status">
+    <div className={compact ? "bs-wrap bs-compact" : "bs-wrap"} role="status">
       <style>{KEYFRAMES}</style>
       <div className="bs-row">
         <span className="bs-logo" aria-hidden="true">

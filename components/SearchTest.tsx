@@ -350,47 +350,28 @@ function CandThumb({
 }
 
 // Status "mencari link preset" saat video tampil layar penuh: pill kecil di bawah
-// (tidak menutupi video) lengkap dengan timer, supaya video tetap bisa ditonton.
-function PresetLoadingPill() {
+// (tidak menutupi video) memakai logo scan brand. Timer dihitung dari waktu mulai
+// pengecekan (bukan dari saat pill muncul), jadi tidak ikut ke-reset kalau tampilan berganti.
+function PresetLoadingPill({ startTime }: { startTime?: number }) {
   const ui = useUi();
-  const startRef = useRef(0);
-  const [elapsed, setElapsed] = useState("0.0s");
-
-  useEffect(() => {
-    startRef.current = Date.now();
-    const timer = setInterval(() => {
-      setElapsed(`${((Date.now() - startRef.current) / 1000).toFixed(1)}s`);
-    }, 100);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       style={{
         position: "absolute",
         left: "50%",
         bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)",
         transform: "translateX(-50%)",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "10px 16px",
+        padding: "9px 18px 9px 12px",
         borderRadius: 999,
         background: "rgba(12, 12, 13, 0.78)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
-        color: "#F2F2F3",
-        fontSize: 14,
-        fontWeight: 600,
         whiteSpace: "nowrap",
         pointerEvents: "none",
       }}
     >
-      <span className="spinner" aria-hidden="true" />
-      <span>{ui.scan.presets}</span>
-      <span style={{ color: ACCENT, fontVariantNumeric: "tabular-nums" }}>{elapsed}</span>
+      <BrandScan compact title={ui.scan.presets} startTime={startTime} />
     </div>
   );
 }
@@ -505,6 +486,7 @@ export default function SearchTest({
   const [isMuted, setIsMuted] = useState(false);
   const [fullscreenVideoUrl, setFullscreenVideoUrl] = useState<string>("");
   const [isFinishingLoading, setIsFinishingLoading] = useState(false);
+  const [presetStartTime, setPresetStartTime] = useState<number | null>(null);
 
   const activePlayUrlRef = useRef("");
   const isVideoPlayingRef = useRef(false);
@@ -1797,6 +1779,7 @@ export default function SearchTest({
 
     checkRef.current?.close();
     const runId = ++checkRunRef.current;
+    setPresetStartTime(Date.now());
     setDetails((prev) => ({ ...prev, [url]: { state: "running" } }));
 
     let source: EventSource | null = null;
@@ -2468,7 +2451,7 @@ export default function SearchTest({
           >
             {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}
           </button>
-          <PresetLoadingPill />
+          <PresetLoadingPill startTime={presetStartTime || undefined} />
         </div>
       ) : isLoadingRunning ? (
         <div
@@ -2488,7 +2471,7 @@ export default function SearchTest({
             pointerEvents: "auto",
           }}
         >
-          <BrandScan />
+          <BrandScan startTime={presetStartTime || undefined} />
           <div
             style={{
               position: "absolute",
