@@ -349,6 +349,52 @@ function CandThumb({
   );
 }
 
+// Status "mencari link preset" saat video tampil layar penuh: pill kecil di bawah
+// (tidak menutupi video) lengkap dengan timer, supaya video tetap bisa ditonton.
+function PresetLoadingPill() {
+  const ui = useUi();
+  const startRef = useRef(0);
+  const [elapsed, setElapsed] = useState("0.0s");
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    const timer = setInterval(() => {
+      setElapsed(`${((Date.now() - startRef.current) / 1000).toFixed(1)}s`);
+    }, 100);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: "absolute",
+        left: "50%",
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)",
+        transform: "translateX(-50%)",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 16px",
+        borderRadius: 999,
+        background: "rgba(12, 12, 13, 0.78)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        color: "#F2F2F3",
+        fontSize: 14,
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
+      }}
+    >
+      <span className="spinner" aria-hidden="true" />
+      <span>{ui.scan.presets}</span>
+      <span style={{ color: ACCENT, fontVariantNumeric: "tabular-nums" }}>{elapsed}</span>
+    </div>
+  );
+}
+
 type SearchTestProps = {
   /** Dipakai di dalam Home (tab Cari Preset): tanpa judul/padding sendiri. */
   embedded?: boolean;
@@ -1708,7 +1754,9 @@ export default function SearchTest({
     if (isCurrentPreview) {
       setFullscreenVideoUrl(url);
       fullscreenVideoUrlRef.current = url;
-      fadeVolume(videoRef.current, 0.25, 250);
+      if (videoRef.current && userMutedChoiceRef.current !== true) {
+        videoRef.current.muted = false;
+      }
     } else {
       setFullscreenVideoUrl("");
       fullscreenVideoUrlRef.current = "";
@@ -2358,7 +2406,71 @@ export default function SearchTest({
         </>
       )}
 
-      {isLoadingRunning && (
+      {isLoadingRunning && fullscreenVideoUrl ? (
+        <div
+          data-theme="dark"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            pointerEvents: "none",
+            opacity: isFinishingLoading ? 0 : 1,
+            transition: "opacity 0.3s ease",
+          }}
+        >
+          <button
+            type="button"
+            aria-label={ui.search.back}
+            onClick={closeVideo}
+            style={{
+              position: "absolute",
+              left: 12,
+              top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+              display: "grid",
+              placeItems: "center",
+              width: 40,
+              height: 40,
+              padding: 0,
+              border: "none",
+              borderRadius: "50%",
+              background: "rgba(12, 12, 13, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              color: "#F2F2F3",
+              cursor: "pointer",
+              pointerEvents: "auto",
+            }}
+          >
+            <ChevronLeft />
+          </button>
+          <button
+            type="button"
+            aria-label={isMuted ? ui.search.unmuteVideo : ui.search.muteVideo}
+            onClick={handleToggleMute}
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+              display: "grid",
+              placeItems: "center",
+              width: 40,
+              height: 40,
+              padding: 0,
+              border: "none",
+              borderRadius: "50%",
+              background: "rgba(12, 12, 13, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              color: "#F2F2F3",
+              cursor: "pointer",
+              pointerEvents: "auto",
+            }}
+          >
+            {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}
+          </button>
+          <PresetLoadingPill />
+        </div>
+      ) : isLoadingRunning ? (
         <div
           role="status"
           aria-live="polite"
@@ -2367,9 +2479,7 @@ export default function SearchTest({
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: fullscreenVideoUrl ? "rgba(0, 0, 0, 0.45)" : "#000000",
-            backdropFilter: fullscreenVideoUrl ? "blur(2px)" : undefined,
-            WebkitBackdropFilter: fullscreenVideoUrl ? "blur(2px)" : undefined,
+            background: "#000000",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2393,7 +2503,7 @@ export default function SearchTest({
             {ui.footer.copyright}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
