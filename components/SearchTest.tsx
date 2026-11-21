@@ -353,7 +353,7 @@ function CandThumb({
 // Status "mencari link preset" saat video tampil layar penuh: pill kecil di bawah
 // (tidak menutupi video) memakai logo scan brand. Timer dihitung dari waktu mulai
 // pengecekan (bukan dari saat pill muncul), jadi tidak ikut ke-reset kalau tampilan berganti.
-function PresetLoadingPill({ startTime }: { startTime?: number }) {
+function PresetLoadingPill({ startTime, position = "bottom" }: { startTime?: number; position?: "top" | "bottom" }) {
   const ui = useUi();
 
   return (
@@ -361,7 +361,9 @@ function PresetLoadingPill({ startTime }: { startTime?: number }) {
       style={{
         position: "absolute",
         left: "50%",
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)",
+        ...(position === "top"
+          ? { top: "calc(env(safe-area-inset-top, 0px) + 16px)" }
+          : { bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)" }),
         transform: "translateX(-50%)",
         padding: "9px 18px 9px 12px",
         borderRadius: 999,
@@ -2527,7 +2529,7 @@ export default function SearchTest({
             pointerEvents: "auto",
           }}
         >
-          <BrandScan startTime={presetStartTime || undefined} />
+          <PresetLoadingPill position="top" startTime={presetStartTime || undefined} />
           <div
             style={{
               position: "absolute",
