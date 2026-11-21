@@ -85,30 +85,6 @@ export type FindResult = {
   error?: string;
 };
 
-// Feed "Rekomendasi Preset" (API /api/rekomen-preset).
-export type RekomenItem = {
-  url: string;
-  handle?: string;
-  snippet?: string;
-  thumb?: string;
-  // views/likes cuma diisi kalau memang datang dari engine (tikwm).
-  views?: number | null;
-  likes?: number | null;
-  seed?: string;
-};
-
-export type RekomenSource = {
-  query: string;
-  ok: boolean;
-  count: number;
-};
-
-export type RekomenFeed = {
-  generatedAt: string;
-  items: RekomenItem[];
-  sources: RekomenSource[];
-};
-
 export type ExplorePresetItem = {
   id: string;
   url: string;

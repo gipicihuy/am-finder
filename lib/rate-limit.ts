@@ -37,8 +37,6 @@ const SCOPES = {
   // Autocomplete dipanggil tiap user berhenti mengetik. Murah (index di memori),
   // jadi plafonnya longgar; kalau tetap kena limit, route balikin list kosong.
   suggest: { burst: 30, burstMs: 10_000, sustained: 200, sustainedMs: 60_000, penaltyAt: 400, penaltyMs: 30_000 },
-  // Feed dirender ulang tiap 10 menit, jadi plafonnya lebih ketat.
-  rekomen: { burst: 4, burstMs: 10_000, sustained: 10, sustainedMs: 60_000, penaltyAt: 25, penaltyMs: 60_000 },
   // Ambil judul + thumbnail buat pratinjau OG. Ringan (1 request kecil ke
   // oembed/tikwm), tapi tetap dibatasi: alamat /preset bisa sangat banyak dan
   // kuota tikwm cuma 10.000/hari, dipakai bareng pencarian.
