@@ -8,6 +8,7 @@ import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { useUi } from "@/components/LocaleProvider";
 import type { UiTexts } from "@/lib/ui";
+import { finishVideoHandoff, peekVideoHandoff, type VideoHandoff } from "@/lib/video-handoff";
 
 type ShareLink = NonNullable<FindResult["shareLinks"]>[number];
 
@@ -362,6 +363,38 @@ function morphFrame(rect: DOMRect): Keyframe {
   };
 }
 
+function zoomOutFromScreen(box: HTMLElement): void {
+  if (typeof box.animate !== "function" || prefersReducedMotion()) return;
+  const rect = box.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scale = Math.max(vw / rect.width, vh / rect.height);
+  const dx = vw / 2 - (rect.left + rect.width / 2);
+  const dy = vh / 2 - (rect.top + rect.height / 2);
+  const insetX = Math.max(0, (rect.width - vw / scale) / 2);
+  const insetY = Math.max(0, (rect.height - vh / scale) / 2);
+  const radius = getComputedStyle(box).borderTopLeftRadius || "0px";
+  box.style.zIndex = "9999";
+  const animation = box.animate(
+    [
+      {
+        transform: `translate(${dx}px, ${dy}px) scale(${scale})`,
+        clipPath: `inset(${insetY}px ${insetX}px round 0px)`,
+      },
+      {
+        transform: "translate(0px, 0px) scale(1)",
+        clipPath: `inset(0px round ${radius})`,
+      },
+    ],
+    { duration: 440, easing: EASE_OPEN },
+  );
+  const cleanup = () => {
+    box.style.zIndex = "";
+  };
+  animation.finished.then(cleanup, cleanup);
+}
+
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const total = Math.floor(seconds);
@@ -513,6 +546,7 @@ function VideoPreview({
   const [closing, setClosing] = useState(false);
   const [muted, setMuted] = useState(false);
   const autoMutedRef = useRef(false);
+  const handoffRef = useRef<VideoHandoff | null>(null);
 
   const requestClose = useCallback(() => {
     if (closingRef.current) return;
@@ -629,9 +663,67 @@ function VideoPreview({
   // Coba putar dengan suara dulu. Kalau browser/WebView menolak autoplay
   // bersuara, putar muted sebagai cadangan dan tandai supaya suara dinyalakan
   // begitu pengguna menyentuh video atau tombol suara.
+  useLayoutEffect(() => {
+    const video = videoRef.current;
+    const box = boxRef.current;
+    const handoff = peekVideoHandoff();
+    if (!handoff || !video || !box || !src || !allowMotion) {
+      handoffRef.current = null;
+      if (handoff) finishVideoHandoff();
+      return undefined;
+    }
+    handoffRef.current = handoff;
+    box.style.visibility = "hidden";
+    video.muted = true;
+    let revealed = false;
+    let seeking = false;
+
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      box.style.visibility = "";
+      video.muted = handoff.muted;
+      if (!handoff.muted) {
+        autoMutedRef.current = false;
+        video.play().catch(() => {
+          video.muted = true;
+          autoMutedRef.current = true;
+          video.play().catch(() => undefined);
+        });
+      }
+      zoomOutFromScreen(box);
+      finishVideoHandoff();
+    };
+
+    const seekAndPlay = () => {
+      if (seeking) return;
+      seeking = true;
+      const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+      const elapsed = (performance.now() - handoff.at) / 1000;
+      const target = handoff.time + elapsed;
+      video.currentTime = duration ? target % duration : target;
+      video.play().then(() => {
+        if (video.seeking) video.addEventListener("seeked", reveal, { once: true });
+        else reveal();
+      }, reveal);
+    };
+
+    if (video.readyState >= 1) seekAndPlay();
+    else video.addEventListener("loadedmetadata", seekAndPlay, { once: true });
+    const timer = window.setTimeout(reveal, 1500);
+
+    return () => {
+      window.clearTimeout(timer);
+      video.removeEventListener("loadedmetadata", seekAndPlay);
+      video.removeEventListener("seeked", reveal);
+      if (!revealed) box.style.visibility = "";
+    };
+  }, [src, allowMotion]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src || !allowMotion) return undefined;
+    if (handoffRef.current) return undefined;
     let cancelled = false;
     video.muted = false;
     autoMutedRef.current = false;

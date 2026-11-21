@@ -18,6 +18,7 @@ import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 import { rememberHistoryLink, rememberHistoryResult } from "@/lib/history";
+import { VIDEO_HANDOFF_DONE, clearVideoHandoff, setVideoHandoff } from "@/lib/video-handoff";
 
 const BG = "var(--background)";
 const SURFACE = "var(--surface)";
@@ -486,6 +487,8 @@ export default function SearchTest({
   const [isMuted, setIsMuted] = useState(false);
   const [fullscreenVideoUrl, setFullscreenVideoUrl] = useState<string>("");
   const [isFinishingLoading, setIsFinishingLoading] = useState(false);
+  const [isHandingOff, setIsHandingOff] = useState(false);
+  const handoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [presetStartTime, setPresetStartTime] = useState<number | null>(null);
 
   const activePlayUrlRef = useRef("");
@@ -522,6 +525,34 @@ export default function SearchTest({
   useEffect(() => {
     isFinishingLoadingRef.current = isFinishingLoading;
   }, [isFinishingLoading]);
+
+  const completeHandoff = () => {
+    if (handoffTimerRef.current) {
+      clearTimeout(handoffTimerRef.current);
+      handoffTimerRef.current = null;
+    }
+    clearVideoHandoff();
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.muted = true;
+    }
+    setIsHandingOff(false);
+    setFullscreenVideoUrl("");
+    fullscreenVideoUrlRef.current = "";
+    setActivePlayUrl("");
+    setIsVideoPlaying(false);
+  };
+  const completeHandoffRef = useRef(completeHandoff);
+  completeHandoffRef.current = completeHandoff;
+
+  useEffect(() => {
+    const onDone = () => completeHandoffRef.current();
+    window.addEventListener(VIDEO_HANDOFF_DONE, onDone);
+    return () => {
+      window.removeEventListener(VIDEO_HANDOFF_DONE, onDone);
+      if (handoffTimerRef.current) clearTimeout(handoffTimerRef.current);
+    };
+  }, []);
 
   const fadeVolume = (
     video: HTMLVideoElement | null,
@@ -1788,6 +1819,22 @@ export default function SearchTest({
         source.close();
         if (checkRef.current === source) checkRef.current = null;
       }
+      const playing = videoRef.current;
+      const canHandoff =
+        Boolean(fullscreenVideoUrlRef.current) &&
+        next.state === "done" &&
+        (next.result?.presetLinks?.length ?? 0) > 0 &&
+        Boolean(next.result?.video?.playUrlNoWm || next.result?.video?.playUrl) &&
+        playing !== null &&
+        !playing.paused;
+      if (canHandoff && playing) {
+        setVideoHandoff({ time: playing.currentTime, muted: playing.muted, at: performance.now() });
+        setIsHandingOff(true);
+        setDetails((prev) => ({ ...prev, [url]: next }));
+        window.scrollTo({ top: 0 });
+        handoffTimerRef.current = setTimeout(() => completeHandoffRef.current(), 2500);
+        return;
+      }
       if (fullscreenVideoUrlRef.current) {
         setIsFinishingLoading(true);
         isFinishingLoadingRef.current = true;
@@ -1870,6 +1917,12 @@ export default function SearchTest({
   }
 
   function doClose() {
+    if (handoffTimerRef.current) {
+      clearTimeout(handoffTimerRef.current);
+      handoffTimerRef.current = null;
+    }
+    clearVideoHandoff();
+    setIsHandingOff(false);
     checkRef.current?.close();
     checkRef.current = null;
     fadeCancelRef.current?.();
@@ -2015,8 +2068,11 @@ export default function SearchTest({
       }
     >
       {missNotice ? <NoticeModal title={missNotice.title} text={missNotice.text} onClose={() => setMissNotice(null)} /> : null}
-      {!isShowingDetail && (
-        <div aria-hidden={isLoadingRunning ? true : undefined}>
+      {(!isShowingDetail || isHandingOff) && (
+        <div
+          aria-hidden={isLoadingRunning || isHandingOff ? true : undefined}
+          style={isHandingOff ? { height: 0, overflow: "hidden" } : undefined}
+        >
           {!embedded && (
             <>
           <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>{ui.search.title}</h1>
