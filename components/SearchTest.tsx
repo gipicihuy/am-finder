@@ -192,6 +192,7 @@ function CandThumb({
   isActive,
   isPlaying,
   isMuted,
+  isFullscreenLoading,
   userMutedChoice,
   onToggleMute,
   onPlaying,
@@ -210,6 +211,7 @@ function CandThumb({
   isActive?: boolean;
   isPlaying?: boolean;
   isMuted?: boolean;
+  isFullscreenLoading?: boolean;
   userMutedChoice?: boolean | null;
   onToggleMute?: () => void;
   onPlaying?: () => void;
@@ -237,7 +239,13 @@ function CandThumb({
   };
 
   return (
-    <span className={isGrid ? "cand-thumb is-grid" : "cand-thumb"} style={{ viewTransitionName: thumbName(url) }}>
+    <span
+      className={isGrid ? "cand-thumb is-grid" : "cand-thumb"}
+      style={{
+        viewTransitionName: thumbName(url),
+        ...(isFullscreenLoading ? { overflow: "visible", zIndex: 9998 } : {}),
+      }}
+    >
       {src && !failed ? (
         <img
           src={src}
@@ -288,19 +296,20 @@ function CandThumb({
           onEnded={onEnded}
           onError={onError}
           style={{
-            position: "absolute",
+            position: isFullscreenLoading ? "fixed" : "absolute",
             inset: 0,
-            width: "100%",
-            height: "100%",
+            width: isFullscreenLoading ? "100vw" : "100%",
+            height: isFullscreenLoading ? "100vh" : "100%",
             objectFit: "cover",
             opacity: isPlaying ? 1 : 0,
-            transition: "opacity 0.15s ease",
-            zIndex: 1,
+            transition: isFullscreenLoading ? "none" : "opacity 0.15s ease",
+            zIndex: isFullscreenLoading ? 9998 : 1,
             pointerEvents: "none",
+            borderRadius: 0,
           }}
         />
       ) : null}
-      {isActive && isGrid && isPlaying ? (
+      {isActive && isGrid && isPlaying && !isFullscreenLoading ? (
         <span
           role="button"
           tabIndex={0}
@@ -448,10 +457,15 @@ export default function SearchTest({
   const [activePlayUrl, setActivePlayUrl] = useState<string>("");
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [fullscreenVideoUrl, setFullscreenVideoUrl] = useState<string>("");
+  const [isFinishingLoading, setIsFinishingLoading] = useState(false);
 
   const activePlayUrlRef = useRef("");
   const isVideoPlayingRef = useRef(false);
   const isMutedRef = useRef(false);
+  const fullscreenVideoUrlRef = useRef("");
+  const isFinishingLoadingRef = useRef(false);
+  const fadeCancelRef = useRef<(() => void) | null>(null);
   const userMutedChoiceRef = useRef<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -472,6 +486,55 @@ export default function SearchTest({
   useEffect(() => {
     isVideoPlayingRef.current = isVideoPlaying;
   }, [isVideoPlaying]);
+
+  useEffect(() => {
+    fullscreenVideoUrlRef.current = fullscreenVideoUrl;
+  }, [fullscreenVideoUrl]);
+
+  useEffect(() => {
+    isFinishingLoadingRef.current = isFinishingLoading;
+  }, [isFinishingLoading]);
+
+  const fadeVolume = (
+    video: HTMLVideoElement | null,
+    targetVolume: number,
+    durationMs: number = 300,
+    onComplete?: () => void,
+  ) => {
+    fadeCancelRef.current?.();
+    fadeCancelRef.current = null;
+    if (!video) {
+      onComplete?.();
+      return;
+    }
+    if (video.muted) {
+      onComplete?.();
+      return;
+    }
+    const startVol = video.volume;
+    const startTime = performance.now();
+    let animId: number;
+    let cancelled = false;
+    fadeCancelRef.current = () => {
+      cancelled = true;
+      cancelAnimationFrame(animId);
+    };
+    const step = (now: number) => {
+      if (cancelled) return;
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      const currentVol = startVol + (targetVolume - startVol) * progress;
+      video.volume = Math.max(0, Math.min(1, currentVol));
+      if (progress < 1) {
+        animId = requestAnimationFrame(step);
+      } else {
+        video.volume = Math.max(0, Math.min(1, targetVolume));
+        fadeCancelRef.current = null;
+        onComplete?.();
+      }
+    };
+    animId = requestAnimationFrame(step);
+  };
 
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -623,6 +686,7 @@ export default function SearchTest({
 
   const evaluateFocus = () => {
     if (!canAutoPlay()) {
+      if (fullscreenVideoUrlRef.current) return;
       if (videoRef.current && !videoRef.current.paused) {
         videoRef.current.pause();
       }
@@ -679,6 +743,7 @@ export default function SearchTest({
   };
 
   const advanceNextCard = () => {
+    if (fullscreenVideoUrlRef.current) return;
     if (!canAutoPlay()) {
       if (activePlayUrlRef.current) {
         if (videoRef.current && !videoRef.current.paused) {
@@ -784,6 +849,10 @@ export default function SearchTest({
       setActivePlayUrl("");
       setIsVideoPlaying(false);
     }
+    if (fullscreenVideoUrlRef.current === failedUrl) {
+      setFullscreenVideoUrl("");
+      fullscreenVideoUrlRef.current = "";
+    }
     requestAnimationFrame(() => {
       advanceNextCard();
     });
@@ -845,6 +914,7 @@ export default function SearchTest({
   useEffect(() => {
     const checkActiveCardDuringScroll = () => {
       scrollRafRef.current = null;
+      if (fullscreenVideoUrlRef.current) return;
       if (!canAutoPlay()) {
         if (activePlayUrlRef.current) {
           if (videoRef.current && !videoRef.current.paused) {
@@ -898,7 +968,9 @@ export default function SearchTest({
           videoRef.current.pause();
         }
       } else {
-        if (canAutoPlay()) {
+        if (fullscreenVideoUrlRef.current && videoRef.current && videoRef.current.paused) {
+          videoRef.current.play().catch(() => {});
+        } else if (canAutoPlay()) {
           evaluateFocus();
         }
       }
@@ -942,11 +1014,13 @@ export default function SearchTest({
 
   useEffect(() => {
     if (openUrl) {
-      if (videoRef.current && !videoRef.current.paused) {
-        videoRef.current.pause();
+      if (!fullscreenVideoUrlRef.current) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+        setActivePlayUrl("");
+        setIsVideoPlaying(false);
       }
-      setActivePlayUrl("");
-      setIsVideoPlaying(false);
     } else {
       setIsMuted(userMutedChoiceRef.current ?? false);
       if (canAutoPlay()) {
@@ -1329,14 +1403,14 @@ export default function SearchTest({
   // Selama loading full-screen: kunci scroll (posisi halaman dipegang),
   // dilepas otomatis begitu pencarian selesai / komponen unmount.
   useEffect(() => {
-    const running = openUrl !== "" && details[openUrl]?.state === "running";
+    const running = (openUrl !== "" && details[openUrl]?.state === "running") || isFinishingLoading;
     if (!running) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
     };
-  }, [openUrl, details]);
+  }, [openUrl, details, isFinishingLoading]);
 
   useEffect(() => {
     onDetailChange?.(openUrl !== "");
@@ -1625,14 +1699,30 @@ export default function SearchTest({
   }, [openUrl]);
 
   async function openVideo(url: string) {
-    if (videoRef.current && !videoRef.current.paused) {
-      videoRef.current.pause();
+    const isCurrentPreview =
+      activePlayUrlRef.current === url &&
+      isVideoPlayingRef.current &&
+      videoRef.current !== null &&
+      !videoRef.current.paused;
+
+    if (isCurrentPreview) {
+      setFullscreenVideoUrl(url);
+      fullscreenVideoUrlRef.current = url;
+      fadeVolume(videoRef.current, 0.25, 250);
+    } else {
+      setFullscreenVideoUrl("");
+      fullscreenVideoUrlRef.current = "";
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      setActivePlayUrl("");
+      setIsVideoPlaying(false);
     }
-    setActivePlayUrl("");
-    setIsVideoPlaying(false);
+
     listYRef.current = window.scrollY;
     setLastUrl(url);
     setOpenUrl(url);
+    openUrlRef.current = url;
     rememberHistoryLink(url);
     // Alamat detail yang bisa dibagiin (/preset/tiktok/<id>). ID-nya diambil dari
     // URL kandidat yang memang selalu berbentuk tiktok.com/@user/video/<id>, jadi
@@ -1642,10 +1732,18 @@ export default function SearchTest({
     if (!window.history.state?.amfDetail) {
       window.history.pushState({ amfDetail: true }, "", detailPath ?? "");
     }
-    window.scrollTo({ top: 0 });
+
     if (details[url]?.state === "done") {
       const cached = details[url].result;
       if (cached) rememberHistoryResult(url, cached, detailPath);
+      window.scrollTo({ top: 0 });
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      setFullscreenVideoUrl("");
+      fullscreenVideoUrlRef.current = "";
+      setActivePlayUrl("");
+      setIsVideoPlaying(false);
       return;
     }
 
@@ -1653,27 +1751,54 @@ export default function SearchTest({
     const runId = ++checkRunRef.current;
     setDetails((prev) => ({ ...prev, [url]: { state: "running" } }));
 
+    let source: EventSource | null = null;
+    const finish = (next: Detail) => {
+      if (source) {
+        source.close();
+        if (checkRef.current === source) checkRef.current = null;
+      }
+      if (fullscreenVideoUrlRef.current) {
+        setIsFinishingLoading(true);
+        isFinishingLoadingRef.current = true;
+        if (videoRef.current && !videoRef.current.paused) {
+          fadeVolume(videoRef.current, 0, 300, () => {
+            if (videoRef.current) {
+              videoRef.current.pause();
+              videoRef.current.volume = 1;
+            }
+          });
+        }
+        setTimeout(() => {
+          setDetails((prev) => ({ ...prev, [url]: next }));
+          setFullscreenVideoUrl("");
+          fullscreenVideoUrlRef.current = "";
+          setActivePlayUrl("");
+          setIsVideoPlaying(false);
+          setIsFinishingLoading(false);
+          isFinishingLoadingRef.current = false;
+          window.scrollTo({ top: 0 });
+        }, 300);
+      } else {
+        setDetails((prev) => ({ ...prev, [url]: next }));
+        window.scrollTo({ top: 0 });
+      }
+    };
+
     let token: string;
     try {
       token = await getSecurityToken();
     } catch {
       if (runId === checkRunRef.current) {
-        setDetails((prev) => ({ ...prev, [url]: { state: "error", message: ui.search.errSecurityShort } }));
+        finish({ state: "error", message: ui.search.errSecurityShort });
       }
       return;
     }
     if (runId !== checkRunRef.current) return;
 
-    const source = new EventSource(
+    source = new EventSource(
       withSecurityToken(`/api/find?url=${encodeURIComponent(url)}`, token),
     );
     checkRef.current = source;
-
-    const finish = (next: Detail) => {
-      source.close();
-      if (checkRef.current === source) checkRef.current = null;
-      setDetails((prev) => ({ ...prev, [url]: next }));
-    };
 
     source.addEventListener("result", (event) => {
       try {
@@ -1697,7 +1822,9 @@ export default function SearchTest({
         finish({ state: "error", message: msg });
         return;
       }
-      if (source.readyState === EventSource.CLOSED) finish({ state: "error", message: ui.search.errLost });
+      if (source && source.readyState === EventSource.CLOSED) {
+        finish({ state: "error", message: ui.search.errLost });
+      }
     });
   }
 
@@ -1714,6 +1841,20 @@ export default function SearchTest({
   function doClose() {
     checkRef.current?.close();
     checkRef.current = null;
+    fadeCancelRef.current?.();
+    fadeCancelRef.current = null;
+    if (videoRef.current) {
+      if (!videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      videoRef.current.volume = 1;
+    }
+    setFullscreenVideoUrl("");
+    fullscreenVideoUrlRef.current = "";
+    setActivePlayUrl("");
+    setIsVideoPlaying(false);
+    setIsFinishingLoading(false);
+    isFinishingLoadingRef.current = false;
     setDetails((prev) => {
       const cur = prev[openUrl];
       if (cur?.state !== "running") return prev;
@@ -1831,6 +1972,9 @@ export default function SearchTest({
       </div>
     ) : null;
 
+  const isShowingDetail = Boolean(openUrl) && current?.state !== "running" && !isFinishingLoading;
+  const isLoadingRunning = current?.state === "running" || isFinishingLoading;
+
   return (
     <div
       style={
@@ -1840,8 +1984,8 @@ export default function SearchTest({
       }
     >
       {missNotice ? <NoticeModal title={missNotice.title} text={missNotice.text} onClose={() => setMissNotice(null)} /> : null}
-      {!openUrl && (
-        <>
+      {!isShowingDetail && (
+        <div aria-hidden={isLoadingRunning ? true : undefined}>
           {!embedded && (
             <>
           <h1 style={{ fontSize: 30, lineHeight: 1.1, margin: "0 0 10px" }}>{ui.search.title}</h1>
@@ -2007,7 +2151,10 @@ export default function SearchTest({
                             name: item.author || ui.search.thisVideo,
                           })}
                           onClick={() => openVideo(item.url)}
-                          style={{ viewTransitionName: vtName(item.url) }}
+                          style={{
+                            viewTransitionName: vtName(item.url),
+                            ...(fullscreenVideoUrl === item.url ? { zIndex: 9998, overflow: "visible" } : {}),
+                          }}
                         >
                           <CandThumb
                             url={item.url}
@@ -2017,6 +2164,7 @@ export default function SearchTest({
                             isActive={isGrid && activePlayUrl === item.url}
                             isPlaying={isVideoPlaying}
                             isMuted={isMuted}
+                            isFullscreenLoading={fullscreenVideoUrl === item.url}
                             userMutedChoice={userMutedChoiceRef.current}
                             onToggleMute={handleToggleMute}
                             onPlaying={handleVideoPlaying}
@@ -2132,7 +2280,10 @@ export default function SearchTest({
                     onClick={() => {
                       if (!miss) openVideo(c.url);
                     }}
-                    style={{ viewTransitionName: vtName(c.url) }}
+                    style={{
+                      viewTransitionName: vtName(c.url),
+                      ...(fullscreenVideoUrl === c.url ? { zIndex: 9998, overflow: "visible" } : {}),
+                    }}
                   >
                     <CandThumb
                       url={c.url}
@@ -2143,6 +2294,7 @@ export default function SearchTest({
                       isActive={isGrid && activePlayUrl === c.url}
                       isPlaying={isVideoPlaying}
                       isMuted={isMuted}
+                      isFullscreenLoading={fullscreenVideoUrl === c.url}
                       userMutedChoice={userMutedChoiceRef.current}
                       onToggleMute={handleToggleMute}
                       onPlaying={handleVideoPlaying}
@@ -2177,10 +2329,10 @@ export default function SearchTest({
               )}
             </section>
           )}
-        </>
+        </div>
       )}
 
-      {openUrl && (
+      {isShowingDetail && (
         <>
           <button
             type="button"
@@ -2194,37 +2346,6 @@ export default function SearchTest({
           {candidate && searchedQuery && (
             <div style={{ fontSize: 15, fontWeight: 700 }}>{ui.search.titleLabel} {searchedQuery}</div>
           )}
-          {current?.state === "running" && (
-            <div
-              role="status"
-              aria-live="polite"
-              data-theme="dark"
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 9999,
-                background: "#000000",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <BrandScan />
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 18,
-                  textAlign: "center",
-                  fontSize: 11,
-                  color: "#5C5C63",
-                }}
-              >
-                {ui.footer.copyright}
-              </div>
-            </div>
-          )}
           {current?.state === "error" && (
             <div role="alert" style={{ fontSize: 14, color: DANGER, marginTop: 16 }}>
               {current.message || ui.search.errWrong}
@@ -2235,6 +2356,43 @@ export default function SearchTest({
             <FoundToast count={current.result?.presetLinks?.length ?? 0} />
           ) : null}
         </>
+      )}
+
+      {isLoadingRunning && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-theme="dark"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: fullscreenVideoUrl ? "rgba(0, 0, 0, 0.45)" : "#000000",
+            backdropFilter: fullscreenVideoUrl ? "blur(2px)" : undefined,
+            WebkitBackdropFilter: fullscreenVideoUrl ? "blur(2px)" : undefined,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: isFinishingLoading ? 0 : 1,
+            transition: "opacity 0.3s ease",
+            pointerEvents: "auto",
+          }}
+        >
+          <BrandScan />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 18,
+              textAlign: "center",
+              fontSize: 11,
+              color: "#5C5C63",
+            }}
+          >
+            {ui.footer.copyright}
+          </div>
+        </div>
       )}
     </div>
   );
