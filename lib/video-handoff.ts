@@ -2,6 +2,7 @@ export type VideoHandoff = {
   time: number;
   muted: boolean;
   at: number;
+  fit: "contain" | "cover";
 };
 
 export const VIDEO_HANDOFF_DONE = "amf:video-handoff-done";

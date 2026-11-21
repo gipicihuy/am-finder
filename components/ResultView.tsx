@@ -363,20 +363,33 @@ function morphFrame(rect: DOMRect): Keyframe {
   };
 }
 
-function zoomOutFromScreen(box: HTMLElement): void {
+function zoomOutFromScreen(box: HTMLElement, fit: "contain" | "cover"): void {
   if (typeof box.animate !== "function" || prefersReducedMotion()) return;
   const rect = box.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const scale = Math.max(vw / rect.width, vh / rect.height);
+  const scale =
+    fit === "contain" ? Math.min(vw / rect.width, vh / rect.height) : Math.max(vw / rect.width, vh / rect.height);
   const dx = vw / 2 - (rect.left + rect.width / 2);
   const dy = vh / 2 - (rect.top + rect.height / 2);
-  const insetX = Math.max(0, (rect.width - vw / scale) / 2);
-  const insetY = Math.max(0, (rect.height - vh / scale) / 2);
+  const insetX = fit === "contain" ? 0 : Math.max(0, (rect.width - vw / scale) / 2);
+  const insetY = fit === "contain" ? 0 : Math.max(0, (rect.height - vh / scale) / 2);
   const radius = getComputedStyle(box).borderTopLeftRadius || "0px";
   box.style.zIndex = "9999";
   emitVideoZoom({ dx, dy, scale, duration: 440, easing: EASE_OPEN });
+  if (fit === "contain") {
+    const backdrop = document.createElement("div");
+    backdrop.style.cssText = "position:fixed;inset:0;z-index:9990;background:#000;pointer-events:none";
+    document.body.appendChild(backdrop);
+    const fade = backdrop.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: 440,
+      easing: EASE_OPEN,
+      fill: "forwards",
+    });
+    const remove = () => backdrop.remove();
+    fade.finished.then(remove, remove);
+  }
   const animation = box.animate(
     [
       {
@@ -692,7 +705,7 @@ function VideoPreview({
           video.play().catch(() => undefined);
         });
       }
-      zoomOutFromScreen(box);
+      zoomOutFromScreen(box, handoff.fit);
       finishVideoHandoff();
     };
 

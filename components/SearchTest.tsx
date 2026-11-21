@@ -231,6 +231,7 @@ function CandThumb({
 }) {
   const [src, setSrc] = useState(thumb || fallback || "");
   const [failed, setFailed] = useState(false);
+  const [wide, setWide] = useState(false);
 
   useEffect(() => {
     setSrc(thumb || fallback || "");
@@ -287,6 +288,7 @@ function CandThumb({
           loop
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
+            setWide(v.videoWidth > 0 && v.videoWidth >= v.videoHeight);
             const shouldMute = userMutedChoice === true;
             v.muted = shouldMute;
             v.play().catch(() => {
@@ -307,7 +309,8 @@ function CandThumb({
             inset: 0,
             width: isFullscreenLoading ? "100vw" : "100%",
             height: isFullscreenLoading ? "100vh" : "100%",
-            objectFit: "cover",
+            objectFit: isFullscreenLoading && wide ? "contain" : "cover",
+            background: isFullscreenLoading ? "#000" : undefined,
             opacity: isPlaying ? 1 : 0,
             transition: isFullscreenLoading ? "none" : "opacity 0.15s ease",
             zIndex: isFullscreenLoading ? 9998 : 1,
@@ -1873,7 +1876,12 @@ export default function SearchTest({
         playing !== null &&
         !playing.paused;
       if (canHandoff && playing) {
-        setVideoHandoff({ time: playing.currentTime, muted: playing.muted, at: performance.now() });
+        setVideoHandoff({
+          time: playing.currentTime,
+          muted: playing.muted,
+          at: performance.now(),
+          fit: playing.videoWidth > 0 && playing.videoWidth >= playing.videoHeight ? "contain" : "cover",
+        });
         setIsHandingOff(true);
         setOverlayShown(true);
         setDetails((prev) => ({ ...prev, [url]: next }));
