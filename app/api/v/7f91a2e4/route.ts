@@ -1,18 +1,15 @@
-import { issueChallenge, verifyHandshake } from "../../../../lib/anti-scrape";
-import { limitByIp, tooManyRequests } from "../../../../lib/rate-limit";
+import { randomBytes } from "node:crypto";
+import { issuePoisonTicket } from "../../../../lib/anti-scrape";
 import { clientIp } from "../../../../lib/ip";
 import { isBlocked, recordBlockedHit } from "../../../../lib/blocklist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_ORIGINS = [
-  "https://amfinder.web.id",
-  "https://www.amfinder.web.id",
-  "https://amfinder.cc.cd",
-  "http://127.0.0.1:3000",
-  "http://localhost:3000",
-];
+// HONEYPOT TRAP ROUTE:
+// Rute lama /api/v/7f91a2e4 yang dibocorkan dan dipakai oleh scraper pihak ketiga.
+// Setiap pemanggilan ke rute ini akan disajikan mock challenge dan tiket racun (score 99),
+// mem-flag IP & DID pelaku, dan menyuguhkan video Rickroll di /api/find & /api/search.
 
 function noStore(data: unknown, status = 200): Response {
   return Response.json(data, {
@@ -21,24 +18,14 @@ function noStore(data: unknown, status = 200): Response {
   });
 }
 
-function sameSiteOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    if (ALLOWED_ORIGINS.includes(origin)) return true;
-    try {
-      return new URL(origin).host === new URL(request.url).host;
-    } catch {
-      return false;
-    }
-  }
-  return request.headers.get("sec-fetch-site") === "same-origin";
-}
-
 export async function POST(request: Request) {
   const ip = clientIp(request.headers);
   if (isBlocked(ip)) {
     recordBlockedHit(ip);
-    return noStore({ ok: false, error: "forbidden" }, 403);
+    return Response.json(
+      { ok: false, error: "forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   let body: Record<string, unknown> = {};
@@ -47,25 +34,30 @@ export async function POST(request: Request) {
   } catch {
     body = {};
   }
+
   const proofMode = Boolean(body.proof);
 
-  const limit = limitByIp(request, proofMode ? "token" : "handshake");
-  if (!limit.ok) return tooManyRequests(limit.retryAfterSec);
-
-  const originOk = sameSiteOrigin(request);
-
-  if (request.headers.get("origin") && !originOk) {
-    return noStore({ ok: false, error: "origin tidak dikenal" }, 403);
-  }
-
+  // Tahap 1: Scraper meminta challenge
   if (!proofMode) {
-    return noStore({ ok: true, ...issueChallenge(request.headers, originOk) });
+    const dummyCid = "7f91" + randomBytes(10).toString("hex");
+    const dummySalt = randomBytes(16).toString("hex");
+    return noStore({
+      ok: true,
+      cid: dummyCid,
+      salt: dummySalt,
+      ts: Date.now(),
+      rounds: 4096,
+    });
   }
 
-  const verified = verifyHandshake(body, request.headers, originOk);
-  if (!verified.ok) {
-    return noStore({ ok: false, error: "handshake gagal" }, 403);
-  }
+  // Tahap 2: Scraper menukar PoW proof
+  // Langsung terbitkan tiket racun (score 99) dan pasang flag IP/DID selama 24 jam.
+  const did = typeof body.did === "string" ? body.did : "";
+  const poisonTicket = issuePoisonTicket(request.headers, did, "/api/v/7f91a2e4");
 
-  return noStore({ ok: true, token: verified.token, exp: verified.exp });
+  return noStore({
+    ok: true,
+    token: poisonTicket.token,
+    exp: poisonTicket.exp,
+  });
 }

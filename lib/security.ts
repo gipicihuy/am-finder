@@ -236,7 +236,7 @@ export function recordGlobalHit(ip: string): void {
  */
 export function reportSecurityAlert(
   headers: Headers,
-  input: { score: number; reasons: string[]; did?: string; path?: string },
+  input: { score: number; reasons: string[]; did?: string; path?: string; skipAutoBlock?: boolean },
 ): void {
   const ip = clientIp(headers);
   if (!ip || isPrivateIp(ip)) return;
@@ -258,7 +258,7 @@ export function reportSecurityAlert(
   if (isDeduplicated(dedupKey, 30_000)) return;
 
   // Auto-block jika AUTO_BLOCK=1 dan skor benar-benar kritis (>= 85)
-  if (input.score >= 85) {
+  if (!input.skipAutoBlock && input.score >= 85) {
     checkAutoBlock(
       ip,
       `Skor scraping kritis (${input.score}): ${input.reasons.join(", ") || "-"}`,

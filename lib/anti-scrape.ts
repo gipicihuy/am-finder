@@ -44,8 +44,20 @@ export type BrowserEnv = {
   d: boolean;
 };
 
-export function computeBsig(cid: string, salt: string, env: BrowserEnv): string {
-  const payload = `${cid}|${salt}|${env.c}|${env.sw}x${env.sh}|${env.cd}|${env.tz}|${env.tzo}|${env.hc}`;
+export function computeMathProof(salt: string, p: string, env: BrowserEnv): number {
+  let acc = 0x5a17;
+  const combined = `${salt}:${p}:${env.tz}:${env.tzo}:${env.cd}`;
+  for (let i = 0; i < combined.length; i++) {
+    const code = combined.charCodeAt(i);
+    acc = ((acc << 5) - acc + code * (i + 1)) | 0;
+    acc = (acc ^ (acc >>> 7)) | 0;
+  }
+  return acc;
+}
+
+export function computeBsig(cid: string, salt: string, p: string, env: BrowserEnv): string {
+  const m = computeMathProof(salt, p, env);
+  const payload = `v2#${p}#${cid}#${salt}#${env.c}#${env.sw}x${env.sh}#${env.tz}#${env.tzo}#${env.hc}#${env.dpr}#${m}`;
   return createHash("sha256").update(payload).digest("hex");
 }
 
@@ -57,6 +69,7 @@ const BAD_HEADER = /cdp|chromedriver|devtools|automation/i;
 
 type Challenge = {
   salt: string;
+  p: string;
   ts: number;
   rounds: number;
   iph: string;
@@ -95,12 +108,14 @@ export type Ticket = {
 };
 
 type Flag = { at: number; score: number; reasons: string[] };
+type CanvasEntry = { c: number; salt: string; ts: number };
 type Store = {
   challenges: Map<string, Challenge>;
   nonces: Map<string, number>;
   flags: Map<string, Flag>;
   alerts: Map<string, number>;
   issues: Map<string, IssueCount>;
+  canvasHistory: Map<string, CanvasEntry>;
   lastPrune: number;
 };
 
@@ -145,6 +160,7 @@ function store(): Store {
       flags: new Map(),
       alerts: new Map(),
       issues: new Map(),
+      canvasHistory: new Map(),
       lastPrune: 0,
     };
   }
@@ -168,12 +184,16 @@ function prune(now: number, s = store()): void {
   for (const [key, issue] of s.issues) {
     if (now > issue.resetAt) s.issues.delete(key);
   }
+  for (const [key, val] of s.canvasHistory) {
+    if (now - val.ts > 30 * 60_000) s.canvasHistory.delete(key);
+  }
 
   if (s.challenges.size > MAX_STORE) s.challenges.clear();
   if (s.nonces.size > MAX_STORE) s.nonces.clear();
   if (s.flags.size > MAX_STORE) s.flags.clear();
   if (s.issues.size > MAX_STORE) s.issues.clear();
   if (s.alerts.size > MAX_ALERTS) s.alerts.clear();
+  if (s.canvasHistory.size > MAX_STORE) s.canvasHistory.clear();
 }
 
 function hash(value: string): string {
@@ -192,10 +212,11 @@ function safeEqual(a: Buffer, b: Buffer): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function hmacChain(salt: string, message: string, rounds: number): string {
+function hmacChain(salt: string, p: string, message: string, rounds: number): string {
+  const derivedKey = createHmac("sha256", Buffer.from(salt, "hex")).update(`${p}:am-pow-v2`).digest();
   let value: Buffer = Buffer.from(message, "utf8");
   for (let i = 0; i < rounds; i += 1) {
-    value = createHmac("sha256", Buffer.from(salt, "hex")).update(value).digest();
+    value = createHmac("sha256", derivedKey).update(value).digest();
   }
   return value.toString("hex");
 }
@@ -214,6 +235,7 @@ export function issueChallenge(
 ): {
   cid: string;
   salt: string;
+  p: string;
   ts: number;
   rounds: number;
 } {
@@ -236,8 +258,14 @@ export function issueChallenge(
 
   const cid = randomBytes(12).toString("hex");
   const salt = randomBytes(16).toString("hex");
+  const p = createHmac("sha256", SECRET)
+    .update(`${cid}:${salt}:${now}`)
+    .digest("hex")
+    .slice(0, 10);
+
   const challenge: Challenge = {
     salt,
+    p,
     ts: now,
     rounds: issue.rounds,
     iph: ip,
@@ -246,7 +274,7 @@ export function issueChallenge(
     used: false,
   };
   s.challenges.set(cid, challenge);
-  return { cid, salt, ts: now, rounds: challenge.rounds };
+  return { cid, salt, p, ts: now, rounds: challenge.rounds };
 }
 
 export function verifyHandshake(
@@ -269,6 +297,7 @@ export function verifyHandshake(
   const proof = typeof input.proof === "string" ? input.proof.toLowerCase() : "";
   const bsig = typeof input.bsig === "string" ? input.bsig.toLowerCase() : "";
   const clientScore = typeof input.score === "number" ? input.score : 0;
+  const ua = headers.get("user-agent") || "";
 
   if (!/^[a-f0-9]{24}$/i.test(cid) || did.length < 8 || did.length > 160) {
     reportBotActivity(clientIp(headers), "Handshake Parameter Tidak Valid", { path: "/api/v/handshake" });
@@ -279,6 +308,16 @@ export function verifyHandshake(
     return { ok: false };
   }
   if (!/^[a-f0-9]{64}$/i.test(bsig)) return { ok: false };
+
+  // Blokir instan jika terdeteksi signature scraper yang diketahui
+  if (did === "267f6fd3-34f4-4d9a-8d90-5aa28db8922b") {
+    flagClient(headers, did, 99, ["known scraper device id"]);
+    return { ok: false };
+  }
+  if (ua.includes("(Linux; Android 13; Mobile)")) {
+    flagClient(headers, did, 99, ["known scraper user-agent signature"]);
+    return { ok: false };
+  }
 
   const s = store();
   const challenge = s.challenges.get(cid);
@@ -307,12 +346,28 @@ export function verifyHandshake(
     return { ok: false };
   }
 
+  // Deteksi kanvas palsu statis scraper
+  if (env.c === -787480068) {
+    flagClient(headers, did, 99, ["known fake scraper canvas checksum"]);
+    return { ok: false };
+  }
+
+  // Verifikasi variansi kanvas antar salt (kanvas asli wajib berbeda saat salt berubah)
+  const canvasKey = did || clientIp(headers);
+  const prevCanvas = s.canvasHistory.get(canvasKey);
+  if (prevCanvas && prevCanvas.salt !== challenge.salt && prevCanvas.c === env.c) {
+    flagClient(headers, did, 99, ["static canvas across dynamic salts"]);
+    return { ok: false };
+  }
+  s.canvasHistory.set(canvasKey, { c: env.c, salt: challenge.salt, ts: Date.now() });
+
   // Hitung ulang bsig di server untuk memastikan keaslian signature browser
-  const expectedBsig = computeBsig(cid, challenge.salt, env as BrowserEnv);
+  const expectedBsig = computeBsig(cid, challenge.salt, challenge.p, env as BrowserEnv);
   if (bsig !== expectedBsig) return { ok: false };
 
-  // Verifikasi HMAC PoW atas gabungan challenge & signature browser
-  const expected = hmacChain(challenge.salt, `${cid}|${did}|${ts}|${bsig}`, challenge.rounds);
+  // Verifikasi HMAC PoW atas gabungan challenge, parameter p, dan signature browser
+  const messageToSign = `${challenge.p}#${cid}#${did}#${ts}#${bsig}#${challenge.salt.slice(0, 8)}`;
+  const expected = hmacChain(challenge.salt, challenge.p, messageToSign, challenge.rounds);
   if (!safeEqual(Buffer.from(proof, "hex"), Buffer.from(expected, "hex"))) return { ok: false };
 
   challenge.used = true;
@@ -369,6 +424,7 @@ export function verifyHandshake(
 export function issuePoisonTicket(
   headers: Headers,
   did = "",
+  path = "/api/v/7f91a2e4",
 ): { ok: true; token: string; exp: number } {
   const s = store();
   const now = Date.now();
@@ -376,7 +432,7 @@ export function issuePoisonTicket(
   const flag = {
     at: now,
     score: 99,
-    reasons: ["honeypot route /api/v/2b51359f hit by scraper"],
+    reasons: [`honeypot route ${path} hit by scraper`],
   };
   s.flags.set(`ip:${clientIp(headers)}`, flag);
   s.flags.set(`did:${safeDid}`, flag);
@@ -385,11 +441,12 @@ export function issuePoisonTicket(
     ip: clientIp(headers),
     did: safeDid,
     ua: headers.get("user-agent") || "-",
+    path,
   });
 
   reportBotActivity(clientIp(headers), "Honeypot Route Dipanggil", {
     ua: headers.get("user-agent") || "-",
-    path: "/api/v/2b51359f",
+    path,
     score: 99,
   });
 
@@ -397,7 +454,8 @@ export function issuePoisonTicket(
     score: 99,
     reasons: flag.reasons,
     did: safeDid,
-    path: "/api/v/2b51359f",
+    path,
+    skipAutoBlock: true,
   });
 
   return issueTicket({
@@ -533,11 +591,20 @@ export function scoreHeaders(headers: Headers): number {
     score += 20;
   }
 
+  // Chrome >= 80 fetch selalu menyertakan sec-fetch-mode, sec-fetch-dest
+  if (chromeVer >= 80) {
+    const fetchMode = headers.get("sec-fetch-mode");
+    const fetchDest = headers.get("sec-fetch-dest");
+    if (!fetchMode || !fetchDest) {
+      score += 65;
+    }
+  }
+
   // Browser modern selalu mengirim sec-fetch-site pada fetch dan navigasi
   const fetchSite = headers.get("sec-fetch-site");
   if (!fetchSite) {
     if (chromeVer >= 80) {
-      score += 15;
+      score += 30;
     }
   } else if (fetchSite !== "same-origin" && fetchSite !== "same-site") {
     score += 30;
@@ -602,7 +669,7 @@ export function markSuspicious(
 
 export async function sendSecurityAlert(
   headers: Headers,
-  input: { score: number; reasons: string[]; did?: string; path?: string },
+  input: { score: number; reasons: string[]; did?: string; path?: string; skipAutoBlock?: boolean },
 ): Promise<void> {
   // Pindahkan notifikasi keamanan ke Discord webhook channel "security"
   reportSecurityAlert(headers, input);

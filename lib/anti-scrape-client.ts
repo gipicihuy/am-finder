@@ -1,6 +1,7 @@
 "use client";
 
 const DEVICE_KEY = "amfinder:device";
+const HANDSHAKE_PATH = "/api/v/9c72e41f";
 
 type Risk = { score: number; reasons: string[] };
 
@@ -53,22 +54,32 @@ function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function hmacChain(salt: string, message: string, rounds: number): Promise<string> {
+async function hmacChain(salt: string, p: string, message: string, rounds: number): Promise<string> {
   if (!crypto?.subtle) throw new Error("WebCrypto tidak tersedia");
-  const key = await crypto.subtle.importKey(
+  const saltKey = await crypto.subtle.importKey(
     "raw",
     hexToBytes(salt) as BufferSource,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   );
+  const derivedKeyBuf = await crypto.subtle.sign(
+    "HMAC",
+    saltKey,
+    new TextEncoder().encode(`${p}:am-pow-v2`) as BufferSource,
+  );
+  const hmacKey = await crypto.subtle.importKey(
+    "raw",
+    derivedKeyBuf,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
 
   let value = new TextEncoder().encode(message);
-  // Server yang menentukan biaya (rounds bisa diadaptasi terhadap IP yang
-  // haus). Setelan client tinggal mengikuti, bukan membatasi di bawah server.
   const total = Math.max(1, Math.min(100_000, Math.floor(rounds)));
   for (let i = 0; i < total; i += 1) {
-    value = new Uint8Array(await crypto.subtle.sign("HMAC", key, value as BufferSource));
+    value = new Uint8Array(await crypto.subtle.sign("HMAC", hmacKey, value as BufferSource));
   }
   return bytesToHex(value);
 }
@@ -87,7 +98,7 @@ type BrowserEnv = {
   d: boolean;
 };
 
-function computeCanvasChecksum(salt: string): number {
+function computeCanvasChecksum(salt: string, p: string): number {
   if (typeof document === "undefined") return 0;
   try {
     const canvas = document.createElement("canvas");
@@ -97,7 +108,7 @@ function computeCanvasChecksum(salt: string): number {
     if (!ctx) return 0;
 
     const color1 = "#" + (salt.slice(0, 6) || "3b82f6");
-    const color2 = "#" + (salt.slice(6, 12) || "10b981");
+    const color2 = "#" + (p.slice(0, 6) || "10b981");
     const grad = ctx.createLinearGradient(0, 0, 128, 48);
     grad.addColorStop(0, color1);
     grad.addColorStop(1, color2);
@@ -110,7 +121,7 @@ function computeCanvasChecksum(salt: string): number {
     ctx.shadowOffsetY = 2;
     ctx.font = "14px sans-serif";
     ctx.fillStyle = "#ffffff";
-    ctx.fillText("AM:" + salt.slice(0, 8), 10, 28);
+    ctx.fillText("AM:" + salt.slice(0, 8) + ":" + p.slice(0, 4), 10, 28);
 
     ctx.beginPath();
     ctx.arc(100, 24, 12, 0, Math.PI * 2);
@@ -129,8 +140,8 @@ function computeCanvasChecksum(salt: string): number {
   }
 }
 
-function collectBrowserEnv(salt: string): BrowserEnv {
-  const c = computeCanvasChecksum(salt);
+function collectBrowserEnv(salt: string, p: string): BrowserEnv {
+  const c = computeCanvasChecksum(salt, p);
   const sw = typeof screen !== "undefined" && screen.width ? screen.width : 1024;
   const sh = typeof screen !== "undefined" && screen.height ? screen.height : 768;
   const cd = typeof screen !== "undefined" && screen.colorDepth ? screen.colorDepth : 24;
@@ -158,14 +169,26 @@ function collectBrowserEnv(salt: string): BrowserEnv {
   };
 }
 
-async function computeClientBsig(cid: string, salt: string, env: BrowserEnv): Promise<string> {
-  const str = `${cid}|${salt}|${env.c}|${env.sw}x${env.sh}|${env.cd}|${env.tz}|${env.tzo}|${env.hc}`;
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+function computeClientMathProof(salt: string, p: string, env: BrowserEnv): number {
+  let acc = 0x5a17;
+  const combined = `${salt}:${p}:${env.tz}:${env.tzo}:${env.cd}`;
+  for (let i = 0; i < combined.length; i++) {
+    const code = combined.charCodeAt(i);
+    acc = ((acc << 5) - acc + code * (i + 1)) | 0;
+    acc = (acc ^ (acc >>> 7)) | 0;
+  }
+  return acc;
+}
+
+async function computeClientBsig(cid: string, salt: string, p: string, env: BrowserEnv): Promise<string> {
+  const m = computeClientMathProof(salt, p, env);
+  const payload = `v2#${p}#${cid}#${salt}#${env.c}#${env.sw}x${env.sh}#${env.tz}#${env.tzo}#${env.hc}#${env.dpr}#${m}`;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload));
   return bytesToHex(new Uint8Array(buf));
 }
 
 async function postJson<T>(body: Record<string, unknown>): Promise<T> {
-  const response = await fetch("/api/v/7f91a2e4", {
+  const response = await fetch(HANDSHAKE_PATH, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -207,16 +230,19 @@ async function handshakeOnce(): Promise<string> {
   const challenge = await postJson<{
     cid: string;
     salt: string;
+    p: string;
     ts: number;
     rounds: number;
   }>({ did });
 
-  const env = collectBrowserEnv(challenge.salt);
-  const bsig = await computeClientBsig(challenge.cid, challenge.salt, env);
+  const env = collectBrowserEnv(challenge.salt, challenge.p);
+  const bsig = await computeClientBsig(challenge.cid, challenge.salt, challenge.p, env);
 
+  const messageToSign = `${challenge.p}#${challenge.cid}#${did}#${challenge.ts}#${bsig}#${challenge.salt.slice(0, 8)}`;
   const proof = await hmacChain(
     challenge.salt,
-    `${challenge.cid}|${did}|${challenge.ts}|${bsig}`,
+    challenge.p,
+    messageToSign,
     challenge.rounds,
   );
 
