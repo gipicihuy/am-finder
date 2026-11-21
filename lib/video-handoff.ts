@@ -5,6 +5,19 @@ export type VideoHandoff = {
 };
 
 export const VIDEO_HANDOFF_DONE = "amf:video-handoff-done";
+export const VIDEO_HANDOFF_ZOOM = "amf:video-handoff-zoom";
+
+export type VideoZoom = {
+  dx: number;
+  dy: number;
+  scale: number;
+  duration: number;
+  easing: string;
+};
+
+export function emitVideoZoom(zoom: VideoZoom): void {
+  window.dispatchEvent(new CustomEvent<VideoZoom>(VIDEO_HANDOFF_ZOOM, { detail: zoom }));
+}
 
 let pending: VideoHandoff | null = null;
 

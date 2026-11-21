@@ -18,7 +18,13 @@ import { HowSteps } from "@/components/HowSteps";
 import { getSecurityToken, withSecurityToken } from "@/lib/anti-scrape-client";
 import { SEARCH_STARTED_EVENT } from "@/lib/promo-events";
 import { rememberHistoryLink, rememberHistoryResult } from "@/lib/history";
-import { VIDEO_HANDOFF_DONE, clearVideoHandoff, setVideoHandoff } from "@/lib/video-handoff";
+import {
+  VIDEO_HANDOFF_DONE,
+  VIDEO_HANDOFF_ZOOM,
+  clearVideoHandoff,
+  setVideoHandoff,
+  type VideoZoom,
+} from "@/lib/video-handoff";
 
 const BG = "var(--background)";
 const SURFACE = "var(--surface)";
@@ -489,6 +495,9 @@ export default function SearchTest({
   const [isFinishingLoading, setIsFinishingLoading] = useState(false);
   const [isHandingOff, setIsHandingOff] = useState(false);
   const handoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [overlayShown, setOverlayShown] = useState(false);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const zoomStartedRef = useRef(false);
   const [presetStartTime, setPresetStartTime] = useState<number | null>(null);
 
   const activePlayUrlRef = useRef("");
@@ -541,9 +550,45 @@ export default function SearchTest({
     fullscreenVideoUrlRef.current = "";
     setActivePlayUrl("");
     setIsVideoPlaying(false);
+    if (!zoomStartedRef.current) setOverlayShown(false);
   };
   const completeHandoffRef = useRef(completeHandoff);
   completeHandoffRef.current = completeHandoff;
+
+  useEffect(() => {
+    const onZoom = (event: Event) => {
+      const zoom = (event as CustomEvent<VideoZoom>).detail;
+      const layer = overlayRef.current;
+      if (!layer || typeof layer.animate !== "function") {
+        setOverlayShown(false);
+        return;
+      }
+      zoomStartedRef.current = true;
+      const animation = layer.animate(
+        [
+          { transform: "translate(0px, 0px) scale(1)", opacity: 1 },
+          { transform: "translate(0px, 0px) scale(1)", opacity: 1, offset: 0.01 },
+          {
+            transform: `translate(${-zoom.dx}px, ${-zoom.dy}px) scale(${1 / zoom.scale})`,
+            opacity: 1,
+            offset: 0.6,
+          },
+          {
+            transform: `translate(${-zoom.dx}px, ${-zoom.dy}px) scale(${1 / zoom.scale})`,
+            opacity: 0,
+          },
+        ],
+        { duration: zoom.duration, easing: zoom.easing, fill: "forwards" },
+      );
+      const end = () => {
+        zoomStartedRef.current = false;
+        setOverlayShown(false);
+      };
+      animation.finished.then(end, end);
+    };
+    window.addEventListener(VIDEO_HANDOFF_ZOOM, onZoom);
+    return () => window.removeEventListener(VIDEO_HANDOFF_ZOOM, onZoom);
+  }, []);
 
   useEffect(() => {
     const onDone = () => completeHandoffRef.current();
@@ -1830,6 +1875,7 @@ export default function SearchTest({
       if (canHandoff && playing) {
         setVideoHandoff({ time: playing.currentTime, muted: playing.muted, at: performance.now() });
         setIsHandingOff(true);
+        setOverlayShown(true);
         setDetails((prev) => ({ ...prev, [url]: next }));
         window.scrollTo({ top: 0 });
         handoffTimerRef.current = setTimeout(() => completeHandoffRef.current(), 2500);
@@ -1923,6 +1969,8 @@ export default function SearchTest({
     }
     clearVideoHandoff();
     setIsHandingOff(false);
+    zoomStartedRef.current = false;
+    setOverlayShown(false);
     checkRef.current?.close();
     checkRef.current = null;
     fadeCancelRef.current?.();
@@ -2445,8 +2493,9 @@ export default function SearchTest({
         </>
       )}
 
-      {isLoadingRunning && fullscreenVideoUrl ? (
+      {(isLoadingRunning && fullscreenVideoUrl) || overlayShown ? (
         <div
+          ref={overlayRef}
           data-theme="dark"
           style={{
             position: "fixed",
@@ -2477,7 +2526,7 @@ export default function SearchTest({
               WebkitBackdropFilter: "blur(8px)",
               color: "#F2F2F3",
               cursor: "pointer",
-              pointerEvents: "auto",
+              pointerEvents: isLoadingRunning ? "auto" : "none",
             }}
           >
             <ChevronLeft />
@@ -2502,7 +2551,7 @@ export default function SearchTest({
               WebkitBackdropFilter: "blur(8px)",
               color: "#F2F2F3",
               cursor: "pointer",
-              pointerEvents: "auto",
+              pointerEvents: isLoadingRunning ? "auto" : "none",
             }}
           >
             {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}

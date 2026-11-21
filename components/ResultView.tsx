@@ -8,7 +8,7 @@ import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { useUi } from "@/components/LocaleProvider";
 import type { UiTexts } from "@/lib/ui";
-import { finishVideoHandoff, peekVideoHandoff, type VideoHandoff } from "@/lib/video-handoff";
+import { emitVideoZoom, finishVideoHandoff, peekVideoHandoff, type VideoHandoff } from "@/lib/video-handoff";
 
 type ShareLink = NonNullable<FindResult["shareLinks"]>[number];
 
@@ -376,6 +376,7 @@ function zoomOutFromScreen(box: HTMLElement): void {
   const insetY = Math.max(0, (rect.height - vh / scale) / 2);
   const radius = getComputedStyle(box).borderTopLeftRadius || "0px";
   box.style.zIndex = "9999";
+  emitVideoZoom({ dx, dy, scale, duration: 440, easing: EASE_OPEN });
   const animation = box.animate(
     [
       {
