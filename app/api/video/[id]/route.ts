@@ -1,11 +1,12 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { readFile, unlink } from "node:fs/promises";
+import { readFile, unlink, writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { Readable } from "node:stream";
 import { contentDisposition, cleanSoundTitle } from "@/lib/audio";
+import { isTikTokUrlExpired } from "@/lib/video-util";
 import { clientIp } from "@/lib/ip";
 import { isBlocked, recordBlockedHit } from "@/lib/blocklist";
 import { reportServerError } from "@/lib/discord";
@@ -27,24 +28,10 @@ async function loadCache(): Promise<Record<string, unknown> | null> {
   }
 }
 
-async function getTikTokVideo(id: string): Promise<{ url: string; title: string } | null> {
-  const data = await loadCache();
-  if (data) {
-    const entry =
-      data[`video:v10:${id}:all`] ??
-      data[`video:v10:${id}`] ??
-      Object.entries(data).find(([key]) => key.endsWith(`:${id}:all`) || key.endsWith(`:${id}`))?.[1];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const video = (entry as any)?.v?.video;
-    const playUrl = video?.playUrlNoWm || video?.playUrl;
-    if (typeof playUrl === "string" && playUrl.startsWith("http")) {
-      return { url: playUrl, title: cleanSoundTitle(video?.description || `tiktok-${id}`, 80) };
-    }
-  }
-
+async function fetchTikTokFromTikwm(id: string): Promise<{ url: string; title: string } | null> {
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
+    const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(`https://tikwm.com/api/?url=https://www.tiktok.com/@/video/${id}`, {
       signal: controller.signal,
       cache: "no-store",
@@ -59,13 +46,59 @@ async function getTikTokVideo(id: string): Promise<{ url: string; title: string 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const json = (await res.json()) as any;
     if (json.code === 0 && (json.data?.play || json.data?.wmplay)) {
+      const play = json.data.play || json.data.wmplay;
+      const full = play.startsWith("//") ? `https:${play}` : play.startsWith("/") ? `https://www.tikwm.com${play}` : play;
       return {
-        url: json.data.play || json.data.wmplay,
+        url: full,
         title: cleanSoundTitle(json.data.title || `tiktok-${id}`, 80),
       };
     }
   } catch {}
+  return null;
+}
 
+async function updateCachedTikTokPlayUrl(id: string, freshPlayUrl: string) {
+  try {
+    const raw = await readFile(CACHE_FILE, "utf8");
+    const data = JSON.parse(raw);
+    let changed = false;
+    for (const [key, entry] of Object.entries(data)) {
+      if (key.endsWith(`:${id}:all`) || key.endsWith(`:${id}`)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const v = (entry as any)?.v;
+        if (v?.video) {
+          v.video.playUrl = freshPlayUrl;
+          v.video.playUrlNoWm = freshPlayUrl;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      const tmp = `${CACHE_FILE}.tmp.${Date.now()}`;
+      await writeFile(tmp, JSON.stringify(data));
+      await rename(tmp, CACHE_FILE);
+    }
+  } catch {}
+}
+
+async function getTikTokVideo(id: string): Promise<{ url: string; title: string } | null> {
+  const data = await loadCache();
+  if (data) {
+    const entry =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Object.entries(data).find(([key]) => key.endsWith(`:${id}:all`) || key.endsWith(`:${id}`))?.[1] as any;
+    const video = entry?.v?.video;
+    const playUrl = video?.playUrlNoWm || video?.playUrl;
+    if (typeof playUrl === "string" && playUrl.startsWith("http") && !isTikTokUrlExpired(playUrl)) {
+      return { url: playUrl, title: cleanSoundTitle(video?.description || `tiktok-${id}`, 80) };
+    }
+  }
+
+  const fresh = await fetchTikTokFromTikwm(id);
+  if (fresh) {
+    void updateCachedTikTokPlayUrl(id, fresh.url);
+    return fresh;
+  }
   return null;
 }
 
@@ -154,28 +187,50 @@ export async function GET(
 
   // JALUR 1: TikTok Video
   if (isTiktokId) {
-    const tt = await getTikTokVideo(id);
+    let tt = await getTikTokVideo(id);
     if (!tt) {
       return new Response("Video TikTok tidak ditemukan", { status: 404 });
     }
 
-    const upstream = await fetch(tt.url, {
-      headers: {
+    const range = request.headers.get("range");
+    const fetchUpstream = async (targetUrl: string) => {
+      const headers: Record<string, string> = {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         Referer: "https://www.tiktok.com/",
-      },
-    });
+      };
+      if (range && !isDownload) {
+        headers["Range"] = range;
+      }
+      return fetch(targetUrl, { headers });
+    };
+
+    let upstream = await fetchUpstream(tt.url);
+
+    // Jika upstream gagal (mis. 403 Forbidden atau 410 Gone karena link CDN expired/basi), coba ambil ulang dari TikWM
+    if (!upstream.ok || !upstream.body) {
+      const fresh = await fetchTikTokFromTikwm(id);
+      if (fresh && fresh.url !== tt.url) {
+        tt = fresh;
+        void updateCachedTikTokPlayUrl(id, fresh.url);
+        upstream = await fetchUpstream(fresh.url);
+      }
+    }
 
     if (!upstream.ok || !upstream.body) {
       return new Response("Gagal mengambil stream video TikTok", { status: 502 });
     }
 
     const headers = new Headers();
-    headers.set("Content-Type", "video/mp4");
+    headers.set("Content-Type", upstream.headers.get("content-type") || "video/mp4");
     headers.set("Cache-Control", "public, max-age=7200");
+    headers.set("Accept-Ranges", "bytes");
+
     const len = upstream.headers.get("content-length");
     if (len) headers.set("Content-Length", len);
+
+    const cr = upstream.headers.get("content-range");
+    if (cr) headers.set("Content-Range", cr);
 
     if (isDownload) {
       headers.set(
@@ -184,7 +239,10 @@ export async function GET(
       );
     }
 
-    return new Response(upstream.body, { status: 200, headers });
+    return new Response(upstream.body, {
+      status: upstream.status === 206 ? 206 : 200,
+      headers,
+    });
   }
 
   // JALUR 2: YouTube Video
@@ -272,6 +330,7 @@ export async function HEAD(
     return new Response(null, {
       status: 200,
       headers: {
+        "Accept-Ranges": "bytes",
         "Content-Type": "video/mp4",
         "Cache-Control": "public, max-age=7200",
       },

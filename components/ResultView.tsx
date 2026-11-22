@@ -9,6 +9,7 @@ import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
 import { useUi } from "@/components/LocaleProvider";
 import type { UiTexts } from "@/lib/ui";
 import { emitVideoZoom, finishVideoHandoff, peekVideoHandoff, type VideoHandoff } from "@/lib/video-handoff";
+import { isTikTokUrlExpired } from "@/lib/video-util";
 
 type ShareLink = NonNullable<FindResult["shareLinks"]>[number];
 
@@ -535,6 +536,7 @@ function VideoPreview({
   width,
   height,
   allowMotion,
+  fallbackSrc,
   onMeasure,
 }: {
   src?: string;
@@ -542,6 +544,7 @@ function VideoPreview({
   width?: number;
   height?: number;
   allowMotion: boolean;
+  fallbackSrc?: string;
   onMeasure?: (width: number, height: number) => void;
 }) {
   const ui = useUi();
@@ -561,6 +564,11 @@ function VideoPreview({
   const [muted, setMuted] = useState(false);
   const autoMutedRef = useRef(false);
   const handoffRef = useRef<VideoHandoff | null>(null);
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+  }, [src]);
 
   const requestClose = useCallback(() => {
     if (closingRef.current) return;
@@ -866,15 +874,20 @@ function VideoPreview({
           </svg>
         </button>
       ) : null}
-      {src ? (
+      {currentSrc ? (
         <video
           ref={videoRef}
-          src={src}
+          src={currentSrc}
           poster={poster}
           loop
           playsInline
           disableRemotePlayback
           preload="metadata"
+          onError={() => {
+            if (fallbackSrc && currentSrc !== fallbackSrc) {
+              setCurrentSrc(fallbackSrc);
+            }
+          }}
           onLoadedMetadata={(event) => {
             const v = event.currentTarget;
             if (v.videoWidth && v.videoHeight) onMeasure?.(v.videoWidth, v.videoHeight);
@@ -1003,6 +1016,7 @@ function VideoHead({
   width,
   height,
   allowMotion,
+  fallbackSrc,
   children,
 }: {
   src?: string;
@@ -1010,6 +1024,7 @@ function VideoHead({
   width?: number;
   height?: number;
   allowMotion: boolean;
+  fallbackSrc?: string;
   children: ReactNode;
 }) {
   const [measured, setMeasured] = useState<{ key: string; w: number; h: number } | null>(null);
@@ -1021,6 +1036,7 @@ function VideoHead({
     <div className={`content-head is-${videoKind(w, h)}`}>
       <VideoPreview
         src={src}
+        fallbackSrc={fallbackSrc}
         poster={poster}
         width={w}
         height={h}
@@ -1112,17 +1128,20 @@ export function ResultView({ result }: { result: FindResult }) {
   const presets = result.presetLinks ?? [];
   const avatar = result.authorDetail?.avatar;
   const cover = result.video?.cover;
+  const videoId = result.videoId || ytId;
+  const rawPlay = result.video?.playUrlNoWm || result.video?.playUrl;
+  const rawExpired = isTikTokUrlExpired(rawPlay);
+  const fallbackVideoSrc = videoId ? `/api/video/${encodeURIComponent(videoId)}` : undefined;
   const playUrl =
-    result.video?.playUrlNoWm ||
-    result.video?.playUrl ||
-    (ytId ? `/api/video/${encodeURIComponent(ytId)}` : undefined);
+    !rawExpired && rawPlay
+      ? rawPlay
+      : fallbackVideoSrc || (ytId ? `/api/video/${encodeURIComponent(ytId)}` : undefined);
   const stats = result.video?.stats;
   const views = formatCount(stats?.views);
   const likes = formatCount(stats?.likes);
   const comments = formatCount(stats?.comments);
   const description = result.video?.description?.trim();
   const music = result.video?.music;
-  const videoId = result.videoId || ytId;
   const soundTitle = clipText(music?.title || result.video?.title || description || "Sound", 80);
   const soundAuthor = clipText(music?.author || result.author || result.authorDetail?.nickname || "", 60);
   const soundLink = isYt && ytId ? `https://www.youtube.com/watch?v=${ytId}` : soundPageHref(music?.id);
@@ -1375,6 +1394,7 @@ export function ResultView({ result }: { result: FindResult }) {
       <section className="video-meta" aria-label={ui.result.contentInfo}>
         <VideoHead
           src={playUrl}
+          fallbackSrc={fallbackVideoSrc}
           poster={cover}
           width={result.video?.width}
           height={result.video?.height}

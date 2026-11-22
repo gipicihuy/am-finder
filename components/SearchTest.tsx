@@ -25,6 +25,7 @@ import {
   setVideoHandoff,
   type VideoZoom,
 } from "@/lib/video-handoff";
+import { isTikTokUrlExpired, extractTikTokId } from "@/lib/video-util";
 
 const BG = "var(--background)";
 const SURFACE = "var(--surface)";
@@ -232,6 +233,20 @@ function CandThumb({
   const [src, setSrc] = useState(thumb || fallback || "");
   const [failed, setFailed] = useState(false);
   const [wide, setWide] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(playUrl);
+
+  useEffect(() => {
+    setVideoSrc(playUrl);
+  }, [playUrl]);
+
+  const handleVideoError = () => {
+    const tid = extractTikTokId(url);
+    if (tid && videoSrc !== `/api/video/${tid}`) {
+      setVideoSrc(`/api/video/${tid}`);
+    } else {
+      onError?.();
+    }
+  };
 
   useEffect(() => {
     setSrc(thumb || fallback || "");
@@ -300,10 +315,10 @@ function CandThumb({
           }}
         />
       ) : null}
-      {isActive && isGrid && playUrl ? (
+      {isActive && isGrid && videoSrc ? (
         <video
           ref={videoRef}
-          src={playUrl}
+          src={videoSrc}
           playsInline
           autoPlay
           loop
@@ -324,7 +339,7 @@ function CandThumb({
           }}
           onPlaying={onPlaying}
           onEnded={onEnded}
-          onError={onError}
+          onError={handleVideoError}
           style={{
             position: isFullscreenLoading ? "fixed" : "absolute",
             inset: 0,
@@ -421,10 +436,7 @@ type SearchTestProps = {
 };
 
 function isUrlExpired(url?: string): boolean {
-  if (!url) return false;
-  const m = url.match(/[?&]x-expires=(\d+)/);
-  if (!m) return false;
-  return Number(m[1]) * 1000 <= Date.now() + 60_000;
+  return isTikTokUrlExpired(url);
 }
 
 export default function SearchTest({
@@ -1482,6 +1494,10 @@ export default function SearchTest({
       }
       const cleaned = (saved.cands as Candidate[]).map((c) => {
         if (c.playUrl && isUrlExpired(c.playUrl)) {
+          const tid = extractTikTokId(c.url);
+          if (tid) {
+            return { ...c, playUrl: `/api/video/${tid}` };
+          }
           const next = { ...c };
           delete next.playUrl;
           return next;
@@ -1768,7 +1784,16 @@ export default function SearchTest({
       lastPlayedAtRef.current.clear();
       setIsMuted(false);
       isMutedRef.current = false;
-      setCands(items);
+      const normalizedItems = items.map((c) => {
+        if (c.playUrl && isUrlExpired(c.playUrl)) {
+          const tid = extractTikTokId(c.url);
+          if (tid) {
+            return { ...c, playUrl: `/api/video/${tid}` };
+          }
+        }
+        return c;
+      });
+      setCands(normalizedItems);
       setLastUrl("");
       const limit = items.length;
       setCandLimit(limit);
