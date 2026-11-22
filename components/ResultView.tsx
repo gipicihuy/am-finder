@@ -406,6 +406,7 @@ function zoomOutFromScreen(box: HTMLElement, fit: "contain" | "cover"): void {
   );
   const cleanup = () => {
     box.style.zIndex = "";
+    box.style.willChange = "";
   };
   animation.finished.then(cleanup, cleanup);
 }
@@ -696,7 +697,19 @@ function VideoPreview({
     }
     handoffRef.current = handoff;
     box.style.opacity = "0";
-    video.muted = true;
+    box.style.willChange = "transform, clip-path";
+    let warm = false;
+    if (handoff.muted) {
+      video.muted = true;
+    } else {
+      video.muted = false;
+      video.volume = 0;
+      warm = video.volume === 0;
+      if (!warm) {
+        video.volume = 1;
+        video.muted = true;
+      }
+    }
     const source = handoff.source;
     let revealed = false;
     let started = false;
@@ -726,17 +739,30 @@ function VideoPreview({
       if (revealed) return;
       revealed = true;
       box.style.opacity = "";
-      video.muted = handoff.muted;
-      if (!handoff.muted) {
+      if (warm) {
+        video.volume = 1;
         autoMutedRef.current = false;
-        video.play().catch(() => {
-          video.muted = true;
-          autoMutedRef.current = true;
-          video.play().catch(() => undefined);
-        });
+      } else {
+        video.volume = 1;
+        video.muted = handoff.muted;
+        if (!handoff.muted) {
+          autoMutedRef.current = false;
+          video.play().catch(() => {
+            video.muted = true;
+            autoMutedRef.current = true;
+            video.play().catch(() => undefined);
+          });
+        }
       }
       zoomOutFromScreen(box, handoff.fit);
-      finishVideoHandoff();
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        finishVideoHandoff();
+      };
+      if (typeof video.requestVideoFrameCallback === "function") video.requestVideoFrameCallback(done);
+      window.setTimeout(done, 90);
     };
 
     const onSeeked = () => {
@@ -767,7 +793,14 @@ function VideoPreview({
     const start = () => {
       if (started) return;
       started = true;
-      video.play().catch(() => undefined);
+      video.play().catch(() => {
+        if (warm) {
+          warm = false;
+          video.volume = 1;
+          video.muted = true;
+          video.play().catch(() => undefined);
+        }
+      });
       align();
     };
 
@@ -779,7 +812,10 @@ function VideoPreview({
       window.clearTimeout(timer);
       video.removeEventListener("loadedmetadata", start);
       video.removeEventListener("seeked", onSeeked);
-      if (!revealed) box.style.opacity = "";
+      if (!revealed) {
+        box.style.opacity = "";
+        box.style.willChange = "";
+      }
     };
   }, [src, allowMotion]);
 
