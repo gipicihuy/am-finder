@@ -3,6 +3,7 @@ export type VideoHandoff = {
   muted: boolean;
   at: number;
   fit: "contain" | "cover";
+  source: HTMLVideoElement | null;
 };
 
 export const VIDEO_HANDOFF_DONE = "amf:video-handoff-done";

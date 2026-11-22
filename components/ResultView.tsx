@@ -687,15 +687,37 @@ function VideoPreview({
       return undefined;
     }
     handoffRef.current = handoff;
-    box.style.visibility = "hidden";
+    box.style.opacity = "0";
     video.muted = true;
+    const source = handoff.source;
     let revealed = false;
-    let seeking = false;
+    let started = false;
+    let attempts = 0;
+    let lead = 0.2;
+
+    const span = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0);
+    const wrap = (time: number) => {
+      const total = span();
+      return total ? ((time % total) + total) % total : Math.max(0, time);
+    };
+    const gap = (a: number, b: number) => {
+      const total = span();
+      let value = a - b;
+      if (total) {
+        if (value > total / 2) value -= total;
+        if (value < -total / 2) value += total;
+      }
+      return value;
+    };
+    const livePosition = () =>
+      source && source.isConnected && !source.paused
+        ? source.currentTime
+        : handoff.time + (performance.now() - handoff.at) / 1000;
 
     const reveal = () => {
       if (revealed) return;
       revealed = true;
-      box.style.visibility = "";
+      box.style.opacity = "";
       video.muted = handoff.muted;
       if (!handoff.muted) {
         autoMutedRef.current = false;
@@ -709,28 +731,47 @@ function VideoPreview({
       finishVideoHandoff();
     };
 
-    const seekAndPlay = () => {
-      if (seeking) return;
-      seeking = true;
-      const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
-      const elapsed = (performance.now() - handoff.at) / 1000;
-      const target = handoff.time + elapsed;
-      video.currentTime = duration ? target % duration : target;
-      video.play().then(() => {
-        if (video.seeking) video.addEventListener("seeked", reveal, { once: true });
-        else reveal();
-      }, reveal);
+    const onSeeked = () => {
+      if (revealed) return;
+      if (typeof video.requestVideoFrameCallback !== "function") {
+        reveal();
+        return;
+      }
+      video.requestVideoFrameCallback((_now, meta) => {
+        if (revealed) return;
+        const drift = gap(livePosition(), meta.mediaTime);
+        if (Math.abs(drift) <= 0.035 || attempts >= 4) {
+          reveal();
+          return;
+        }
+        lead += drift;
+        align();
+      });
     };
 
-    if (video.readyState >= 1) seekAndPlay();
-    else video.addEventListener("loadedmetadata", seekAndPlay, { once: true });
-    const timer = window.setTimeout(reveal, 1500);
+    const align = () => {
+      if (revealed) return;
+      attempts += 1;
+      video.addEventListener("seeked", onSeeked, { once: true });
+      video.currentTime = wrap(livePosition() + lead);
+    };
+
+    const start = () => {
+      if (started) return;
+      started = true;
+      video.play().catch(() => undefined);
+      align();
+    };
+
+    if (video.readyState >= 1) start();
+    else video.addEventListener("loadedmetadata", start, { once: true });
+    const timer = window.setTimeout(reveal, 1600);
 
     return () => {
       window.clearTimeout(timer);
-      video.removeEventListener("loadedmetadata", seekAndPlay);
-      video.removeEventListener("seeked", reveal);
-      if (!revealed) box.style.visibility = "";
+      video.removeEventListener("loadedmetadata", start);
+      video.removeEventListener("seeked", onSeeked);
+      if (!revealed) box.style.opacity = "";
     };
   }, [src, allowMotion]);
 

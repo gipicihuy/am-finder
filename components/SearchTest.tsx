@@ -262,6 +262,10 @@ function CandThumb({
           decoding="async"
           referrerPolicy="no-referrer"
           onError={handleError}
+          onLoad={(e) => {
+            const image = e.currentTarget;
+            if (image.naturalWidth > 0) setWide(image.naturalWidth >= image.naturalHeight);
+          }}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
@@ -279,6 +283,23 @@ function CandThumb({
           <PlayIcon />
         </span>
       )}
+      {isFullscreenLoading && !isPlaying && src && !failed ? (
+        <img
+          src={src}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100vw",
+            height: "100vh",
+            objectFit: wide ? "contain" : "cover",
+            background: "#000",
+            zIndex: 9997,
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
       {isActive && isGrid && playUrl ? (
         <video
           ref={videoRef}
@@ -689,6 +710,16 @@ export default function SearchTest({
     const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
     if (Boolean(nav.connection?.saveData)) return false;
     return true;
+  };
+
+  const hasPlayable = (url: string): boolean => {
+    if (!url || failedUrlsRef.current.has(url)) return false;
+    if (candsRef.current.length > 0) {
+      const c = candsRef.current.find((item) => item.url === url);
+      return Boolean(c && c.playUrl && !isUrlExpired(c.playUrl) && !missTag(url));
+    }
+    const p = explorePresetsRef.current.find((item) => item.url === url);
+    return Boolean(p && p.playUrl && !isUrlExpired(p.playUrl));
   };
 
   const isCardInZone = (url: string): boolean => {
@@ -1818,6 +1849,15 @@ export default function SearchTest({
       if (videoRef.current && userMutedChoiceRef.current !== true) {
         videoRef.current.muted = false;
       }
+    } else if (hasPlayable(url)) {
+      if (videoRef.current && !videoRef.current.paused && activePlayUrlRef.current !== url) {
+        videoRef.current.pause();
+      }
+      setActivePlayUrl(url);
+      activePlayUrlRef.current = url;
+      setIsVideoPlaying(false);
+      setFullscreenVideoUrl(url);
+      fullscreenVideoUrlRef.current = url;
     } else {
       setFullscreenVideoUrl("");
       fullscreenVideoUrlRef.current = "";
@@ -1881,6 +1921,7 @@ export default function SearchTest({
           muted: playing.muted,
           at: performance.now(),
           fit: playing.videoWidth > 0 && playing.videoWidth >= playing.videoHeight ? "contain" : "cover",
+          source: playing,
         });
         setIsHandingOff(true);
         setOverlayShown(true);
