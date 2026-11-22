@@ -322,8 +322,6 @@ function CandThumb({
           playsInline
           autoPlay
           loop
-          preload="metadata"
-          disableRemotePlayback
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
             setWide(v.videoWidth > 0 && v.videoWidth >= v.videoHeight);
@@ -1495,11 +1493,11 @@ export default function SearchTest({
         return;
       }
       const cleaned = (saved.cands as Candidate[]).map((c) => {
-        const tid = extractTikTokId(c.url);
-        if (tid) {
-          return { ...c, playUrl: `/api/video/${tid}` };
-        }
         if (c.playUrl && isUrlExpired(c.playUrl)) {
+          const tid = extractTikTokId(c.url);
+          if (tid) {
+            return { ...c, playUrl: `/api/video/${tid}` };
+          }
           const next = { ...c };
           delete next.playUrl;
           return next;
@@ -1787,9 +1785,11 @@ export default function SearchTest({
       setIsMuted(false);
       isMutedRef.current = false;
       const normalizedItems = items.map((c) => {
-        const tid = extractTikTokId(c.url);
-        if (tid) {
-          return { ...c, playUrl: `/api/video/${tid}` };
+        if (c.playUrl && isUrlExpired(c.playUrl)) {
+          const tid = extractTikTokId(c.url);
+          if (tid) {
+            return { ...c, playUrl: `/api/video/${tid}` };
+          }
         }
         return c;
       });
