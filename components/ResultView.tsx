@@ -774,7 +774,7 @@ function VideoPreview({
       video.requestVideoFrameCallback((_now, meta) => {
         if (revealed) return;
         const drift = gap(livePosition(), meta.mediaTime);
-        if (Math.abs(drift) <= 0.035 || attempts >= 4) {
+        if (Math.abs(drift) <= 0.08 || attempts >= 2) {
           reveal();
           return;
         }
@@ -824,16 +824,12 @@ function VideoPreview({
     if (!video || !src || !allowMotion) return undefined;
     if (handoffRef.current) return undefined;
     let cancelled = false;
-    video.muted = false;
-    autoMutedRef.current = false;
+    // Browser mobile mensyaratkan autoplay dalam kondisi muted agar tidak diblokir
+    video.muted = true;
+    autoMutedRef.current = true;
     const attempt = video.play();
     if (attempt && typeof attempt.catch === "function") {
-      attempt.catch(() => {
-        if (cancelled) return;
-        video.muted = true;
-        autoMutedRef.current = true;
-        video.play().catch(() => undefined);
-      });
+      attempt.catch(() => undefined);
     }
     return () => {
       cancelled = true;
@@ -918,7 +914,7 @@ function VideoPreview({
           loop
           playsInline
           disableRemotePlayback
-          preload="metadata"
+          preload="auto"
           onError={() => {
             if (fallbackSrc && currentSrc !== fallbackSrc) {
               setCurrentSrc(fallbackSrc);
@@ -1167,11 +1163,9 @@ export function ResultView({ result }: { result: FindResult }) {
   const videoId = result.videoId || ytId;
   const rawPlay = result.video?.playUrlNoWm || result.video?.playUrl;
   const rawExpired = isTikTokUrlExpired(rawPlay);
-  const fallbackVideoSrc = videoId ? `/api/video/${encodeURIComponent(videoId)}` : undefined;
-  const playUrl =
-    !rawExpired && rawPlay
-      ? rawPlay
-      : fallbackVideoSrc || (ytId ? `/api/video/${encodeURIComponent(ytId)}` : undefined);
+  const localStreamSrc = videoId ? `/api/video/${encodeURIComponent(videoId)}` : undefined;
+  const playUrl = localStreamSrc || (!rawExpired && rawPlay ? rawPlay : undefined);
+  const fallbackVideoSrc = (!rawExpired && rawPlay) || undefined;
   const stats = result.video?.stats;
   const views = formatCount(stats?.views);
   const likes = formatCount(stats?.likes);

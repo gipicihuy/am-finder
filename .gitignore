@@ -29,3 +29,4 @@ android/local.properties
 dist/
 *.jks
 *.keystore
+tmp/

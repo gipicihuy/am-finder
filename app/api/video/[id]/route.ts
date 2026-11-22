@@ -102,9 +102,198 @@ async function getTikTokVideo(id: string): Promise<{ url: string; title: string 
   return null;
 }
 
+async function optimizeTikTokVideoAsync(rawPath: string, targetPath: string) {
+  try {
+    if (!existsSync(rawPath)) return;
+    const stat = statSync(rawPath);
+    if (stat.size < 1000) return;
+
+    let duration = 0;
+    let bitRate = 0;
+    try {
+      const { stdout } = await execFileAsync("ffprobe", [
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=codec_name,width,height,r_frame_rate,avg_frame_rate,bit_rate",
+        "-show_entries",
+        "format=duration,size,bit_rate",
+        "-of",
+        "json",
+        rawPath,
+      ]);
+      const info = JSON.parse(stdout);
+      const vStream = info.streams?.[0];
+      duration = parseFloat(info.format?.duration || "0");
+      bitRate = parseInt(info.format?.bit_rate || vStream?.bit_rate || "0", 10);
+    } catch {}
+
+    const isOptimal = stat.size <= 4_000_000 && duration < 20 && bitRate <= 1_200_000;
+    const optTmpPath = `${targetPath}.tmp.${Date.now()}.mp4`;
+
+    if (isOptimal) {
+      // Sudah optimal: repack dengan moov atom di awal file (+faststart) tanpa kompresi ulang
+      await execFileAsync("ffmpeg", [
+        "-i",
+        rawPath,
+        "-c",
+        "copy",
+        "-movflags",
+        "+faststart",
+        "-y",
+        optTmpPath,
+      ]);
+    } else {
+      // Optimasi kompresi ringan: H.264 profile High yuv420p, CRF 25, passthrough fps, GOP 2 detik (-g 60 -keyint_min 30), faststart
+      await execFileAsync("ffmpeg", [
+        "-i",
+        rawPath,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "-crf",
+        "25",
+        "-fps_mode",
+        "passthrough",
+        "-pix_fmt",
+        "yuv420p",
+        "-g",
+        "60",
+        "-keyint_min",
+        "30",
+        "-movflags",
+        "+faststart",
+        "-c:a",
+        "copy",
+        "-y",
+        optTmpPath,
+      ]);
+    }
+
+    if (existsSync(optTmpPath)) {
+      const optStat = statSync(optTmpPath);
+      if (optStat.size > 1000) {
+        await rename(optTmpPath, targetPath);
+        await unlink(rawPath).catch(() => {});
+      } else {
+        await unlink(optTmpPath).catch(() => {});
+      }
+    }
+  } catch {
+    try {
+      if (existsSync(rawPath) && !existsSync(targetPath)) {
+        await rename(rawPath, targetPath);
+      }
+    } catch {}
+  }
+}
+
+async function ensureTikTokVideo(id: string): Promise<{ filePath: string; title: string }> {
+  const filePath = path.join(os.tmpdir(), `amf-tt-${id}.mp4`);
+  const rawPath = path.join(os.tmpdir(), `amf-tt-${id}.raw.mp4`);
+
+  let title = `tiktok-${id}`;
+  const data = await loadCache();
+  if (data) {
+    const entry =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Object.entries(data).find(([key]) => key.endsWith(`:${id}:all`) || key.endsWith(`:${id}`))?.[1] as any;
+    const video = entry?.v?.video;
+    if (video?.description) title = cleanSoundTitle(video.description, 80);
+  }
+
+  // 1. Sudah ada file cache optimal
+  if (existsSync(filePath)) {
+    try {
+      const st = statSync(filePath);
+      if (st.size > 1000) return { filePath, title };
+    } catch {}
+  }
+
+  // 2. File raw sudah tersedia (transcode berjalan asinkron di latar)
+  if (existsSync(rawPath)) {
+    try {
+      const st = statSync(rawPath);
+      if (st.size > 1000) return { filePath: rawPath, title };
+    } catch {}
+  }
+
+  // 3. Deduplikasi in-flight download
+  const existing = downloadPromises.get(`tt:${id}`);
+  if (existing) {
+    const p = await existing;
+    return { filePath: p, title };
+  }
+
+  const promise = (async () => {
+    let tt = await getTikTokVideo(id);
+    if (!tt) {
+      throw new Error("Video TikTok tidak ditemukan");
+    }
+    if (tt.title) title = tt.title;
+
+    const fetchUpstream = async (targetUrl: string) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20_000);
+      try {
+        const res = await fetch(targetUrl, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            Referer: "https://www.tiktok.com/",
+          },
+        });
+        clearTimeout(timer);
+        return res;
+      } catch (e) {
+        clearTimeout(timer);
+        throw e;
+      }
+    };
+
+    let upstream = await fetchUpstream(tt.url).catch(() => null);
+    if (!upstream || !upstream.ok || !upstream.body) {
+      const fresh = await fetchTikTokFromTikwm(id);
+      if (fresh) {
+        tt = fresh;
+        void updateCachedTikTokPlayUrl(id, fresh.url);
+        upstream = await fetchUpstream(fresh.url).catch(() => null);
+      }
+    }
+
+    if (!upstream || !upstream.ok) {
+      throw new Error("Gagal mengunduh stream video TikTok");
+    }
+
+    const arrayBuffer = await upstream.arrayBuffer();
+    await writeFile(rawPath, Buffer.from(arrayBuffer));
+
+    const timer = setTimeout(() => {
+      unlink(filePath).catch(() => {});
+      unlink(rawPath).catch(() => {});
+    }, 2 * 60 * 60 * 1000);
+    if (typeof timer.unref === "function") timer.unref();
+
+    // Jalankan optimasi di background tanpa menunda respon streaming awal
+    void optimizeTikTokVideoAsync(rawPath, filePath);
+
+    return rawPath;
+  })().finally(() => {
+    downloadPromises.delete(`tt:${id}`);
+  });
+
+  downloadPromises.set(`tt:${id}`, promise);
+  const p = await promise;
+  return { filePath: p, title };
+}
+
 async function ensureYoutubeVideo(id: string): Promise<{ filePath: string; title: string }> {
   const filePath = path.join(os.tmpdir(), `amf-yt-${id}.mp4`);
-  
+
   let title = `youtube-${id}`;
   const data = await loadCache();
   if (data) {
@@ -144,7 +333,7 @@ async function ensureYoutubeVideo(id: string): Promise<{ filePath: string; title
         "--no-playlist",
         `https://www.youtube.com/watch?v=${id}`,
       ],
-      { timeout: 90_000 }
+      { timeout: 90_000 },
     );
 
     const timer = setTimeout(() => {
@@ -160,6 +349,74 @@ async function ensureYoutubeVideo(id: string): Promise<{ filePath: string; title
   downloadPromises.set(id, promise);
   const p = await promise;
   return { filePath: p, title };
+}
+
+function serveVideoFile(
+  filePath: string,
+  request: Request,
+  title: string,
+  id: string,
+  isDownload: boolean,
+) {
+  let stat;
+  try {
+    stat = statSync(filePath);
+  } catch {
+    return new Response("Video file not found", { status: 404 });
+  }
+
+  const fileSize = stat.size;
+  const range = request.headers.get("range");
+
+  if (range && !isDownload) {
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize || end >= fileSize) {
+      return new Response("Range Not Satisfiable", {
+        status: 416,
+        headers: { "Content-Range": `bytes */${fileSize}` },
+      });
+    }
+
+    const chunksize = end - start + 1;
+    const stream = createReadStream(filePath, { start, end });
+    const webStream = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
+
+    return new Response(webStream, {
+      status: 206,
+      headers: {
+        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": String(chunksize),
+        "Content-Type": "video/mp4",
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+      },
+    });
+  }
+
+  const stream = createReadStream(filePath);
+  const webStream = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
+
+  const headers = new Headers({
+    "Content-Length": String(fileSize),
+    "Accept-Ranges": "bytes",
+    "Content-Type": "video/mp4",
+    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+  });
+
+  if (isDownload) {
+    headers.set(
+      "Content-Disposition",
+      contentDisposition(`${title}.mp4`, `video-${id}.mp4`),
+    );
+  }
+
+  return new Response(webStream, {
+    status: 200,
+    headers,
+  });
 }
 
 export async function GET(
@@ -187,132 +444,23 @@ export async function GET(
 
   // JALUR 1: TikTok Video
   if (isTiktokId) {
-    let tt = await getTikTokVideo(id);
-    if (!tt) {
-      return new Response("Video TikTok tidak ditemukan", { status: 404 });
+    try {
+      const ttResult = await ensureTikTokVideo(id);
+      return serveVideoFile(ttResult.filePath, request, ttResult.title, id, isDownload);
+    } catch (err) {
+      reportServerError("/api/video", err, request);
+      return new Response("Gagal memuat video TikTok", { status: 502 });
     }
-
-    const range = request.headers.get("range");
-    const fetchUpstream = async (targetUrl: string) => {
-      const headers: Record<string, string> = {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        Referer: "https://www.tiktok.com/",
-      };
-      if (range && !isDownload) {
-        headers["Range"] = range;
-      }
-      return fetch(targetUrl, { headers });
-    };
-
-    let upstream = await fetchUpstream(tt.url);
-
-    // Jika upstream gagal (mis. 403 Forbidden atau 410 Gone karena link CDN expired/basi), coba ambil ulang dari TikWM
-    if (!upstream.ok || !upstream.body) {
-      const fresh = await fetchTikTokFromTikwm(id);
-      if (fresh && fresh.url !== tt.url) {
-        tt = fresh;
-        void updateCachedTikTokPlayUrl(id, fresh.url);
-        upstream = await fetchUpstream(fresh.url);
-      }
-    }
-
-    if (!upstream.ok || !upstream.body) {
-      return new Response("Gagal mengambil stream video TikTok", { status: 502 });
-    }
-
-    const headers = new Headers();
-    headers.set("Content-Type", upstream.headers.get("content-type") || "video/mp4");
-    headers.set("Cache-Control", "public, max-age=7200");
-    headers.set("Accept-Ranges", "bytes");
-
-    const len = upstream.headers.get("content-length");
-    if (len) headers.set("Content-Length", len);
-
-    const cr = upstream.headers.get("content-range");
-    if (cr) headers.set("Content-Range", cr);
-
-    if (isDownload) {
-      headers.set(
-        "Content-Disposition",
-        contentDisposition(`${tt.title}.mp4`, `video-${id}.mp4`)
-      );
-    }
-
-    return new Response(upstream.body, {
-      status: upstream.status === 206 ? 206 : 200,
-      headers,
-    });
   }
 
   // JALUR 2: YouTube Video
-  let ytResult: { filePath: string; title: string };
   try {
-    ytResult = await ensureYoutubeVideo(id);
+    const ytResult = await ensureYoutubeVideo(id);
+    return serveVideoFile(ytResult.filePath, request, ytResult.title, id, isDownload);
   } catch (err) {
     reportServerError("/api/video", err, request);
     return new Response("Failed to download video", { status: 502 });
   }
-
-  let stat;
-  try {
-    stat = statSync(ytResult.filePath);
-  } catch {
-    return new Response("Video file not found", { status: 404 });
-  }
-
-  const fileSize = stat.size;
-  const range = request.headers.get("range");
-
-  if (range && !isDownload) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-    if (start >= fileSize || end >= fileSize) {
-      return new Response("Range Not Satisfiable", {
-        status: 416,
-        headers: { "Content-Range": `bytes */${fileSize}` },
-      });
-    }
-
-    const chunksize = end - start + 1;
-    const stream = createReadStream(ytResult.filePath, { start, end });
-    const webStream = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
-
-    return new Response(webStream, {
-      status: 206,
-      headers: {
-        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-        "Accept-Ranges": "bytes",
-        "Content-Length": String(chunksize),
-        "Content-Type": "video/mp4",
-        "Cache-Control": "public, max-age=7200",
-      },
-    });
-  }
-
-  const stream = createReadStream(ytResult.filePath);
-  const webStream = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
-
-  const headers = new Headers({
-    "Content-Length": String(fileSize),
-    "Accept-Ranges": "bytes",
-    "Content-Type": "video/mp4",
-    "Cache-Control": "public, max-age=7200",
-  });
-
-  if (isDownload) {
-    headers.set(
-      "Content-Disposition",
-      contentDisposition(`${ytResult.title}.mp4`, `video-${id}.mp4`)
-    );
-  }
-
-  return new Response(webStream, {
-    status: 200,
-    headers,
-  });
 }
 
 export async function HEAD(
@@ -326,27 +474,16 @@ export async function HEAD(
     return new Response(null, { status: 400 });
   }
 
-  if (isTiktokId) {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        "Accept-Ranges": "bytes",
-        "Content-Type": "video/mp4",
-        "Cache-Control": "public, max-age=7200",
-      },
-    });
-  }
-
   try {
-    const ytResult = await ensureYoutubeVideo(id);
-    const stat = statSync(ytResult.filePath);
+    const res = isTiktokId ? await ensureTikTokVideo(id) : await ensureYoutubeVideo(id);
+    const stat = statSync(res.filePath);
     return new Response(null, {
       status: 200,
       headers: {
         "Content-Length": String(stat.size),
         "Accept-Ranges": "bytes",
         "Content-Type": "video/mp4",
-        "Cache-Control": "public, max-age=7200",
+        "Cache-Control": "public, max-age=86400",
       },
     });
   } catch {
