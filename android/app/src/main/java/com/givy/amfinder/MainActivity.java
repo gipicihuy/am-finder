@@ -18,6 +18,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Icon;
 import android.media.MediaPlayer;
 import android.media.MediaScannerConnection;
 import android.net.ConnectivityManager;
@@ -695,6 +696,8 @@ public class MainActivity extends Activity {
         OutputStream out = null;
         Uri outUri = null;
         File outFile = null;
+        Uri doneUri = null;
+        boolean notifiedByScan = false;
         String error = null;
         long soFar = 0;
         long total = -1;
@@ -760,8 +763,13 @@ public class MainActivity extends Activity {
                 ContentValues done = new ContentValues();
                 done.put(MediaStore.MediaColumns.IS_PENDING, 0);
                 getContentResolver().update(outUri, done, null, null);
+                doneUri = outUri;
             } else if (outFile != null) {
-                MediaScannerConnection.scanFile(this, new String[]{outFile.getAbsolutePath()}, new String[]{mimeType}, null);
+                // Android 9 ke bawah: dapatkan content:// Uri dari MediaStore lewat scan, lalu
+                // notifikasi selesai dibuat dari callback agar bisa membuka/membagikan file.
+                notifiedByScan = true;
+                MediaScannerConnection.scanFile(this, new String[]{outFile.getAbsolutePath()}, new String[]{mimeType},
+                        (scanPath, scanUri) -> postDoneNotification(nm, notifId, filename, mimeType, scanUri));
             }
         } catch (Exception e) {
             error = e.getMessage() != null && !e.getMessage().isEmpty() ? e.getMessage() : e.getClass().getSimpleName();
@@ -790,7 +798,7 @@ public class MainActivity extends Activity {
 
         final String fError = error;
         if (fError == null) {
-            notifyDownload(nm, notifId, filename, "Unduhan selesai. Ketuk untuk membuka folder Download.", 100, false, false, true);
+            if (!notifiedByScan) postDoneNotification(nm, notifId, filename, mimeType, doneUri);
             runOnUiThread(() -> {
                 Toast.makeText(MainActivity.this, "Tersimpan di folder Download: " + filename, Toast.LENGTH_LONG).show();
                 if (web != null) {
@@ -803,7 +811,7 @@ public class MainActivity extends Activity {
             });
         } else {
             final String message = "Unduhan gagal: " + fError;
-            notifyDownload(nm, notifId, filename, message, 0, false, false, true);
+            postErrorNotification(nm, notifId, filename, message);
             runOnUiThread(() -> {
                 Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
                 if (web != null) {
@@ -864,6 +872,72 @@ public class MainActivity extends Activity {
                         PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
             }
             nm.notify(notifId, b.build());
+        } catch (Exception ignored) {
+        }
+    }
+
+    private PendingIntent actionIntent(int requestCode, Intent intent) {
+        return PendingIntent.getActivity(this, requestCode, intent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    // Notifikasi selesai: ketuk = buka file langsung di pemutar bawaan; tombol Buka, Bagikan, Folder.
+    private void postDoneNotification(NotificationManager nm, int notifId, String filename, String mimeType, Uri uri) {
+        if (nm == null) return;
+        try {
+            ensureDownloadChannel(nm);
+            Notification.Builder b = new Notification.Builder(this, DL_CHANNEL)
+                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                    .setContentTitle(filename)
+                    .setContentText(uri != null ? "Unduhan selesai. Ketuk untuk membuka." : "Unduhan selesai. Ketuk untuk membuka folder Download.")
+                    .setOngoing(false)
+                    .setAutoCancel(true)
+                    .setOnlyAlertOnce(true);
+
+            Intent folder = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+            folder.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent folderPi = actionIntent(notifId * 3 + 2, folder);
+
+            if (uri != null) {
+                Intent view = new Intent(Intent.ACTION_VIEW);
+                view.setDataAndType(uri, mimeType);
+                view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                PendingIntent openPi = actionIntent(notifId * 3, view);
+                b.setContentIntent(openPi);
+                b.addAction(new Notification.Action.Builder(
+                        Icon.createWithResource(this, android.R.drawable.ic_menu_view), "Buka", openPi).build());
+
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType(mimeType);
+                send.putExtra(Intent.EXTRA_STREAM, uri);
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent chooser = Intent.createChooser(send, "Bagikan " + filename);
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                b.addAction(new Notification.Action.Builder(
+                        Icon.createWithResource(this, android.R.drawable.ic_menu_share), "Bagikan",
+                        actionIntent(notifId * 3 + 1, chooser)).build());
+            } else {
+                b.setContentIntent(folderPi);
+            }
+            b.addAction(new Notification.Action.Builder(
+                    Icon.createWithResource(this, android.R.drawable.ic_menu_agenda), "Folder", folderPi).build());
+            nm.notify(notifId, b.build());
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void postErrorNotification(NotificationManager nm, int notifId, String filename, String message) {
+        if (nm == null) return;
+        try {
+            ensureDownloadChannel(nm);
+            nm.notify(notifId, new Notification.Builder(this, DL_CHANNEL)
+                    .setSmallIcon(android.R.drawable.stat_notify_error)
+                    .setContentTitle(filename)
+                    .setContentText(message)
+                    .setStyle(new Notification.BigTextStyle().bigText(message))
+                    .setOngoing(false)
+                    .setAutoCancel(true)
+                    .build());
         } catch (Exception ignored) {
         }
     }
