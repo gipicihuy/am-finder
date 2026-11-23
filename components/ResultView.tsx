@@ -1096,7 +1096,7 @@ function VideoHead({
 
 type DownloadState =
   | { status: "idle" }
-  | { status: "downloading"; kind: "audio" | "video"; percent?: number }
+  | { status: "downloading"; kind: "audio" | "video"; percent?: number; bytes?: number }
   | { status: "success"; kind: "audio" | "video"; isApk?: boolean; filename?: string }
   | { status: "error"; kind: "audio" | "video"; message: string };
 
@@ -1136,13 +1136,19 @@ export function ResultView({ result }: { result: FindResult }) {
     win.onAMFinderDownloadProgress = (
       _id: number,
       kind: "audio" | "video",
-      _cur: number,
+      cur: number,
       _total: number,
       percent: number
     ) => {
       setDownloadState((prev) => {
         if (prev.status === "downloading" && prev.kind === kind) {
-          return { ...prev, percent: Math.max(1, Math.min(100, percent)) };
+          // Ukuran total belum diketahui (percent 0): jangan dipalsukan jadi 1%,
+          // tampilkan ukuran terunduh + bar berjalan.
+          return {
+            ...prev,
+            percent: percent > 0 ? Math.min(100, percent) : 0,
+            bytes: cur > 0 ? cur : undefined,
+          };
         }
         return prev;
       });
@@ -1755,7 +1761,9 @@ export function ResultView({ result }: { result: FindResult }) {
                         ? typeof downloadState.percent === "number" && downloadState.percent > 0
                           ? `${downloadState.percent}% - ${isAndroidApp() ? (downloadState.kind === "audio" ? ui.result.downloadingAudio : ui.result.downloadingVideo) : ui.result.downloadProgressText}`
                           : isAndroidApp()
-                            ? ui.result.downloadApkStarting
+                            ? typeof downloadState.bytes === "number" && downloadState.bytes > 0
+                              ? `${(downloadState.bytes / 1048576).toFixed(1)} MB - ${downloadState.kind === "audio" ? ui.result.downloadingAudio : ui.result.downloadingVideo}`
+                              : ui.result.downloadApkStarting
                             : ui.result.downloadProgressText
                         : downloadState.status === "success"
                           ? downloadState.kind === "audio"

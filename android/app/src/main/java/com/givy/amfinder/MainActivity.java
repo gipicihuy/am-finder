@@ -133,6 +133,9 @@ public class MainActivity extends Activity {
         public final String kind;
         public final String filename;
         public final String mimeType;
+        // Penjaga unduhan macet: waktu mulai dan waktu pertama kali berstatus PAUSED.
+        public final long startedMs = System.currentTimeMillis();
+        public long pausedSinceMs = 0;
 
         public DownloadRecord(long id, String kind, String filename, String mimeType) {
             this.id = id;
@@ -199,6 +202,23 @@ public class MainActivity extends Activity {
                             long soFar = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
                             long total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
                             int percent = total > 0 ? (int) ((soFar * 100) / total) : 0;
+                            long now = System.currentTimeMillis();
+                            if (status == DownloadManager.STATUS_PAUSED) {
+                                // DownloadManager mengulang tanpa henti saat server/jaringan error, dan
+                                // tampilannya macet di awal. Bila terhenti > 10 detik, batalkan dan beri tahu.
+                                if (rec.pausedSinceMs == 0) {
+                                    rec.pausedSinceMs = now;
+                                } else if (now - rec.pausedSinceMs > 10000) {
+                                    int reason = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON));
+                                    failDownload(dm, id, rec, "Unduhan terhenti: " + getDownloadErrorMessage(status, reason) + ". Coba lagi.");
+                                    continue;
+                                }
+                            } else if (status == DownloadManager.STATUS_PENDING && now - rec.startedMs > 20000) {
+                                failDownload(dm, id, rec, "Unduhan tidak bisa dimulai. Periksa koneksi lalu coba lagi.");
+                                continue;
+                            } else if (status == DownloadManager.STATUS_RUNNING) {
+                                rec.pausedSinceMs = 0;
+                            }
                             if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
                                 runOnUiThread(() -> {
                                     if (web != null) {
@@ -218,6 +238,24 @@ public class MainActivity extends Activity {
             pollerHandler.postDelayed(this, 500);
         }
     };
+
+    private void failDownload(DownloadManager dm, long id, DownloadRecord rec, String message) {
+        try {
+            dm.remove(id);
+        } catch (Exception ignored) {
+        }
+        activeDownloads.remove(id);
+        runOnUiThread(() -> {
+            Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+            if (web != null) {
+                web.evaluateJavascript(
+                    String.format(Locale.US,
+                        "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'error', message: %s });",
+                        id, rec.kind, JSONObject.quote(message)),
+                    null);
+            }
+        });
+    }
 
     private void startProgressPoller() {
         if (!isPollerRunning && !activeDownloads.isEmpty()) {
