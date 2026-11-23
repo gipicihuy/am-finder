@@ -192,7 +192,7 @@
     "downloadSuccessAudioDesc": "MP3 file saved to your device.",
     "downloadSuccessVideoDesc": "MP4 video saved to your device.",
     "downloadApkNotice": "Downloading in the background (check notifications).",
-    "downloadApkStarting": "Sending to phone's Download Manager...",
+    "downloadApkStarting": "Connecting to the server...",
     "downloadProgressText": "Preparing and downloading file...",
     "downloadAudioDesc": "Clear audio in high quality",
     "downloadVideoDesc": "Video without watermark",

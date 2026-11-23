@@ -4,6 +4,11 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.ClipData;
 import android.content.BroadcastReceiver;
 import android.content.ClipboardManager;
@@ -24,6 +29,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -46,10 +52,18 @@ import android.widget.VideoView;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MainActivity extends Activity {
 
@@ -179,6 +193,9 @@ public class MainActivity extends Activity {
     private volatile String appUserAgent;
     private Runnable completeProgressTask;
     private static final int REQ_STORAGE = 4201;
+    private static final int REQ_NOTIF = 4202;
+    private static final String DL_CHANNEL = "am_downloads";
+    private final AtomicLong ownDownloadSeq = new AtomicLong(1000000L);
     private PendingDownload pendingDownload;
     private final Map<Long, DownloadRecord> activeDownloads = new ConcurrentHashMap<>();
     private final Handler pollerHandler = new Handler(Looper.getMainLooper());
@@ -656,58 +673,238 @@ public class MainActivity extends Activity {
         return executeDownload(fullUrl, finalName, safeMime, safeKind);
     }
 
+    // Unduhan memakai koneksi sendiri (bukan DownloadManager) agar progres nyata, galat server
+    // terbaca jelas, dan notifikasi progres selalu tampil. DownloadManager sering macet di
+    // status PENDING tanpa pesan sehingga tampilan terjebak di "mengirim ke Download Manager".
     private String executeDownload(String url, String filename, String mimeType, String kind) {
-        try {
-            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            if (dm == null) throw new IllegalStateException("DownloadManager tidak tersedia");
-
-            Log.d(TAG, "Enqueueing DownloadManager request: URL=" + url + ", filename=" + filename + ", mimeType=" + mimeType);
-
-            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
-            req.setTitle(filename);
-            req.setDescription("AM Finder " + (kind.equals("video") ? "Video MP4" : "Audio MP3"));
-            req.setMimeType(mimeType);
-
-            if (appUserAgent != null) {
-                req.addRequestHeader("User-Agent", appUserAgent);
+        final long id = ownDownloadSeq.incrementAndGet();
+        runOnUiThread(() -> {
+            Toast.makeText(MainActivity.this, "Mengunduh " + (kind.equals("video") ? "MP4" : "MP3") + "...", Toast.LENGTH_SHORT).show();
+            if (Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIF);
             }
+        });
+        new Thread(() -> runOwnDownload(id, url, filename, mimeType, kind), "am-download-" + id).start();
+        return String.valueOf(id);
+    }
 
+    private void runOwnDownload(long id, String url, String filename, String mimeType, String kind) {
+        HttpURLConnection conn = null;
+        InputStream in = null;
+        OutputStream out = null;
+        Uri outUri = null;
+        File outFile = null;
+        String error = null;
+        long soFar = 0;
+        long total = -1;
+        final NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        final int notifId = (int) (id % 100000L) + 5000;
+        try {
+            ensureDownloadChannel(nm);
+            notifyDownload(nm, notifId, filename, "Menghubungkan ke server...", 0, true, true, false);
+
+            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(60000);
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("Accept-Encoding", "identity");
+            if (appUserAgent != null) conn.setRequestProperty("User-Agent", appUserAgent);
             try {
                 String cookie = CookieManager.getInstance().getCookie(url);
-                if (cookie != null && !cookie.isEmpty()) req.addRequestHeader("Cookie", cookie);
+                if (cookie != null && !cookie.isEmpty()) conn.setRequestProperty("Cookie", cookie);
             } catch (Exception ignored) {
             }
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) {
+                throw new IOException(httpErrorMessage(conn, code));
+            }
+            total = conn.getContentLengthLong();
 
-            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            req.allowScanningByMediaScanner();
-            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+            if (Build.VERSION.SDK_INT >= 29) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                outUri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                if (outUri == null) throw new IOException("Gagal membuat file di folder Download");
+                out = getContentResolver().openOutputStream(outUri);
+                if (out == null) throw new IOException("Gagal membuka file tujuan");
+            } else {
+                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                if (!dir.exists() && !dir.mkdirs()) throw new IOException("Folder Download tidak bisa dibuat");
+                outFile = uniqueFile(dir, filename);
+                out = new FileOutputStream(outFile);
+            }
 
-            long downloadId = dm.enqueue(req);
-            Log.d(TAG, "Download enqueued successfully: id=" + downloadId + " for " + filename);
-            activeDownloads.put(downloadId, new DownloadRecord(downloadId, kind, filename, mimeType));
+            in = conn.getInputStream();
+            byte[] buf = new byte[64 * 1024];
+            long lastReport = 0;
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                out.write(buf, 0, n);
+                soFar += n;
+                long now = SystemClock.elapsedRealtime();
+                if (now - lastReport >= 400) {
+                    lastReport = now;
+                    reportOwnProgress(id, kind, filename, nm, notifId, soFar, total);
+                }
+            }
+            out.flush();
+            if (soFar <= 0) throw new IOException("Server mengirim file kosong");
+            out.close();
+            out = null;
 
-            runOnUiThread(() -> {
-                Toast.makeText(MainActivity.this, "Mengunduh " + (kind.equals("video") ? "MP4" : "MP3") + "...", Toast.LENGTH_SHORT).show();
-                startProgressPoller();
-            });
-
-            return String.valueOf(downloadId);
+            if (Build.VERSION.SDK_INT >= 29) {
+                ContentValues done = new ContentValues();
+                done.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                getContentResolver().update(outUri, done, null, null);
+            } else if (outFile != null) {
+                MediaScannerConnection.scanFile(this, new String[]{outFile.getAbsolutePath()}, new String[]{mimeType}, null);
+            }
         } catch (Exception e) {
-            Log.e(TAG, "executeDownload failed for URL: " + url + ", filename: " + filename, e);
-            final String errDetail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            error = e.getMessage() != null && !e.getMessage().isEmpty() ? e.getMessage() : e.getClass().getSimpleName();
+            Log.e(TAG, "Own download failed: " + url, e);
+            try {
+                if (out != null) out.close();
+            } catch (Exception ignored) {
+            }
+            out = null;
+            try {
+                if (outUri != null) getContentResolver().delete(outUri, null, null);
+                if (outFile != null) outFile.delete();
+            } catch (Exception ignored) {
+            }
+        } finally {
+            try {
+                if (in != null) in.close();
+            } catch (Exception ignored) {
+            }
+            try {
+                if (out != null) out.close();
+            } catch (Exception ignored) {
+            }
+            if (conn != null) conn.disconnect();
+        }
+
+        final String fError = error;
+        if (fError == null) {
+            notifyDownload(nm, notifId, filename, "Unduhan selesai. Ketuk untuk membuka folder Download.", 100, false, false, true);
             runOnUiThread(() -> {
-                Toast.makeText(MainActivity.this, "Gagal memulai unduhan: " + errDetail, Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Tersimpan di folder Download: " + filename, Toast.LENGTH_LONG).show();
                 if (web != null) {
-                    String safeMsg = JSONObject.quote("Gagal memulai unduhan: " + errDetail);
                     web.evaluateJavascript(
                         String.format(Locale.US,
-                            "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: -1, kind: '%s', status: 'error', message: %s });",
-                            kind, safeMsg),
+                            "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'success', filename: %s });",
+                            id, kind, JSONObject.quote(filename)),
                         null);
                 }
             });
-            return "";
+        } else {
+            final String message = "Unduhan gagal: " + fError;
+            notifyDownload(nm, notifId, filename, message, 0, false, false, true);
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+                if (web != null) {
+                    web.evaluateJavascript(
+                        String.format(Locale.US,
+                            "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'error', message: %s });",
+                            id, kind, JSONObject.quote(message)),
+                        null);
+                }
+            });
         }
+    }
+
+    private void reportOwnProgress(long id, String kind, String filename, NotificationManager nm, int notifId, long soFar, long total) {
+        final int percent = total > 0 ? (int) Math.min(100L, (soFar * 100L) / total) : 0;
+        final String text = total > 0
+                ? percent + "%"
+                : String.format(Locale.US, "%.1f MB", soFar / 1048576.0);
+        notifyDownload(nm, notifId, filename, text, percent, total <= 0, true, false);
+        final long fSoFar = soFar;
+        final long fTotal = total;
+        runOnUiThread(() -> {
+            if (web != null) {
+                web.evaluateJavascript(
+                    String.format(Locale.US,
+                        "window.onAMFinderDownloadProgress && window.onAMFinderDownloadProgress(%d, '%s', %d, %d, %d);",
+                        id, kind, fSoFar, fTotal, percent),
+                    null);
+            }
+        });
+    }
+
+    private void ensureDownloadChannel(NotificationManager nm) {
+        if (nm == null || Build.VERSION.SDK_INT < 26) return;
+        if (nm.getNotificationChannel(DL_CHANNEL) == null) {
+            NotificationChannel ch = new NotificationChannel(DL_CHANNEL, "Unduhan", NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription("Progres unduhan video dan audio");
+            nm.createNotificationChannel(ch);
+        }
+    }
+
+    private void notifyDownload(NotificationManager nm, int notifId, String title, String text,
+                                int percent, boolean indeterminate, boolean ongoing, boolean done) {
+        if (nm == null) return;
+        try {
+            Notification.Builder b = new Notification.Builder(this, DL_CHANNEL)
+                    .setSmallIcon(done ? android.R.drawable.stat_sys_download_done : android.R.drawable.stat_sys_download)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setOngoing(ongoing)
+                    .setOnlyAlertOnce(true)
+                    .setAutoCancel(!ongoing);
+            if (ongoing) b.setProgress(100, Math.max(0, percent), indeterminate);
+            if (done) {
+                Intent view = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+                view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                b.setContentIntent(PendingIntent.getActivity(this, notifId, view,
+                        PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+            }
+            nm.notify(notifId, b.build());
+        } catch (Exception ignored) {
+        }
+    }
+
+    private File uniqueFile(File dir, String name) {
+        File f = new File(dir, name);
+        if (!f.exists()) return f;
+        int dot = name.lastIndexOf('.');
+        String base = dot > 0 ? name.substring(0, dot) : name;
+        String ext = dot > 0 ? name.substring(dot) : "";
+        for (int i = 1; i < 1000; i++) {
+            f = new File(dir, base + " (" + i + ")" + ext);
+            if (!f.exists()) return f;
+        }
+        return new File(dir, base + "-" + System.currentTimeMillis() + ext);
+    }
+
+    private String httpErrorMessage(HttpURLConnection conn, int code) {
+        String detail = "";
+        try {
+            InputStream es = conn.getErrorStream();
+            if (es != null) {
+                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                byte[] b = new byte[1024];
+                int n;
+                int read = 0;
+                while (read < 4096 && (n = es.read(b)) != -1) {
+                    bo.write(b, 0, n);
+                    read += n;
+                }
+                es.close();
+                String body = bo.toString("UTF-8");
+                try {
+                    detail = new JSONObject(body).optString("error", "");
+                } catch (Exception ignored) {
+                }
+                if (detail.isEmpty() && body.length() < 160) detail = body.trim();
+            }
+        } catch (Exception ignored) {
+        }
+        return detail.isEmpty() ? "Server membalas HTTP " + code : detail + " (HTTP " + code + ")";
     }
 
     @Override
