@@ -283,5 +283,18 @@
     "audioRead": "无法读取来源的音频，请再试一次。",
     "searchInterrupted": "搜索意外中断。",
     "audioYoutubeFailed": "下载 YouTube 音频失败。"
+  },
+  "update": {
+    "forceTitle": "应用强制更新",
+    "optionalTitle": "发现新版本",
+    "forceDesc": "您当前使用的 AM Finder 版本 ({version}) 已不再受支持。请更新至版本 {latest} 以继续使用该应用。",
+    "optionalDesc": "AM Finder 新版本 ({latest}) 现已推出。立即更新以获得更佳功能和性能体验。",
+    "releaseNotes": "更新日志：",
+    "updateNow": "立即更新",
+    "later": "以后再说",
+    "safelinkNotice": "您将通过 SafelinkU 访问官方下载页面。",
+    "currentVersion": "当前版本",
+    "minVersion": "最低要求版本",
+    "newVersion": "最新版本"
   }
 }

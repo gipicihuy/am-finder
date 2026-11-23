@@ -48,6 +48,26 @@ public class MainActivity extends Activity {
     private static final int ACCENT = 0xFF05FAA8;
     private static final int BG = 0xFF0F0F10;
     private static final long MAX_SPLASH_MS = 10000;
+
+    private String getAppVersion() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "1.8";
+        }
+    }
+
+    private int getAppVersionCode() {
+        try {
+            if (Build.VERSION.SDK_INT >= 28) {
+                return (int) getPackageManager().getPackageInfo(getPackageName(), 0).getLongVersionCode();
+            } else {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+            }
+        } catch (Exception e) {
+            return 9;
+        }
+    }
     private static final long VIDEO_END_MARGIN_MS = 350;
 
     private WebView web;
@@ -128,8 +148,9 @@ public class MainActivity extends Activity {
         // Penanda biar halaman monitor bisa membedakan "lewat aplikasi" dengan
         // akurat. Tanpa ini, deteksi nebak dari "; wv)" yang juga dipakai
         // browser in-app milik aplikasi lain.
+        String appVer = getAppVersion();
         web.getSettings().setUserAgentString(
-                web.getSettings().getUserAgentString() + " AMFinderApp/1.0 AMFinderDL/1");
+                web.getSettings().getUserAgentString() + " AMFinderApp/" + appVer + " AMFinderVer/" + appVer + " AMFinderDL/1");
         splash = buildSplash();
         offlinePanel = buildOfflinePanel();
         progressTrack = buildProgress();
@@ -191,6 +212,18 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public String getVersion() {
+                return getAppVersion();
+            }
+
+            @JavascriptInterface
+            public int getVersionCode() {
+                return getAppVersionCode();
+            }
+        }, "AMFinderNative");
 
         // navigator.clipboard.readText() ditolak di WebView (gak ada UI permission
         // clipboard-read), jadi tombol paste di site butuh bridge native ini.

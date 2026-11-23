@@ -283,5 +283,18 @@
     "audioRead": "Gagal membaca audio dari sumber, coba lagi.",
     "searchInterrupted": "Proses pencarian terputus tak terduga.",
     "audioYoutubeFailed": "Gagal mengunduh audio YouTube."
+  },
+  "update": {
+    "forceTitle": "Pembaruan Aplikasi Wajib",
+    "optionalTitle": "Pembaruan Tersedia",
+    "forceDesc": "Versi aplikasi AM Finder yang kamu gunakan ({version}) sudah tidak didukung. Harap perbarui ke versi {latest} untuk dapat menggunakan aplikasi kembali.",
+    "optionalDesc": "Versi baru AM Finder ({latest}) telah tersedia. Perbarui sekarang untuk mendapatkan fitur dan performa terbaik.",
+    "releaseNotes": "Catatan Pembaruan:",
+    "updateNow": "UPDATE SEKARANG",
+    "later": "Nanti Saja",
+    "safelinkNotice": "Kamu akan diarahkan ke laman unduhan resmi melalui SafelinkU.",
+    "currentVersion": "Versi Kamu",
+    "minVersion": "Versi Wajib",
+    "newVersion": "Versi Baru"
   }
 }

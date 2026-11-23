@@ -283,5 +283,18 @@
     "audioRead": "Couldn't read the audio from the source, try again.",
     "searchInterrupted": "The search was interrupted unexpectedly.",
     "audioYoutubeFailed": "Failed to download the YouTube audio."
+  },
+  "update": {
+    "forceTitle": "Mandatory App Update",
+    "optionalTitle": "Update Available",
+    "forceDesc": "The AM Finder app version you are using ({version}) is no longer supported. Please update to version {latest} to continue using the application.",
+    "optionalDesc": "A new version of AM Finder ({latest}) is available. Update now to enjoy the latest features and performance.",
+    "releaseNotes": "Release Notes:",
+    "updateNow": "UPDATE NOW",
+    "later": "Maybe Later",
+    "safelinkNotice": "You will be redirected to the official download page via SafelinkU.",
+    "currentVersion": "Your Version",
+    "minVersion": "Required Version",
+    "newVersion": "New Version"
   }
 }

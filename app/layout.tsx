@@ -5,6 +5,7 @@ import { SupportModal } from "@/components/SupportModal";
 import { WaChannelToast } from "@/components/WaChannelToast";
 import { PremiumPromo } from "@/components/PremiumPromo";
 import { AntiScrapeGuard } from "@/components/AntiScrapeGuard";
+import { AppUpdateModal } from "@/components/AppUpdateModal";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import { getLocale } from "@/lib/locale-server";
 import { getUi } from "@/lib/ui";
@@ -120,6 +121,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <WaChannelToast />
           <PremiumPromo />
           <AntiScrapeGuard />
+          <AppUpdateModal />
         </LocaleProvider>
       </body>
     </html>
