@@ -892,6 +892,7 @@ public class MainActivity extends Activity {
         try {
             Notification.Builder b = new Notification.Builder(this, DL_CHANNEL)
                     .setSmallIcon(R.drawable.ic_stat_amfinder)
+                    .setLargeIcon(largeLogo())
                     .setColor(0xFF10B981)
                     .setContentTitle(title)
                     .setContentText(text)
@@ -966,6 +967,26 @@ public class MainActivity extends Activity {
         return launchOnUi(buildFolderIntent(), "Tidak bisa membuka folder Download");
     }
 
+    private android.graphics.Bitmap notifLargeIcon;
+
+    // Logo berwarna AM Finder untuk sisi kiri notifikasi (ikon kecil status bar hanya bisa siluet).
+    private android.graphics.Bitmap largeLogo() {
+        if (notifLargeIcon == null) {
+            try {
+                // Ikon launcher bersifat adaptif (XML), jadi digambar ke bitmap, bukan di-decode langsung.
+                android.graphics.drawable.Drawable d = getResources().getDrawable(R.mipmap.ic_launcher, getTheme());
+                int size = 192;
+                android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
+                android.graphics.Canvas canvas = new android.graphics.Canvas(bmp);
+                d.setBounds(0, 0, size, size);
+                d.draw(canvas);
+                notifLargeIcon = bmp;
+            } catch (Exception ignored) {
+            }
+        }
+        return notifLargeIcon;
+    }
+
     private PendingIntent actionIntent(int requestCode, Intent intent) {
         return PendingIntent.getActivity(this, requestCode, intent,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -978,6 +999,7 @@ public class MainActivity extends Activity {
             ensureDownloadChannel(nm);
             Notification.Builder b = new Notification.Builder(this, DL_CHANNEL)
                     .setSmallIcon(R.drawable.ic_stat_amfinder)
+                    .setLargeIcon(largeLogo())
                     .setColor(0xFF10B981)
                     .setContentTitle(filename)
                     .setContentText(uri != null ? "Unduhan selesai. Ketuk untuk membuka." : "Unduhan selesai. Ketuk untuk membuka folder Download.")
@@ -1012,6 +1034,7 @@ public class MainActivity extends Activity {
             ensureDownloadChannel(nm);
             nm.notify(notifId, new Notification.Builder(this, DL_CHANNEL)
                     .setSmallIcon(R.drawable.ic_stat_amfinder)
+                    .setLargeIcon(largeLogo())
                     .setColor(0xFFEF4444)
                     .setContentTitle(filename)
                     .setContentText(message)
