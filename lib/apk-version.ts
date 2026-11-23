@@ -72,20 +72,28 @@ export function detectApkVersion(): ApkVersionInfo {
     if (ver !== "1.0") {
       return { isApk: true, version: ver };
     }
-    // Jika "1.0" (default pada APK v1.5 s/d v1.8):
+    // Jika "1.0" (User-Agent statis pada APK versi lawas sebelum v1.8+):
     if (/AMFinderDL\/1/i.test(ua)) {
-      // APK v1.6 - v1.8 (DownloadListener native aktif)
-      return { isApk: true, version: "1.8" };
+      // APK v1.6 (dan v1.7 legacy): Memiliki marker AMFinderDL/1 tetapi belum memiliki AMFinderVer
+      return { isApk: true, version: "1.6" };
     }
-    // APK v1.5
+    // APK v1.5: Memiliki AMFinderApp/1.0 tanpa AMFinderDL/1
     return { isApk: true, version: "1.5" };
   }
 
-  // 5. Cek AndroidClipboard bridge (hadir sejak APK v1.5)
+  // 5. Cek jika UA memiliki marker AMFinderDL/1 atau AMFinder secara umum
+  if (/AMFinderDL\/1/i.test(ua)) {
+    return { isApk: true, version: "1.6" };
+  }
+  if (/AMFinder/i.test(ua)) {
+    return { isApk: true, version: "1.5" };
+  }
+
+  // 6. Cek AndroidClipboard bridge (hadir sejak APK v1.5)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (Boolean((window as any).AndroidClipboard)) {
     if (/AMFinderDL\/1/i.test(ua)) {
-      return { isApk: true, version: "1.8" };
+      return { isApk: true, version: "1.6" };
     }
     return { isApk: true, version: "1.5" };
   }

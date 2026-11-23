@@ -28,7 +28,7 @@ export function AppUpdateModal() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
 
-    fetch("/api/app-update", {
+    fetch(`/api/app-update?_t=${Date.now()}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -37,14 +37,17 @@ export function AppUpdateModal() {
         clearTimeout(timer);
         if (!data || !data.minimum_version) return;
 
+        // Re-evaluasi versi jika Native bridge baru ready setelah mount
+        const currentApk = detectApkVersion();
+        const currentVer = currentApk.version || apk.version || "1.6";
+        setUserApkVersion(currentVer);
+
         setUpdateInfo({
           latest_version: data.latest_version,
           minimum_version: data.minimum_version,
           update_url: data.update_url,
           release_notes: data.release_notes,
         });
-
-        const currentVer = apk.version || "1.0";
 
         // 1. Cek Force Update jika versi di bawah minimum_version
         if (compareVersions(currentVer, data.minimum_version) < 0) {
@@ -114,9 +117,22 @@ export function AppUpdateModal() {
     };
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
+
+    let onPopState: (() => void) | null = null;
+    if (modalType === "force") {
+      try {
+        window.history.pushState(null, "", window.location.href);
+        onPopState = () => {
+          window.history.pushState(null, "", window.location.href);
+        };
+        window.addEventListener("popstate", onPopState);
+      } catch {}
+    }
+
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown, { capture: true });
+      if (onPopState) window.removeEventListener("popstate", onPopState);
     };
   }, [modalType, dismissOptional]);
 
