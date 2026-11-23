@@ -314,6 +314,18 @@ Catatan:
 - Situs `https://amfinder.web.id` sengaja **tidak memuat ajakan unduh APK**. Distribusi APK dilakukan lewat link Tutwuri yang dibagikan di channel WhatsApp, komentar, atau status — bukan dari halaman situs.
 - Update situs biasa tidak butuh build ulang APK; WebView selalu memuat URL terbaru. Build ulang hanya saat icon/nama/versi berubah.
 
+### Rilis versi baru (contoh v2.0)
+
+1. Naikkan `versionName` dan `versionCode` di `android/app/build.gradle`. `versionCode` harus selalu lebih besar dari rilis sebelumnya; `versionName` menentukan tag rilis `v<versionName>`. Nilai cadangan di `MainActivity.java` (`getAppVersion` dan `getAppVersionCode`) ikut disamakan.
+2. Push perubahan di `android/` otomatis membangun dan menerbitkan rilis. Kalau belum mau build, tulis `[skip ci]` di pesan commit.
+3. Saat siap, jalankan **Actions → Build APK → Run workflow**. Rilis `v<versionName>` baru dibuat dan rilis versi lama tidak disentuh. Workflow berhenti kalau rilis dengan versi yang sama sudah ada, kecuali dijalankan manual dengan `overwrite=true`.
+4. Unggah APK ke SafelinkU lalu ambil link barunya.
+5. Ubah `config/app-update.json` **berurutan**. Config dibaca server langsung dari branch `main` di GitHub (cache ±20 detik), jadi perubahannya aktif hampir seketika:
+   - Pertama `latest_version` dan `update_url` ke versi dan link baru. User lama mendapat ajakan update opsional.
+   - `minimum_version` terakhir, hanya setelah APK baru benar-benar bisa diunduh. Nilai ini yang mengunci APK lama (force update).
+
+`config/app-update.v2.0.json` adalah bahan siap salin untuk v2.0 dan tidak dibaca aplikasi. Ganti `update_url` di dalamnya dengan link SafelinkU v2.0 sebelum disalin ke `config/app-update.json`.
+
 ### Loading screen APK
 
 Saat app dibuka, `VideoView` memutar `android/app/src/main/res/raw/loading.mp4` (loop, senyap) sambil WebView memuat situs, plus garis progres tipis warna aksen di tepi atas yang ngikuti progres unduhan halaman yang asli. Splash baru fade out setelah halaman pertama termuat **dan** video selesai diputar (animasi tidak pernah kepotong; kalau internet lambat video loop), maksimum 10 detik, dan langsung hilang kalau gagal muat.
