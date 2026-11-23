@@ -32,7 +32,7 @@ const GITHUB_RAW_URL =
 export const DEFAULT_UPDATE_CONFIG: AppUpdateConfig = {
   latest_version: "1.8",
   minimum_version: "1.8",
-  update_url: "https://safelinkid.com/amfinder-apk",
+  update_url: "https://sfl.gl/sriMZT",
   release_notes:
     "Pembaruan penting untuk meningkatkan kestabilan, performa pencarian preset, dan perbaikan unduhan.",
 };
