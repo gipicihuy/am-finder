@@ -5,11 +5,16 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.ClipData;
+import android.content.BroadcastReceiver;
 import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
+import android.media.MediaScannerConnection;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
@@ -63,6 +68,36 @@ public class MainActivity extends Activity {
     private Runnable completeProgressTask;
     private static final int REQ_STORAGE = 4201;
     private String pendingUrl, pendingUa, pendingDisposition, pendingMime;
+    private final java.util.Set<Long> activeDownloads = new java.util.HashSet<>();
+
+    private final BroadcastReceiver downloadDone = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+            if (id < 0 || !activeDownloads.remove(id)) return;
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            if (dm == null) return;
+            try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
+                if (c == null || !c.moveToFirst()) return;
+                int status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                if (status != DownloadManager.STATUS_SUCCESSFUL) {
+                    Toast.makeText(MainActivity.this, "Unduhan gagal, coba lagi", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                String mime = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE));
+                String local = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
+                String path = local == null ? null : Uri.parse(local).getPath();
+                if (path != null) {
+                    MediaScannerConnection.scanFile(MainActivity.this, new String[]{path},
+                            new String[]{mime}, null);
+                    String name = new java.io.File(path).getName();
+                    Toast.makeText(MainActivity.this, "Tersimpan di folder Download: " + name,
+                            Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception ignored) {
+            }
+        }
+    };
 
     private final Runnable splashFinisher = new Runnable() {
         @Override
@@ -257,6 +292,13 @@ public class MainActivity extends Activity {
             web.restoreState(savedInstanceState);
         }
         splash.post(splashFinisher);
+
+        IntentFilter doneFilter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(downloadDone, doneFilter, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(downloadDone, doneFilter);
+        }
     }
 
     private void startDownload(String url, String ua, String disposition, String mime) {
@@ -293,10 +335,11 @@ public class MainActivity extends Activity {
             if (cookie != null) req.addRequestHeader("Cookie", cookie);
             req.setNotificationVisibility(
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.allowScanningByMediaScanner();
             req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name);
             DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             if (dm == null) throw new IllegalStateException("no DownloadManager");
-            dm.enqueue(req);
+            activeDownloads.add(dm.enqueue(req));
             Toast.makeText(this, "Mengunduh: " + name, Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(this, "Gagal memulai unduhan", Toast.LENGTH_SHORT).show();
@@ -504,6 +547,10 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        try {
+            unregisterReceiver(downloadDone);
+        } catch (Exception ignored) {
+        }
         if (video != null) {
             video.stopPlayback();
             video = null;
