@@ -2908,6 +2908,14 @@ html[data-theme="light"] .state-miss-icon {
   border-radius: var(--radius);
 }
 
+/* a:hover global mewarnai teks jadi hijau; di tombol hijau dialog update itu bikin "Unduh" hilang */
+.app-update-primary:hover,
+.app-update-primary:focus,
+.app-update-primary:active,
+.app-update-primary:visited {
+  color: var(--accent-ink);
+}
+
 .app-update-later {
   width: 100%;
   min-height: 42px;
