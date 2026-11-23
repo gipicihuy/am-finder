@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { FindResult, PresetLink } from "@/lib/types";
-import { soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
+import { cleanSoundTitle, soundCoverUrl, soundFileName, soundUrl } from "@/lib/audio";
 import { isYoutubeLink, youtubeId } from "@/lib/tiktok-link";
 import { SectionOrnament } from "@/components/Ornament";
 import { TelegramIcon, WhatsAppIcon } from "@/components/ShareIcons";
@@ -58,12 +58,20 @@ function soundPageHref(id: unknown): string | null {
 }
 
 function isAndroidApp(): boolean {
-  return typeof navigator !== "undefined" && /AMFinderApp\/1\.0/i.test(navigator.userAgent);
+  if (typeof window !== "undefined" && Boolean((window as unknown as { AMFinderNative?: unknown }).AMFinderNative)) {
+    return true;
+  }
+  return typeof navigator !== "undefined" && /AMFinderApp\//i.test(navigator.userAgent);
 }
 
-// APK v1.6+ membawa DownloadListener native (UA berisi AMFinderDL/1). Versi lama
-// tidak bisa mengunduh blob/attachment sama sekali.
+// APK v1.6+ membawa DownloadListener native (UA berisi AMFinderDL/1) atau JS Bridge AMFinderNative.downloadMedia.
 function hasNativeDownload(): boolean {
+  if (
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { AMFinderNative?: { downloadMedia?: unknown } }).AMFinderNative?.downloadMedia === "function"
+  ) {
+    return true;
+  }
   return typeof navigator !== "undefined" && /AMFinderDL\/1/i.test(navigator.userAgent);
 }
 
@@ -1088,8 +1096,8 @@ function VideoHead({
 
 type DownloadState =
   | { status: "idle" }
-  | { status: "downloading"; kind: "audio" | "video" }
-  | { status: "success"; kind: "audio" | "video"; isApk?: boolean }
+  | { status: "downloading"; kind: "audio" | "video"; percent?: number }
+  | { status: "success"; kind: "audio" | "video"; isApk?: boolean; filename?: string }
   | { status: "error"; kind: "audio" | "video"; message: string };
 
 export function ResultView({ result }: { result: FindResult }) {
@@ -1119,6 +1127,59 @@ export function ResultView({ result }: { result: FindResult }) {
     setAudioError("");
     setVideoError("");
   }, [clearSuccessTimer]);
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const win = typeof window !== "undefined" ? (window as any) : null;
+    if (!win) return;
+
+    win.onAMFinderDownloadProgress = (
+      _id: number,
+      kind: "audio" | "video",
+      _cur: number,
+      _total: number,
+      percent: number
+    ) => {
+      setDownloadState((prev) => {
+        if (prev.status === "downloading" && prev.kind === kind) {
+          return { ...prev, percent: Math.max(1, Math.min(100, percent)) };
+        }
+        return prev;
+      });
+    };
+
+    win.onAMFinderDownloadEvent = (event: {
+      id: number;
+      kind: "audio" | "video";
+      status: "success" | "error";
+      filename?: string;
+      message?: string;
+    }) => {
+      clearSuccessTimer();
+      if (event.status === "success") {
+        setDownloadState({
+          status: "success",
+          kind: event.kind,
+          isApk: true,
+          filename: event.filename,
+        });
+        successTimerRef.current = setTimeout(() => {
+          setDownloadState({ status: "idle" });
+        }, 5000);
+      } else {
+        setDownloadState({
+          status: "error",
+          kind: event.kind,
+          message: event.message || (event.kind === "video" ? ui.result.videoFailed : ui.result.audioFailed),
+        });
+      }
+    };
+
+    return () => {
+      delete win.onAMFinderDownloadProgress;
+      delete win.onAMFinderDownloadEvent;
+    };
+  }, [clearSuccessTimer, ui]);
 
   useEffect(() => {
     setAllowMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -1194,40 +1255,34 @@ export function ResultView({ result }: { result: FindResult }) {
     clearSuccessTimer();
     setMenuOpen(false);
 
-    // APK v1.6+: navigasi langsung ke endpoint attachment, DownloadListener
-    // native yang menangani unduhan (blob URL tidak bisa diunduh WebView).
+    const safeTitle = cleanSoundTitle(soundTitle || "audio", 80);
+    const safeFilename = `${safeTitle || `audio-${videoId}`}.mp3`;
+
+    // 1. Native bridge AMFinderNative.downloadMedia di Android APK
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nativeBridge = typeof window !== "undefined" ? (window as any).AMFinderNative : null;
+    if (nativeBridge && typeof nativeBridge.downloadMedia === "function") {
+      setDownloadState({ status: "downloading", kind: "audio", percent: 0 });
+      const fullUrl = `${window.location.origin}/api/audio/${encodeURIComponent(videoId)}?dl=1`;
+      try {
+        const dlId = nativeBridge.downloadMedia(fullUrl, safeFilename, "audio/mpeg", "audio");
+        if (!dlId) {
+          setDownloadState({ status: "error", kind: "audio", message: ui.result.audioFailed });
+        }
+      } catch {
+        setDownloadState({ status: "error", kind: "audio", message: ui.result.audioFailed });
+      }
+      return;
+    }
+
+    // 2. APK lama dengan DownloadListener tapi tanpa JS bridge downloadMedia
     if (isAndroidApp() && hasNativeDownload()) {
       setDownloadState({ status: "downloading", kind: "audio" });
       window.location.assign(`/api/audio/${encodeURIComponent(videoId)}?dl=1`);
-      successTimerRef.current = setTimeout(() => {
-        setDownloadState({ status: "success", kind: "audio", isApk: true });
-        successTimerRef.current = setTimeout(() => {
-          setDownloadState({ status: "idle" });
-        }, 5500);
-      }, 1000);
       return;
     }
 
-    // WebView APK v1.5 belum punya DownloadListener. Buka link CDN di browser
-    // (perilaku lama) untuk APK lama.
-    if (isAndroidApp() && soundAudio) {
-      setDownloadState({ status: "downloading", kind: "audio" });
-      const link = document.createElement("a");
-      link.href = soundAudio;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      successTimerRef.current = setTimeout(() => {
-        setDownloadState({ status: "success", kind: "audio", isApk: true });
-        successTimerRef.current = setTimeout(() => {
-          setDownloadState({ status: "idle" });
-        }, 5500);
-      }, 1000);
-      return;
-    }
-
+    // 3. Web Browser biasa: fetch -> blob -> <a> download
     const requestId = downloadSeq.current + 1;
     downloadSeq.current = requestId;
     setAudioBusy(true);
@@ -1290,30 +1345,34 @@ export function ResultView({ result }: { result: FindResult }) {
     clearSuccessTimer();
     setMenuOpen(false);
 
+    const safeTitle = cleanSoundTitle(soundTitle || description || `video-${videoId}`, 80);
+    const safeFilename = `${safeTitle || `video-${videoId}`}.mp4`;
+
+    // 1. Native bridge AMFinderNative.downloadMedia di Android APK
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nativeBridge = typeof window !== "undefined" ? (window as any).AMFinderNative : null;
+    if (nativeBridge && typeof nativeBridge.downloadMedia === "function") {
+      setDownloadState({ status: "downloading", kind: "video", percent: 0 });
+      const fullUrl = `${window.location.origin}/api/video/${encodeURIComponent(videoId)}?dl=1`;
+      try {
+        const dlId = nativeBridge.downloadMedia(fullUrl, safeFilename, "video/mp4", "video");
+        if (!dlId) {
+          setDownloadState({ status: "error", kind: "video", message: ui.result.videoFailed });
+        }
+      } catch {
+        setDownloadState({ status: "error", kind: "video", message: ui.result.videoFailed });
+      }
+      return;
+    }
+
+    // 2. APK lama dengan DownloadListener
     if (isAndroidApp() && hasNativeDownload()) {
       setDownloadState({ status: "downloading", kind: "video" });
       window.location.assign(`/api/video/${encodeURIComponent(videoId)}?dl=1`);
-      successTimerRef.current = setTimeout(() => {
-        setDownloadState({ status: "success", kind: "video", isApk: true });
-        successTimerRef.current = setTimeout(() => {
-          setDownloadState({ status: "idle" });
-        }, 5500);
-      }, 1000);
       return;
     }
 
-    if (isAndroidApp() && !hasNativeDownload() && playUrl) {
-      setDownloadState({ status: "downloading", kind: "video" });
-      window.open(playUrl, "_blank");
-      successTimerRef.current = setTimeout(() => {
-        setDownloadState({ status: "success", kind: "video", isApk: true });
-        successTimerRef.current = setTimeout(() => {
-          setDownloadState({ status: "idle" });
-        }, 5500);
-      }, 1000);
-      return;
-    }
-
+    // 3. Web Browser biasa: fetch -> blob -> <a> download
     const requestId = downloadSeq.current + 1;
     downloadSeq.current = requestId;
     setVideoBusy(true);
@@ -1663,15 +1722,15 @@ export function ResultView({ result }: { result: FindResult }) {
 
                     <p className="sound-dl-card-desc">
                       {downloadState.status === "downloading"
-                        ? isAndroidApp() && hasNativeDownload()
-                          ? ui.result.downloadApkStarting
-                          : ui.result.downloadProgressText
+                        ? typeof downloadState.percent === "number" && downloadState.percent > 0
+                          ? `${downloadState.percent}% - ${isAndroidApp() ? (downloadState.kind === "audio" ? ui.result.downloadingAudio : ui.result.downloadingVideo) : ui.result.downloadProgressText}`
+                          : isAndroidApp()
+                            ? ui.result.downloadApkStarting
+                            : ui.result.downloadProgressText
                         : downloadState.status === "success"
-                          ? downloadState.isApk
-                            ? ui.result.downloadApkNotice
-                            : downloadState.kind === "audio"
-                              ? ui.result.downloadSuccessAudioDesc
-                              : ui.result.downloadSuccessVideoDesc
+                          ? downloadState.kind === "audio"
+                            ? ui.result.downloadSuccessAudioDesc
+                            : ui.result.downloadSuccessVideoDesc
                           : downloadState.message}
                       {downloadState.status === "error" && downloadState.kind === "audio" && soundAudio ? (
                         <>
@@ -1685,7 +1744,14 @@ export function ResultView({ result }: { result: FindResult }) {
 
                     {downloadState.status === "downloading" ? (
                       <div className="sound-dl-progress-bar" aria-hidden="true">
-                        <div className="sound-dl-progress-fill" />
+                        <div
+                          className="sound-dl-progress-fill"
+                          style={
+                            typeof downloadState.percent === "number" && downloadState.percent > 0
+                              ? { width: `${downloadState.percent}%`, animation: "none" }
+                              : undefined
+                          }
+                        />
                       </div>
                     ) : null}
                   </div>

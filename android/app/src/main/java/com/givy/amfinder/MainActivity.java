@@ -21,6 +21,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
@@ -40,6 +42,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
+
+import org.json.JSONObject;
+
+import java.io.File;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MainActivity extends Activity {
 
@@ -70,10 +79,12 @@ public class MainActivity extends Activity {
     }
 
     public static class AMFinderNativeBridge {
+        private final MainActivity activity;
         private final String version;
         private final int versionCode;
 
-        public AMFinderNativeBridge(String version, int versionCode) {
+        public AMFinderNativeBridge(MainActivity activity, String version, int versionCode) {
+            this.activity = activity;
             this.version = version;
             this.versionCode = versionCode;
         }
@@ -87,7 +98,54 @@ public class MainActivity extends Activity {
         public int getVersionCode() {
             return versionCode;
         }
+
+        @JavascriptInterface
+        public boolean isNativeApp() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public boolean hasNativeDownload() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public String downloadMedia(String url, String filename, String mimeType, String kind) {
+            if (activity != null) {
+                return activity.downloadMediaFromWeb(url, filename, mimeType, kind);
+            }
+            return "";
+        }
     }
+
+    public static class DownloadRecord {
+        public final long id;
+        public final String kind;
+        public final String filename;
+        public final String mimeType;
+
+        public DownloadRecord(long id, String kind, String filename, String mimeType) {
+            this.id = id;
+            this.kind = kind;
+            this.filename = filename;
+            this.mimeType = mimeType;
+        }
+    }
+
+    private static class PendingDownload {
+        final String url;
+        final String filename;
+        final String mimeType;
+        final String kind;
+
+        PendingDownload(String url, String filename, String mimeType, String kind) {
+            this.url = url;
+            this.filename = filename;
+            this.mimeType = mimeType;
+            this.kind = kind;
+        }
+    }
+
     private static final long VIDEO_END_MARGIN_MS = 350;
 
     private WebView web;
@@ -107,33 +165,126 @@ public class MainActivity extends Activity {
     private volatile String currentUrl;
     private Runnable completeProgressTask;
     private static final int REQ_STORAGE = 4201;
-    private String pendingUrl, pendingUa, pendingDisposition, pendingMime;
-    private final java.util.Set<Long> activeDownloads = new java.util.HashSet<>();
+    private PendingDownload pendingDownload;
+    private final Map<Long, DownloadRecord> activeDownloads = new ConcurrentHashMap<>();
+    private final Handler pollerHandler = new Handler(Looper.getMainLooper());
+    private boolean isPollerRunning = false;
+
+    private final Runnable progressPollerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (activeDownloads.isEmpty()) {
+                isPollerRunning = false;
+                return;
+            }
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            if (dm != null) {
+                for (Map.Entry<Long, DownloadRecord> entry : activeDownloads.entrySet()) {
+                    long id = entry.getKey();
+                    DownloadRecord rec = entry.getValue();
+                    try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
+                        if (c != null && c.moveToFirst()) {
+                            int status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                            long soFar = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                            long total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                            int percent = total > 0 ? (int) ((soFar * 100) / total) : 0;
+                            if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
+                                runOnUiThread(() -> {
+                                    if (web != null) {
+                                        web.evaluateJavascript(
+                                            String.format(Locale.US,
+                                                "window.onAMFinderDownloadProgress && window.onAMFinderDownloadProgress(%d, '%s', %d, %d, %d);",
+                                                id, rec.kind, soFar, total, percent),
+                                            null);
+                                    }
+                                });
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            pollerHandler.postDelayed(this, 500);
+        }
+    };
+
+    private void startProgressPoller() {
+        if (!isPollerRunning && !activeDownloads.isEmpty()) {
+            isPollerRunning = true;
+            pollerHandler.post(progressPollerRunnable);
+        }
+    }
 
     private final BroadcastReceiver downloadDone = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-            if (id < 0 || !activeDownloads.remove(id)) return;
+            if (id < 0) return;
+            DownloadRecord record = activeDownloads.remove(id);
+            if (record == null) return;
+
             DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             if (dm == null) return;
+
             try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
                 if (c == null || !c.moveToFirst()) return;
                 int status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
                 if (status != DownloadManager.STATUS_SUCCESSFUL) {
-                    Toast.makeText(MainActivity.this, "Unduhan gagal, coba lagi", Toast.LENGTH_LONG).show();
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this, "Unduhan gagal, coba lagi", Toast.LENGTH_LONG).show();
+                        if (web != null) {
+                            web.evaluateJavascript(
+                                String.format(Locale.US,
+                                    "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'error', message: 'Unduhan gagal' });",
+                                    record.id, record.kind),
+                                null);
+                        }
+                    });
                     return;
                 }
-                String mime = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE));
+
                 String local = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
-                String path = local == null ? null : Uri.parse(local).getPath();
-                if (path != null) {
-                    MediaScannerConnection.scanFile(MainActivity.this, new String[]{path},
-                            new String[]{mime}, null);
-                    String name = new java.io.File(path).getName();
-                    Toast.makeText(MainActivity.this, "Tersimpan di folder Download: " + name,
-                            Toast.LENGTH_LONG).show();
+                String mime = record.mimeType;
+                try {
+                    String queriedMime = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE));
+                    if (queriedMime != null && !queriedMime.isEmpty()) mime = queriedMime;
+                } catch (Exception ignored) {}
+
+                String path = null;
+                if (local != null && local.startsWith("file://")) {
+                    path = Uri.parse(local).getPath();
                 }
+                if (path == null || !new File(path).exists()) {
+                    File pubDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File candidate = new File(pubDir, record.filename);
+                    if (candidate.exists()) {
+                        path = candidate.getAbsolutePath();
+                    }
+                }
+
+                if (path != null) {
+                    final String finalPath = path;
+                    final String finalMime = mime;
+                    MediaScannerConnection.scanFile(MainActivity.this,
+                            new String[]{finalPath},
+                            new String[]{finalMime},
+                            null);
+                    try {
+                        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(finalPath))));
+                    } catch (Exception ignored) {}
+                }
+
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Tersimpan di folder Download: " + record.filename, Toast.LENGTH_LONG).show();
+                    if (web != null) {
+                        String safeNameJson = JSONObject.quote(record.filename);
+                        web.evaluateJavascript(
+                            String.format(Locale.US,
+                                "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'success', filename: %s });",
+                                record.id, record.kind, safeNameJson),
+                            null);
+                    }
+                });
             } catch (Exception ignored) {
             }
         }
@@ -234,7 +385,7 @@ public class MainActivity extends Activity {
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         web.addJavascriptInterface(
-                new AMFinderNativeBridge(appVer, getAppVersionCode()), "AMFinderNative");
+                new AMFinderNativeBridge(this, appVer, getAppVersionCode()), "AMFinderNative");
 
         // navigator.clipboard.readText() ditolak di WebView (gak ada UI permission
         // clipboard-read), jadi tombol paste di site butuh bridge native ini.
@@ -262,19 +413,11 @@ public class MainActivity extends Activity {
 
         // WebView nggak otomatis ngunduh file. Tanpa DownloadListener, respons
         // "Content-Disposition: attachment" (mis. /api/audio/<id>) cuma diabaikan.
-        // Cuma terima unduhan dari domain sendiri biar bukan jadi downloader bebas.
+        // Langsung arahkan ke download manager native tanpa membuka external intent.
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-            try {
-                String host = Uri.parse(url).getHost();
-                host = host == null ? "" : host.toLowerCase();
-                if (!host.equals(HOST) && !host.endsWith("." + HOST)) {
-                    openExternal(Uri.parse(url));
-                    return;
-                }
-            } catch (Exception e) {
-                return;
-            }
-            startDownload(url, userAgent, contentDisposition, mimeType);
+            String kind = (url.contains("/api/audio/") || (mimeType != null && mimeType.startsWith("audio/"))) ? "audio" : "video";
+            String guessed = URLUtil.guessFileName(url, contentDisposition, mimeType);
+            downloadMediaFromWeb(url, guessed, mimeType, kind);
         });
 
         web.setWebChromeClient(new WebChromeClient() {
@@ -296,13 +439,13 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
-                return openExternal(req.getUrl());
+                return handleUrlOverride(req.getUrl());
             }
 
             @Override
             @SuppressWarnings("deprecation")
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return openExternal(Uri.parse(url));
+                return handleUrlOverride(Uri.parse(url));
             }
 
             @Override
@@ -345,48 +488,86 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void startDownload(String url, String ua, String disposition, String mime) {
-        // Android 9 ke bawah butuh izin tulis untuk folder Download publik.
+    public String downloadMediaFromWeb(String url, String filename, String mimeType, String kind) {
+        if (url == null || url.trim().isEmpty()) return "";
+        final String fullUrl;
+        if (url.startsWith("/")) {
+            fullUrl = HOME + (url.startsWith("/") ? url.substring(1) : url);
+        } else {
+            fullUrl = url;
+        }
+
+        try {
+            Uri parsed = Uri.parse(fullUrl);
+            String host = parsed.getHost() == null ? "" : parsed.getHost().toLowerCase();
+            if (!host.equals(HOST) && !host.endsWith("." + HOST)) {
+                return "";
+            }
+        } catch (Exception e) {
+            return "";
+        }
+
+        final String safeKind = "video".equalsIgnoreCase(kind) ? "video" : "audio";
+        final String safeMime = (mimeType != null && !mimeType.isEmpty())
+                ? mimeType
+                : (safeKind.equals("video") ? "video/mp4" : "audio/mpeg");
+
+        String name = filename == null ? "" : filename.trim();
+        if (name.isEmpty()) {
+            name = (safeKind.equals("video") ? "video_" : "audio_") + System.currentTimeMillis();
+        }
+        name = name.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+        if (safeKind.equals("video")) {
+            if (!name.toLowerCase().endsWith(".mp4")) name += ".mp4";
+        } else {
+            if (!name.toLowerCase().endsWith(".mp3")) name += ".mp3";
+        }
+
+        final String finalName = name;
+
         if (Build.VERSION.SDK_INT < 29
                 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            pendingUrl = url;
-            pendingUa = ua;
-            pendingDisposition = disposition;
-            pendingMime = mime;
-            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
-            return;
+            pendingDownload = new PendingDownload(fullUrl, finalName, safeMime, safeKind);
+            runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE));
+            return "pending_permission";
         }
+
+        return executeDownload(fullUrl, finalName, safeMime, safeKind);
+    }
+
+    private String executeDownload(String url, String filename, String mimeType, String kind) {
         try {
-            if (mime == null || mime.isEmpty()) {
-                if (url.contains("/api/audio/")) mime = "audio/mpeg";
-                else if (url.contains("/api/video/")) mime = "video/mp4";
-            }
-            String name = URLUtil.guessFileName(url, disposition, mime);
-            if (name != null && name.endsWith(".bin")) {
-                if (url.contains("/api/audio/")) {
-                    name = name.substring(0, name.length() - 4) + ".mp3";
-                } else if (url.contains("/api/video/")) {
-                    name = name.substring(0, name.length() - 4) + ".mp4";
-                }
-            }
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            if (dm == null) throw new IllegalStateException("DownloadManager tidak tersedia");
+
             DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
-            req.setTitle(name);
-            req.setDescription("AM Finder");
-            if (mime != null && !mime.isEmpty()) req.setMimeType(mime);
+            req.setTitle(filename);
+            req.setDescription("AM Finder " + (kind.equals("video") ? "Video MP4" : "Audio MP3"));
+            req.setMimeType(mimeType);
+
+            String ua = web != null ? web.getSettings().getUserAgentString() : null;
             if (ua != null) req.addRequestHeader("User-Agent", ua);
+
             String cookie = CookieManager.getInstance().getCookie(url);
             if (cookie != null) req.addRequestHeader("Cookie", cookie);
-            req.setNotificationVisibility(
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             req.allowScanningByMediaScanner();
-            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name);
-            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            if (dm == null) throw new IllegalStateException("no DownloadManager");
-            activeDownloads.add(dm.enqueue(req));
-            Toast.makeText(this, "Mengunduh: " + name, Toast.LENGTH_SHORT).show();
+            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+
+            long downloadId = dm.enqueue(req);
+            activeDownloads.put(downloadId, new DownloadRecord(downloadId, kind, filename, mimeType));
+
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, "Mengunduh: " + filename, Toast.LENGTH_SHORT).show();
+                startProgressPoller();
+            });
+
+            return String.valueOf(downloadId);
         } catch (Exception e) {
-            Toast.makeText(this, "Gagal memulai unduhan", Toast.LENGTH_SHORT).show();
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Gagal memulai unduhan", Toast.LENGTH_SHORT).show());
+            return "";
         }
     }
 
@@ -394,13 +575,14 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
         super.onRequestPermissionsResult(code, perms, results);
         if (code != REQ_STORAGE) return;
-        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED
-                && pendingUrl != null) {
-            startDownload(pendingUrl, pendingUa, pendingDisposition, pendingMime);
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+            if (pendingDownload != null) {
+                executeDownload(pendingDownload.url, pendingDownload.filename, pendingDownload.mimeType, pendingDownload.kind);
+            }
         } else {
             Toast.makeText(this, "Izin penyimpanan dibutuhkan untuk mengunduh", Toast.LENGTH_SHORT).show();
         }
-        pendingUrl = pendingUa = pendingDisposition = pendingMime = null;
+        pendingDownload = null;
     }
 
     private FrameLayout buildSplash() {
@@ -496,16 +678,33 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private boolean handleUrlOverride(Uri uri) {
+        if (uri == null) return false;
+        String scheme = uri.getScheme();
+        if (scheme == null) return false;
+        if (scheme.equalsIgnoreCase("blob") || scheme.equalsIgnoreCase("data")
+                || scheme.equalsIgnoreCase("javascript") || scheme.equalsIgnoreCase("about")) {
+            return true;
+        }
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
+        if (host.equals(HOST) || host.endsWith("." + HOST)) {
+            return false;
+        }
+        return openExternal(uri);
+    }
+
     private boolean openExternal(Uri uri) {
         if (uri == null) return false;
-        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
-        if (host.equals(HOST) || host.endsWith("." + HOST)) return false;
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW, uri));
-        } catch (Exception e) {
-            Toast.makeText(this, "Gak ada aplikasi buat buka link ini", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+                return true;
+            }
+        } catch (Exception ignored) {
         }
-        return true;
+        return false;
     }
 
     private View buildOfflinePanel() {
@@ -591,6 +790,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        pollerHandler.removeCallbacks(progressPollerRunnable);
         try {
             unregisterReceiver(downloadDone);
         } catch (Exception ignored) {

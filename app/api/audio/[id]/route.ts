@@ -180,21 +180,21 @@ async function exactAudioResponse(
       "-map",
       "0:a:0",
       "-c:a",
-      "copy",
-      "-movflags",
-      "frag_keyframe+empty_moov",
+      "libmp3lame",
+      "-b:a",
+      "192k",
       "-f",
-      "mp4",
+      "mp3",
       "pipe:1",
     ],
     { stdio: ["ignore", "pipe", "ignore"] },
   );
 
   const headers = new Headers({
-    "Content-Type": "audio/mp4",
+    "Content-Type": "audio/mpeg",
     "Content-Disposition": contentDisposition(
-      soundFileName(sound.title, id, "audio/mp4"),
-      soundFileName("", id, "audio/mp4"),
+      soundFileName(sound.title, id, "audio/mpeg"),
+      soundFileName("", id, "audio/mpeg"),
     ),
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
