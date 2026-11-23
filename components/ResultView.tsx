@@ -75,6 +75,14 @@ function hasNativeDownload(): boolean {
   return typeof navigator !== "undefined" && /AMFinderDL\/1/i.test(navigator.userAgent);
 }
 
+// APK baru membawa tombol aksi unduhan (Buka/Bagikan/Folder) lewat JS bridge.
+function hasNativeDownloadActions(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { AMFinderNative?: { openDownloadFolder?: unknown } }).AMFinderNative?.openDownloadFolder === "function"
+  );
+}
+
 function filenameFromDisposition(value: string | null): string | null {
   if (!value) return null;
   const utf8 = value.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
@@ -1097,7 +1105,7 @@ function VideoHead({
 type DownloadState =
   | { status: "idle" }
   | { status: "downloading"; kind: "audio" | "video"; percent?: number; bytes?: number }
-  | { status: "success"; kind: "audio" | "video"; isApk?: boolean; filename?: string }
+  | { status: "success"; kind: "audio" | "video"; isApk?: boolean; filename?: string; id?: number }
   | { status: "error"; kind: "audio" | "video"; message: string };
 
 export function ResultView({ result }: { result: FindResult }) {
@@ -1168,10 +1176,12 @@ export function ResultView({ result }: { result: FindResult }) {
           kind: event.kind,
           isApk: true,
           filename: event.filename,
+          id: event.id,
         });
+        // Beri waktu cukup agar tombol aksi (Buka/Bagikan/Folder) sempat dipakai.
         successTimerRef.current = setTimeout(() => {
           setDownloadState({ status: "idle" });
-        }, 5000);
+        }, 30000);
       } else {
         setDownloadState({
           status: "error",
@@ -1271,6 +1281,27 @@ export function ResultView({ result }: { result: FindResult }) {
   const soundCover = soundCoverUrl(music?.cover) || (isYt ? cover : null);
   const hasSound = Boolean(soundTitle || soundAuthor || soundLink || canDownloadAudio);
   const showSoundCover = Boolean(soundCover) && !coverFailed && !(!isYt && isOwnSound(music, avatar, [result.author, result.authorDetail?.nickname, result.authorDetail?.uniqueId]));
+
+  function nativeDownloadAction(action: "open" | "share" | "folder") {
+    if (downloadState.status !== "success") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bridge = typeof window !== "undefined" ? (window as any).AMFinderNative : null;
+    if (!bridge) return;
+    clearSuccessTimer();
+    const id = downloadState.id;
+    let ok = false;
+    try {
+      if (action === "open" && typeof bridge.openDownload === "function" && id !== undefined) {
+        ok = Boolean(bridge.openDownload(id));
+      } else if (action === "share" && typeof bridge.shareDownload === "function" && id !== undefined) {
+        ok = Boolean(bridge.shareDownload(id));
+      }
+      // File tidak dikenali (mis. APK lama / Uri belum siap): jatuh ke folder Download.
+      if (!ok && typeof bridge.openDownloadFolder === "function") bridge.openDownloadFolder();
+    } catch {
+      /* abaikan */
+    }
+  }
 
   async function handleDownload() {
     if (!canDownloadAudio || !videoId || downloadState.status === "downloading") return;
@@ -1779,6 +1810,22 @@ export function ResultView({ result }: { result: FindResult }) {
                         </>
                       ) : null}
                     </p>
+
+                    {downloadState.status === "success" &&
+                    downloadState.isApk &&
+                    hasNativeDownloadActions() ? (
+                      <div className="sound-dl-actions">
+                        <button type="button" className="sound-dl-action is-primary" onClick={() => nativeDownloadAction("open")}>
+                          {ui.result.downloadActionOpen}
+                        </button>
+                        <button type="button" className="sound-dl-action" onClick={() => nativeDownloadAction("share")}>
+                          {ui.result.downloadActionShare}
+                        </button>
+                        <button type="button" className="sound-dl-action" onClick={() => nativeDownloadAction("folder")}>
+                          {ui.result.downloadActionFolder}
+                        </button>
+                      </div>
+                    ) : null}
 
                     {downloadState.status === "downloading" ? (
                       <div className="sound-dl-progress-bar" aria-hidden="true">

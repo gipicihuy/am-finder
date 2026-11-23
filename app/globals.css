@@ -1631,6 +1631,37 @@ html[data-theme="light"] .state-miss-icon {
   }
 }
 
+/* Tombol aksi setelah unduhan selesai (APK) */
+.sound-dl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sound-dl-action {
+  padding: 6px 14px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  border-radius: 99px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sound-dl-action:hover,
+.sound-dl-action:active {
+  background: var(--surface-3);
+}
+
+.sound-dl-action.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 /* Card Close Button */
 .sound-dl-card-close {
   flex: none;

@@ -135,6 +135,21 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public boolean openDownload(long id) {
+            return activity != null && activity.openFinishedDownload(id);
+        }
+
+        @JavascriptInterface
+        public boolean shareDownload(long id) {
+            return activity != null && activity.shareFinishedDownload(id);
+        }
+
+        @JavascriptInterface
+        public boolean openDownloadFolder() {
+            return activity != null && activity.openDownloadsFolder();
+        }
+
+        @JavascriptInterface
         public boolean openContent(String url, String platform, String contentId) {
             if (activity != null) {
                 return activity.openContentFromWeb(url, platform, contentId);
@@ -198,6 +213,20 @@ public class MainActivity extends Activity {
     private static final String DL_CHANNEL = "am_downloads";
     private final AtomicLong ownDownloadSeq = new AtomicLong(1000000L);
     private PendingDownload pendingDownload;
+    private static class FinishedDownload {
+        final Uri uri;
+        final String mimeType;
+        final String filename;
+
+        FinishedDownload(Uri uri, String mimeType, String filename) {
+            this.uri = uri;
+            this.mimeType = mimeType;
+            this.filename = filename;
+        }
+    }
+    // Unduhan yang sudah selesai (id -> file), dipakai tombol aksi di dalam aplikasi.
+    private final java.util.concurrent.ConcurrentHashMap<Long, FinishedDownload> finishedDownloads =
+            new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<Long, DownloadRecord> activeDownloads = new ConcurrentHashMap<>();
     private final Handler pollerHandler = new Handler(Looper.getMainLooper());
     private boolean isPollerRunning = false;
@@ -764,12 +793,16 @@ public class MainActivity extends Activity {
                 done.put(MediaStore.MediaColumns.IS_PENDING, 0);
                 getContentResolver().update(outUri, done, null, null);
                 doneUri = outUri;
+                rememberFinished(id, doneUri, mimeType, filename);
             } else if (outFile != null) {
                 // Android 9 ke bawah: dapatkan content:// Uri dari MediaStore lewat scan, lalu
                 // notifikasi selesai dibuat dari callback agar bisa membuka/membagikan file.
                 notifiedByScan = true;
                 MediaScannerConnection.scanFile(this, new String[]{outFile.getAbsolutePath()}, new String[]{mimeType},
-                        (scanPath, scanUri) -> postDoneNotification(nm, notifId, filename, mimeType, scanUri));
+                        (scanPath, scanUri) -> {
+                            rememberFinished(id, scanUri, mimeType, filename);
+                            postDoneNotification(nm, notifId, filename, mimeType, scanUri);
+                        });
             }
         } catch (Exception e) {
             error = e.getMessage() != null && !e.getMessage().isEmpty() ? e.getMessage() : e.getClass().getSimpleName();
@@ -876,6 +909,62 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private void rememberFinished(long id, Uri uri, String mimeType, String filename) {
+        if (uri != null) finishedDownloads.put(id, new FinishedDownload(uri, mimeType, filename));
+    }
+
+    private Intent buildViewIntent(Uri uri, String mimeType) {
+        Intent view = new Intent(Intent.ACTION_VIEW);
+        view.setDataAndType(uri, mimeType);
+        view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        return view;
+    }
+
+    private Intent buildShareIntent(Uri uri, String mimeType, String filename) {
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType(mimeType);
+        send.putExtra(Intent.EXTRA_STREAM, uri);
+        send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        Intent chooser = Intent.createChooser(send, "Bagikan " + filename);
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        return chooser;
+    }
+
+    private Intent buildFolderIntent() {
+        Intent folder = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+        folder.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return folder;
+    }
+
+    private boolean launchOnUi(Intent intent, String failMessage) {
+        runOnUiThread(() -> {
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(MainActivity.this, failMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
+        return true;
+    }
+
+    // Dipanggil dari tombol aksi di kartu unduhan (JS bridge).
+    public boolean openFinishedDownload(long id) {
+        FinishedDownload f = finishedDownloads.get(id);
+        if (f == null) return false;
+        return launchOnUi(buildViewIntent(f.uri, f.mimeType), "Tidak ada aplikasi untuk membuka file ini");
+    }
+
+    public boolean shareFinishedDownload(long id) {
+        FinishedDownload f = finishedDownloads.get(id);
+        if (f == null) return false;
+        return launchOnUi(buildShareIntent(f.uri, f.mimeType, f.filename), "Tidak bisa membagikan file ini");
+    }
+
+    public boolean openDownloadsFolder() {
+        return launchOnUi(buildFolderIntent(), "Tidak bisa membuka folder Download");
+    }
+
     private PendingIntent actionIntent(int requestCode, Intent intent) {
         return PendingIntent.getActivity(this, requestCode, intent,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -894,28 +983,17 @@ public class MainActivity extends Activity {
                     .setAutoCancel(true)
                     .setOnlyAlertOnce(true);
 
-            Intent folder = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
-            folder.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            PendingIntent folderPi = actionIntent(notifId * 3 + 2, folder);
+            PendingIntent folderPi = actionIntent(notifId * 3 + 2, buildFolderIntent());
 
             if (uri != null) {
-                Intent view = new Intent(Intent.ACTION_VIEW);
-                view.setDataAndType(uri, mimeType);
-                view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                PendingIntent openPi = actionIntent(notifId * 3, view);
+                PendingIntent openPi = actionIntent(notifId * 3, buildViewIntent(uri, mimeType));
                 b.setContentIntent(openPi);
                 b.addAction(new Notification.Action.Builder(
                         Icon.createWithResource(this, android.R.drawable.ic_menu_view), "Buka", openPi).build());
 
-                Intent send = new Intent(Intent.ACTION_SEND);
-                send.setType(mimeType);
-                send.putExtra(Intent.EXTRA_STREAM, uri);
-                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                Intent chooser = Intent.createChooser(send, "Bagikan " + filename);
-                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 b.addAction(new Notification.Action.Builder(
                         Icon.createWithResource(this, android.R.drawable.ic_menu_share), "Bagikan",
-                        actionIntent(notifId * 3 + 1, chooser)).build());
+                        actionIntent(notifId * 3 + 1, buildShareIntent(uri, mimeType, filename))).build());
             } else {
                 b.setContentIntent(folderPi);
             }
