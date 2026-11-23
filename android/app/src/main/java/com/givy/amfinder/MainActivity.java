@@ -173,6 +173,7 @@ public class MainActivity extends Activity {
     private boolean videoReachedEnd;
     private boolean pageLoaded;
     private volatile String currentUrl;
+    private volatile String appUserAgent;
     private Runnable completeProgressTask;
     private static final int REQ_STORAGE = 4201;
     private PendingDownload pendingDownload;
@@ -339,8 +340,8 @@ public class MainActivity extends Activity {
         // akurat. Tanpa ini, deteksi nebak dari "; wv)" yang juga dipakai
         // browser in-app milik aplikasi lain.
         String appVer = getAppVersion();
-        web.getSettings().setUserAgentString(
-                web.getSettings().getUserAgentString() + " AMFinderApp/" + appVer + " AMFinderVer/" + appVer + " AMFinderDL/1");
+        appUserAgent = web.getSettings().getUserAgentString() + " AMFinderApp/" + appVer + " AMFinderVer/" + appVer + " AMFinderDL/1";
+        web.getSettings().setUserAgentString(appUserAgent);
         splash = buildSplash();
         offlinePanel = buildOfflinePanel();
         progressTrack = buildProgress();
@@ -629,11 +630,15 @@ public class MainActivity extends Activity {
             req.setDescription("AM Finder " + (kind.equals("video") ? "Video MP4" : "Audio MP3"));
             req.setMimeType(mimeType);
 
-            String ua = web != null ? web.getSettings().getUserAgentString() : null;
-            if (ua != null) req.addRequestHeader("User-Agent", ua);
+            if (appUserAgent != null) {
+                req.addRequestHeader("User-Agent", appUserAgent);
+            }
 
-            String cookie = CookieManager.getInstance().getCookie(url);
-            if (cookie != null) req.addRequestHeader("Cookie", cookie);
+            try {
+                String cookie = CookieManager.getInstance().getCookie(url);
+                if (cookie != null && !cookie.isEmpty()) req.addRequestHeader("Cookie", cookie);
+            } catch (Exception ignored) {
+            }
 
             req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             req.allowScanningByMediaScanner();
