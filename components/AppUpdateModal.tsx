@@ -39,7 +39,8 @@ export function AppUpdateModal() {
 
         // Re-evaluasi versi jika Native bridge baru ready setelah mount
         const currentApk = detectApkVersion();
-        const currentVer = currentApk.version || apk.version || "1.6";
+        const currentVer = currentApk.version || apk.version;
+        if (!currentVer) return;
         setUserApkVersion(currentVer);
 
         setUpdateInfo({
@@ -49,14 +50,17 @@ export function AppUpdateModal() {
           release_notes: data.release_notes,
         });
 
-        // 1. Cek Force Update jika versi di bawah minimum_version
-        if (compareVersions(currentVer, data.minimum_version) < 0) {
+        const isBelowMinimum = compareVersions(currentVer, data.minimum_version) < 0;
+        const isBelowLatest = compareVersions(currentVer, data.latest_version) < 0;
+
+        // 1. Versi APK < minimum_version: wajib update (tidak bisa dilewati)
+        if (isBelowMinimum) {
           setModalType("force");
           return;
         }
 
-        // 2. Cek Optional Update jika ada versi lebih baru tetapi versi saat ini masih didukung
-        if (compareVersions(currentVer, data.latest_version) < 0) {
+        // 2. Versi APK < latest_version (dan >= minimum_version): update opsional
+        if (isBelowLatest) {
           const dismissKey = `am_update_dismissed_${data.latest_version}`;
           try {
             if (sessionStorage.getItem(dismissKey) !== "1") {
@@ -65,7 +69,11 @@ export function AppUpdateModal() {
           } catch {
             setModalType("optional");
           }
+          return;
         }
+
+        // 3. Versi APK >= latest_version: tidak tampil dialog sama sekali
+        setModalType(null);
       })
       .catch(() => {
         clearTimeout(timer);

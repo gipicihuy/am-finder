@@ -68,6 +68,26 @@ public class MainActivity extends Activity {
             return 9;
         }
     }
+
+    public static class AMFinderNativeBridge {
+        private final String version;
+        private final int versionCode;
+
+        public AMFinderNativeBridge(String version, int versionCode) {
+            this.version = version;
+            this.versionCode = versionCode;
+        }
+
+        @JavascriptInterface
+        public String getVersion() {
+            return version;
+        }
+
+        @JavascriptInterface
+        public int getVersionCode() {
+            return versionCode;
+        }
+    }
     private static final long VIDEO_END_MARGIN_MS = 350;
 
     private WebView web;
@@ -213,17 +233,8 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
 
-        web.addJavascriptInterface(new Object() {
-            @JavascriptInterface
-            public String getVersion() {
-                return getAppVersion();
-            }
-
-            @JavascriptInterface
-            public int getVersionCode() {
-                return getAppVersionCode();
-            }
-        }, "AMFinderNative");
+        web.addJavascriptInterface(
+                new AMFinderNativeBridge(appVer, getAppVersionCode()), "AMFinderNative");
 
         // navigator.clipboard.readText() ditolak di WebView (gak ada UI permission
         // clipboard-read), jadi tombol paste di site butuh bridge native ini.

@@ -13,6 +13,10 @@ export type ApkVersionInfo = {
 export function compareVersions(v1?: string | null, v2?: string | null): number {
   const clean1 = (v1 || "").replace(/^v/i, "").trim();
   const clean2 = (v2 || "").replace(/^v/i, "").trim();
+  if (!clean1 && !clean2) return 0;
+  if (!clean1) return -1;
+  if (!clean2) return 1;
+
   const parts1 = clean1.split(".").map((n) => parseInt(n, 10) || 0);
   const parts2 = clean2.split(".").map((n) => parseInt(n, 10) || 0);
   const len = Math.max(parts1.length, parts2.length);
@@ -48,52 +52,57 @@ export function detectApkVersion(): ApkVersionInfo {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const native = (window as any).AMFinderNative;
-    if (native && typeof native.getVersion === "function") {
-      const v = native.getVersion();
-      if (typeof v === "string" && v.trim()) {
-        return { isApk: true, version: v.trim() };
+    if (native) {
+      let v: any = null;
+      if (typeof native.getVersion === "function") {
+        v = native.getVersion();
+      } else if (typeof native.getVersion === "string") {
+        v = native.getVersion;
+      } else if (typeof native.version === "string") {
+        v = native.version;
+      }
+      if (v != null) {
+        const str = String(v).trim();
+        if (str && str !== "undefined" && str !== "null") {
+          return { isApk: true, version: str };
+        }
       }
     }
   } catch {}
 
   const ua = navigator.userAgent || "";
 
-  // 3. User-Agent eksplisit AMFinderVer/x.x
-  const matchVer = ua.match(/AMFinderVer\/(\d+(?:\.\d+)*)/i);
+  // 3. User-Agent eksplisit AMFinderVer/x.x (mis. AMFinderVer/1.8)
+  const matchVer = ua.match(/AMFinderVer\/([0-9]+(?:\.[0-9]+)*)/i);
   if (matchVer && matchVer[1]) {
-    return { isApk: true, version: matchVer[1] };
+    return { isApk: true, version: matchVer[1].trim() };
   }
 
-  // 4. User-Agent AMFinderApp/x.x
-  const matchApp = ua.match(/AMFinderApp\/(\d+(?:\.\d+)*)/i);
+  // 4. User-Agent AMFinderApp/x.x (bukan 1.0)
+  const matchApp = ua.match(/AMFinderApp\/([0-9]+(?:\.[0-9]+)*)/i);
   if (matchApp && matchApp[1]) {
-    const ver = matchApp[1];
-    // Jika versinya bukan "1.0", maka itu versi dinamis aktual
+    const ver = matchApp[1].trim();
     if (ver !== "1.0") {
       return { isApk: true, version: ver };
     }
-    // Jika "1.0" (User-Agent statis pada APK versi lawas sebelum v1.8+):
-    if (/AMFinderDL\/1/i.test(ua)) {
-      // APK v1.6 (dan v1.7 legacy): Memiliki marker AMFinderDL/1 tetapi belum memiliki AMFinderVer
-      return { isApk: true, version: "1.6" };
-    }
-    // APK v1.5: Memiliki AMFinderApp/1.0 tanpa AMFinderDL/1
-    return { isApk: true, version: "1.5" };
   }
 
-  // 5. Cek jika UA memiliki marker AMFinderDL/1 atau AMFinder secara umum
+  // 5. Cek marker AMFinderDL/1 (hadir pada APK v1.6 ke atas)
+  // APK v1.8 bawaan release mengirim penanda ini
   if (/AMFinderDL\/1/i.test(ua)) {
-    return { isApk: true, version: "1.6" };
+    return { isApk: true, version: "1.8" };
   }
-  if (/AMFinder/i.test(ua)) {
+
+  // 6. Cek jika UA memiliki penanda AMFinderApp/1.0 atau AMFinder umum tanpa DownloadListener
+  if (/AMFinderApp\/1\.0/i.test(ua) || /AMFinder/i.test(ua)) {
     return { isApk: true, version: "1.5" };
   }
 
-  // 6. Cek AndroidClipboard bridge (hadir sejak APK v1.5)
+  // 7. Cek AndroidClipboard bridge (hadir sejak APK v1.5)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (Boolean((window as any).AndroidClipboard)) {
     if (/AMFinderDL\/1/i.test(ua)) {
-      return { isApk: true, version: "1.6" };
+      return { isApk: true, version: "1.8" };
     }
     return { isApk: true, version: "1.5" };
   }
