@@ -199,7 +199,7 @@ export async function GET(
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         Referer: "https://www.tiktok.com/",
       };
-      if (range && !isDownload) {
+      if (range) {
         headers["Range"] = range;
       }
       return fetch(targetUrl, { headers });
@@ -264,7 +264,7 @@ export async function GET(
   const fileSize = stat.size;
   const range = request.headers.get("range");
 
-  if (range && !isDownload) {
+  if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
@@ -327,13 +327,34 @@ export async function HEAD(
   }
 
   if (isTiktokId) {
+    const headers = new Headers({
+      "Accept-Ranges": "bytes",
+      "Content-Type": "video/mp4",
+      "Cache-Control": "public, max-age=7200",
+    });
+    try {
+      const tt = await getTikTokVideo(id);
+      if (tt) {
+        const up = await fetch(tt.url, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            Referer: "https://www.tiktok.com/",
+            Range: "bytes=0-0",
+          },
+        });
+        const cr = up.headers.get("content-range");
+        if (cr && cr.includes("/")) {
+          const total = cr.split("/")[1];
+          if (total && total !== "*") {
+            headers.set("Content-Length", total);
+          }
+        }
+      }
+    } catch {}
     return new Response(null, {
       status: 200,
-      headers: {
-        "Accept-Ranges": "bytes",
-        "Content-Type": "video/mp4",
-        "Cache-Control": "public, max-age=7200",
-      },
+      headers,
     });
   }
 

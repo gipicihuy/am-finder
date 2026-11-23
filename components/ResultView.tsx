@@ -1242,6 +1242,23 @@ export function ResultView({ result }: { result: FindResult }) {
   const soundTitle = clipText(music?.title || result.video?.title || description || "Sound", 80);
   const soundAuthor = clipText(music?.author || result.author || result.authorDetail?.nickname || "", 60);
   const soundLink = isYt && ytId ? `https://www.youtube.com/watch?v=${ytId}` : soundPageHref(music?.id);
+  const videoExternalUrl = isYt && ytId
+    ? `https://www.youtube.com/watch?v=${ytId}`
+    : videoId
+      ? `https://www.tiktok.com/@/video/${videoId}`
+      : soundLink;
+  const targetExternalUrl = videoExternalUrl || soundLink;
+
+  const handleOpenExternal = (e: React.MouseEvent) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nativeBridge = typeof window !== "undefined" ? (window as any).AMFinderNative : null;
+    if (nativeBridge && typeof nativeBridge.openContent === "function") {
+      e.preventDefault();
+      const platform = isYt ? "youtube" : "tiktok";
+      const contentId = isYt ? (ytId || "") : (videoId || "");
+      nativeBridge.openContent(targetExternalUrl || "", platform, contentId);
+    }
+  };
   const soundAudio = soundUrl(music?.playUrl);
   const videoAudio = soundUrl(playUrl);
   const canDownloadAudio = Boolean(videoId && (soundAudio || videoAudio || isYt));
@@ -1255,8 +1272,14 @@ export function ResultView({ result }: { result: FindResult }) {
     clearSuccessTimer();
     setMenuOpen(false);
 
-    const safeTitle = cleanSoundTitle(soundTitle || "audio", 80);
-    const safeFilename = `${safeTitle || `audio-${videoId}`}.mp3`;
+    const rawClean = cleanSoundTitle(soundTitle || "audio", 80)
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\.{2,}/g, "_")
+      .replace(/[^a-zA-Z0-9\s-_()]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 50);
+    const safeFilename = `${rawClean || `audio-${videoId}`}.mp3`;
 
     // 1. Native bridge AMFinderNative.downloadMedia di Android APK
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1345,8 +1368,14 @@ export function ResultView({ result }: { result: FindResult }) {
     clearSuccessTimer();
     setMenuOpen(false);
 
-    const safeTitle = cleanSoundTitle(soundTitle || description || `video-${videoId}`, 80);
-    const safeFilename = `${safeTitle || `video-${videoId}`}.mp4`;
+    const rawClean = cleanSoundTitle(soundTitle || description || `video-${videoId}`, 80)
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\.{2,}/g, "_")
+      .replace(/[^a-zA-Z0-9\s-_()]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 50);
+    const safeFilename = `${rawClean || `video-${videoId}`}.mp4`;
 
     // 1. Native bridge AMFinderNative.downloadMedia di Android APK
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1575,14 +1604,15 @@ export function ResultView({ result }: { result: FindResult }) {
                   </span>
                 </span>
               </span>
-              {soundLink ? (
+              {targetExternalUrl ? (
                 <a
                   className="sound-btn"
-                  href={soundLink}
+                  href={targetExternalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={ui.result.openSound}
                   title={ui.result.openSound}
+                  onClick={handleOpenExternal}
                 >
                   <OpenIcon />
                 </a>

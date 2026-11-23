@@ -24,6 +24,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class MainActivity extends Activity {
 
+    private static final String TAG = "AMFinder";
     private static final String HOME = "https://amfinder.web.id/";
     private static final String HOST = "amfinder.web.id";
     private static final int ACCENT = 0xFF05FAA8;
@@ -115,6 +117,14 @@ public class MainActivity extends Activity {
                 return activity.downloadMediaFromWeb(url, filename, mimeType, kind);
             }
             return "";
+        }
+
+        @JavascriptInterface
+        public boolean openContent(String url, String platform, String contentId) {
+            if (activity != null) {
+                return activity.openContentFromWeb(url, platform, contentId);
+            }
+            return false;
         }
     }
 
@@ -230,13 +240,22 @@ public class MainActivity extends Activity {
                 if (c == null || !c.moveToFirst()) return;
                 int status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
                 if (status != DownloadManager.STATUS_SUCCESSFUL) {
+                    int reason = -1;
+                    int reasonIdx = c.getColumnIndex(DownloadManager.COLUMN_REASON);
+                    if (reasonIdx >= 0) {
+                        reason = c.getInt(reasonIdx);
+                    }
+                    String reasonText = getDownloadErrorMessage(status, reason);
+                    Log.e(TAG, "Download failed for ID: " + record.id + " (" + record.filename + "), status: " + status + ", reason: " + reason + " (" + reasonText + ")");
+                    final String userMsg = "Gagal mengunduh " + (record.kind.equals("video") ? "video" : "audio") + ": " + reasonText;
                     runOnUiThread(() -> {
-                        Toast.makeText(MainActivity.this, "Unduhan gagal, coba lagi", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MainActivity.this, userMsg, Toast.LENGTH_LONG).show();
                         if (web != null) {
+                            String quotedMsg = JSONObject.quote(userMsg);
                             web.evaluateJavascript(
                                 String.format(Locale.US,
-                                    "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'error', message: 'Unduhan gagal' });",
-                                    record.id, record.kind),
+                                    "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: %d, kind: '%s', status: 'error', message: %s });",
+                                    record.id, record.kind, quotedMsg),
                                 null);
                         }
                     });
@@ -488,8 +507,78 @@ public class MainActivity extends Activity {
         }
     }
 
+    public static String sanitizeFilename(String filename, String kind) {
+        String ext = "video".equalsIgnoreCase(kind) ? ".mp4" : ".mp3";
+        if (filename == null || filename.trim().isEmpty()) {
+            return ("video".equalsIgnoreCase(kind) ? "video_" : "audio_") + System.currentTimeMillis() + ext;
+        }
+
+        String base = filename.trim();
+        if (base.toLowerCase().endsWith(".mp4") || base.toLowerCase().endsWith(".mp3")) {
+            base = base.substring(0, base.length() - 4).trim();
+        }
+
+        // 1. Replace filesystem reserved characters
+        base = base.replaceAll("[\\\\/:*?\"<>|]", "_");
+        // 2. Prevent directory traversal (DownloadManager crashes on .. in subPath)
+        base = base.replaceAll("\\.{2,}", "_");
+        // 3. Keep safe characters: alphanumeric, spaces, underscores, hyphens, parentheses
+        // Strip emojis / 4-byte UTF-8 that cause DB/filesystem errors on some Android storage implementations
+        base = base.replaceAll("[^a-zA-Z0-9\\s-_()]", " ");
+        // 4. Collapse consecutive spaces and trim
+        base = base.replaceAll("\\s+", " ").trim();
+        // 5. Remove leading/trailing dots or underscores
+        base = base.replaceAll("^[._\\s]+", "").replaceAll("[._\\s]+$", "");
+
+        // 6. Truncate base name to 50 characters max to prevent filename length limits on external FAT32/exFAT storage
+        if (base.length() > 50) {
+            base = base.substring(0, 50).trim();
+        }
+
+        if (base.isEmpty()) {
+            base = ("video".equalsIgnoreCase(kind) ? "video_" : "audio_") + System.currentTimeMillis();
+        }
+
+        return base + ext;
+    }
+
+    private String getDownloadErrorMessage(int status, int reason) {
+        if (status == DownloadManager.STATUS_PAUSED) {
+            switch (reason) {
+                case DownloadManager.PAUSED_QUEUED_FOR_WIFI: return "Menunggu koneksi Wi-Fi";
+                case DownloadManager.PAUSED_WAITING_FOR_NETWORK: return "Menunggu koneksi jaringan";
+                case DownloadManager.PAUSED_WAITING_TO_RETRY: return "Menunggu untuk mencoba lagi";
+                default: return "Unduhan dijeda (" + reason + ")";
+            }
+        }
+        switch (reason) {
+            case DownloadManager.ERROR_CANNOT_RESUME:
+                return "Tidak dapat melanjutkan unduhan (Range error 1008)";
+            case DownloadManager.ERROR_DEVICE_NOT_FOUND:
+                return "Penyimpanan eksternal tidak ditemukan (1007)";
+            case DownloadManager.ERROR_FILE_ALREADY_EXISTS:
+                return "File sudah ada (1009)";
+            case DownloadManager.ERROR_FILE_ERROR:
+                return "Gagal menulis file ke penyimpanan (1001)";
+            case DownloadManager.ERROR_HTTP_DATA_ERROR:
+                return "Kesalahan transfer data HTTP (1004)";
+            case DownloadManager.ERROR_INSUFFICIENT_SPACE:
+                return "Ruang penyimpanan tidak mencukupi (1006)";
+            case DownloadManager.ERROR_TOO_MANY_REDIRECTS:
+                return "Terlalu banyak pengalihan / redirect (1005)";
+            case DownloadManager.ERROR_UNHANDLED_HTTP_CODE:
+                return "Server mengembalikan kode error HTTP (1002)";
+            case DownloadManager.ERROR_UNKNOWN:
+            default:
+                return "Kesalahan tidak diketahui (" + reason + ")";
+        }
+    }
+
     public String downloadMediaFromWeb(String url, String filename, String mimeType, String kind) {
-        if (url == null || url.trim().isEmpty()) return "";
+        if (url == null || url.trim().isEmpty()) {
+            Log.e(TAG, "downloadMediaFromWeb rejected: url is empty");
+            return "";
+        }
         final String fullUrl;
         if (url.startsWith("/")) {
             fullUrl = HOME + (url.startsWith("/") ? url.substring(1) : url);
@@ -501,9 +590,11 @@ public class MainActivity extends Activity {
             Uri parsed = Uri.parse(fullUrl);
             String host = parsed.getHost() == null ? "" : parsed.getHost().toLowerCase();
             if (!host.equals(HOST) && !host.endsWith("." + HOST)) {
+                Log.e(TAG, "downloadMediaFromWeb rejected: untrusted host " + host);
                 return "";
             }
         } catch (Exception e) {
+            Log.e(TAG, "downloadMediaFromWeb invalid url: " + fullUrl, e);
             return "";
         }
 
@@ -512,18 +603,8 @@ public class MainActivity extends Activity {
                 ? mimeType
                 : (safeKind.equals("video") ? "video/mp4" : "audio/mpeg");
 
-        String name = filename == null ? "" : filename.trim();
-        if (name.isEmpty()) {
-            name = (safeKind.equals("video") ? "video_" : "audio_") + System.currentTimeMillis();
-        }
-        name = name.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
-        if (safeKind.equals("video")) {
-            if (!name.toLowerCase().endsWith(".mp4")) name += ".mp4";
-        } else {
-            if (!name.toLowerCase().endsWith(".mp3")) name += ".mp3";
-        }
-
-        final String finalName = name;
+        final String finalName = sanitizeFilename(filename, safeKind);
+        Log.d(TAG, "Sanitized filename for download: original='" + filename + "' -> sanitized='" + finalName + "'");
 
         if (Build.VERSION.SDK_INT < 29
                 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -541,6 +622,8 @@ public class MainActivity extends Activity {
             DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             if (dm == null) throw new IllegalStateException("DownloadManager tidak tersedia");
 
+            Log.d(TAG, "Enqueueing DownloadManager request: URL=" + url + ", filename=" + filename + ", mimeType=" + mimeType);
+
             DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
             req.setTitle(filename);
             req.setDescription("AM Finder " + (kind.equals("video") ? "Video MP4" : "Audio MP3"));
@@ -557,16 +640,29 @@ public class MainActivity extends Activity {
             req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
 
             long downloadId = dm.enqueue(req);
+            Log.d(TAG, "Download enqueued successfully: id=" + downloadId + " for " + filename);
             activeDownloads.put(downloadId, new DownloadRecord(downloadId, kind, filename, mimeType));
 
             runOnUiThread(() -> {
-                Toast.makeText(MainActivity.this, "Mengunduh: " + filename, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Mengunduh " + (kind.equals("video") ? "MP4" : "MP3") + "...", Toast.LENGTH_SHORT).show();
                 startProgressPoller();
             });
 
             return String.valueOf(downloadId);
         } catch (Exception e) {
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Gagal memulai unduhan", Toast.LENGTH_SHORT).show());
+            Log.e(TAG, "executeDownload failed for URL: " + url + ", filename: " + filename, e);
+            final String errDetail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, "Gagal memulai unduhan: " + errDetail, Toast.LENGTH_LONG).show();
+                if (web != null) {
+                    String safeMsg = JSONObject.quote("Gagal memulai unduhan: " + errDetail);
+                    web.evaluateJavascript(
+                        String.format(Locale.US,
+                            "window.onAMFinderDownloadEvent && window.onAMFinderDownloadEvent({ id: -1, kind: '%s', status: 'error', message: %s });",
+                            kind, safeMsg),
+                        null);
+                }
+            });
             return "";
         }
     }
@@ -678,6 +774,133 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    public boolean openContentFromWeb(String url, String platform, String contentId) {
+        runOnUiThread(() -> {
+            boolean handled = false;
+            if ("tiktok".equalsIgnoreCase(platform) || (url != null && url.contains("tiktok.com"))) {
+                handled = openTikTok(contentId, url);
+            } else if ("youtube".equalsIgnoreCase(platform) || (url != null && (url.contains("youtube.com") || url.contains("youtu.be")))) {
+                handled = openYouTube(contentId, url);
+            } else if (url != null && !url.trim().isEmpty()) {
+                handled = openExternal(Uri.parse(url));
+            }
+            if (!handled && url != null && !url.trim().isEmpty()) {
+                openExternalFallback(Uri.parse(url));
+            }
+        });
+        return true;
+    }
+
+    private boolean openTikTok(String videoId, String webUrl) {
+        String[] tiktokPackages = new String[] {
+            "com.zhiliaoapp.musically",
+            "com.ss.android.ugc.trill",
+            "com.zhiliaoapp.musically.go"
+        };
+        PackageManager pm = getPackageManager();
+        String installedPackage = null;
+        for (String pkg : tiktokPackages) {
+            try {
+                pm.getPackageInfo(pkg, 0);
+                installedPackage = pkg;
+                break;
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (installedPackage != null) {
+            if (videoId != null && videoId.matches("^\\d{15,25}$")) {
+                String deepScheme = installedPackage.contains("trill") ? "snssdk1180" : "snssdk1233";
+                String deepUri = deepScheme + "://aweme/detail/" + videoId;
+                try {
+                    Intent deepIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(deepUri));
+                    deepIntent.setPackage(installedPackage);
+                    deepIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(deepIntent);
+                    return true;
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed deep link to TikTok: " + deepUri, e);
+                }
+            }
+
+            String targetUrl = (webUrl != null && !webUrl.isEmpty())
+                    ? webUrl
+                    : (videoId != null ? ("https://www.tiktok.com/@/video/" + videoId) : null);
+            if (targetUrl != null) {
+                try {
+                    Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl));
+                    appIntent.setPackage(installedPackage);
+                    appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(appIntent);
+                    return true;
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed package intent to TikTok: " + targetUrl, e);
+                }
+            }
+        }
+
+        String browserUrl = (webUrl != null && !webUrl.isEmpty())
+                ? webUrl
+                : (videoId != null ? ("https://www.tiktok.com/@/video/" + videoId) : null);
+        if (browserUrl != null) {
+            return openExternalFallback(Uri.parse(browserUrl));
+        }
+        return false;
+    }
+
+    private boolean openYouTube(String videoId, String webUrl) {
+        String ytPackage = "com.google.android.youtube";
+        PackageManager pm = getPackageManager();
+        boolean isYtInstalled = false;
+        try {
+            pm.getPackageInfo(ytPackage, 0);
+            isYtInstalled = true;
+        } catch (Exception ignored) {}
+
+        if (isYtInstalled) {
+            if (videoId != null && !videoId.isEmpty()) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + videoId));
+                    intent.setPackage(ytPackage);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    return true;
+                } catch (Exception ignored) {}
+            }
+            if (webUrl != null && !webUrl.isEmpty()) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUrl));
+                    intent.setPackage(ytPackage);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    return true;
+                } catch (Exception ignored) {}
+            }
+        }
+
+        String browserUrl = (webUrl != null && !webUrl.isEmpty())
+                ? webUrl
+                : (videoId != null ? ("https://www.youtube.com/watch?v=" + videoId) : null);
+        if (browserUrl != null) {
+            return openExternalFallback(Uri.parse(browserUrl));
+        }
+        return false;
+    }
+
+    private boolean openExternalFallback(Uri uri) {
+        if (uri == null) return false;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "openExternalFallback failed for " + uri, e);
+            runOnUiThread(() -> Toast.makeText(this, "Tidak ada aplikasi untuk membuka tautan", Toast.LENGTH_SHORT).show());
+            return false;
+        }
+    }
+
     private boolean handleUrlOverride(Uri uri) {
         if (uri == null) return false;
         String scheme = uri.getScheme();
@@ -690,21 +913,35 @@ public class MainActivity extends Activity {
         if (host.equals(HOST) || host.endsWith("." + HOST)) {
             return false;
         }
-        return openExternal(uri);
+
+        // Tautan eksternal: buka keluar dan SELALU return true agar tidak pernah dimuat di WebView internal!
+        openExternal(uri);
+        return true;
     }
 
     private boolean openExternal(Uri uri) {
         if (uri == null) return false;
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (intent.resolveActivity(getPackageManager()) != null) {
-                startActivity(intent);
-                return true;
+            String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
+            if (host.contains("tiktok.com")) {
+                String path = uri.getPath();
+                String videoId = null;
+                if (path != null) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("/video/(\\d+)").matcher(path);
+                    if (m.find()) {
+                        videoId = m.group(1);
+                    }
+                }
+                return openTikTok(videoId, uri.toString());
+            } else if (host.contains("youtube.com") || host.contains("youtu.be")) {
+                String videoId = uri.getQueryParameter("v");
+                return openYouTube(videoId, uri.toString());
             }
-        } catch (Exception ignored) {
+            return openExternalFallback(uri);
+        } catch (Exception e) {
+            Log.e(TAG, "openExternal failed for " + uri, e);
+            return false;
         }
-        return false;
     }
 
     private View buildOfflinePanel() {

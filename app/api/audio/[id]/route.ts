@@ -693,3 +693,23 @@ export async function GET(
 
   return new Response(stream, { status: 200, headers });
 }
+
+export async function HEAD(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const isTiktokId = /^\d{15,20}$/.test(id);
+  const isYtId = /^[\w-]{11}$/.test(id);
+  if (!isTiktokId && !isYtId) {
+    return new Response(null, { status: 400 });
+  }
+
+  const headers = new Headers({
+    "Content-Type": "audio/mpeg",
+    "Accept-Ranges": "none",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+  return new Response(null, { status: 200, headers });
+}
