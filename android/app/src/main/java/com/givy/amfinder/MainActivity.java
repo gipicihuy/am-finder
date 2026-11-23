@@ -488,6 +488,9 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // Video hasil pencarian diputar otomatis oleh kode setelah data selesai dimuat (bukan saat disentuh).
+        // Tanpa ini WebView menolak autoplay bersuara dan video jatuh ke mode muted.
+        s.setMediaPlaybackRequiresUserGesture(false);
 
         web.addJavascriptInterface(
                 new AMFinderNativeBridge(this, appVer, getAppVersionCode()), "AMFinderNative");
