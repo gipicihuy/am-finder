@@ -294,6 +294,7 @@
     "later": "Nanti Saja",
     "safelinkNotice": "Kamu akan diarahkan ke laman unduhan resmi melalui SafelinkU.",
     "currentVersion": "Versi Kamu",
+    "legacyVersion": "Versi lama",
     "minVersion": "Versi Wajib",
     "newVersion": "Versi Baru"
   }

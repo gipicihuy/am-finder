@@ -294,6 +294,7 @@
     "later": "Maybe Later",
     "safelinkNotice": "You will be redirected to the official download page via SafelinkU.",
     "currentVersion": "Your Version",
+    "legacyVersion": "Old version",
     "minVersion": "Required Version",
     "newVersion": "New Version"
   }

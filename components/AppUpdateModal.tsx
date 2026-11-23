@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useUi } from "@/components/LocaleProvider";
-import { detectApkVersion, compareVersions } from "@/lib/apk-version";
+import {
+  LEGACY_FLOOR_VERSION,
+  decideUpdate,
+  detectApkVersion,
+  isLikelyAndroidWebView,
+} from "@/lib/apk-version";
 
 type UpdateData = {
   latest_version: string;
@@ -16,15 +21,18 @@ export function AppUpdateModal() {
   const [modalType, setModalType] = useState<"force" | "optional" | null>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateData | null>(null);
   const [userApkVersion, setUserApkVersion] = useState<string>("1.0");
+  const [userApkExact, setUserApkExact] = useState<boolean>(true);
   const dialogRef = useRef<HTMLDivElement>(null);
   const primaryBtnRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const apk = detectApkVersion();
-    // Fitur ini KHUSUS untuk aplikasi APK, tidak tampil di browser web biasa
-    if (!apk.isApk || !apk.version) return;
+    if (!apk.isApk && !isLikelyAndroidWebView(navigator.userAgent || "")) return;
 
-    setUserApkVersion(apk.version);
+    if (apk.isApk && apk.version) {
+      setUserApkVersion(apk.version);
+      setUserApkExact(apk.exact);
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
 
@@ -33,15 +41,23 @@ export function AppUpdateModal() {
       cache: "no-store",
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: (UpdateData & { ok?: boolean }) | null) => {
+      .then((data: (UpdateData & { ok?: boolean; from_apk?: boolean }) | null) => {
         clearTimeout(timer);
         if (!data || !data.minimum_version) return;
 
-        // Re-evaluasi versi jika Native bridge baru ready setelah mount
-        const currentApk = detectApkVersion();
-        const currentVer = currentApk.version || apk.version;
-        if (!currentVer) return;
+        let current = detectApkVersion();
+        if (!current.isApk || !current.version) {
+          if (data.from_apk !== true) return;
+          current = {
+            isApk: true,
+            version: LEGACY_FLOOR_VERSION,
+            exact: false,
+            source: "header",
+          };
+        }
+        const currentVer = current.version as string;
         setUserApkVersion(currentVer);
+        setUserApkExact(current.exact);
 
         setUpdateInfo({
           latest_version: data.latest_version,
@@ -50,17 +66,16 @@ export function AppUpdateModal() {
           release_notes: data.release_notes,
         });
 
-        const isBelowMinimum = compareVersions(currentVer, data.minimum_version) < 0;
-        const isBelowLatest = compareVersions(currentVer, data.latest_version) < 0;
+        const decision = decideUpdate(currentVer, data.minimum_version, data.latest_version);
 
         // 1. Versi APK < minimum_version: wajib update (tidak bisa dilewati)
-        if (isBelowMinimum) {
+        if (decision === "force") {
           setModalType("force");
           return;
         }
 
         // 2. Versi APK < latest_version (dan >= minimum_version): update opsional
-        if (isBelowLatest) {
+        if (decision === "optional") {
           const dismissKey = `am_update_dismissed_${data.latest_version}`;
           try {
             if (sessionStorage.getItem(dismissKey) !== "1") {
@@ -156,6 +171,7 @@ export function AppUpdateModal() {
   };
 
   const t = ui.update;
+  const versionLabel = userApkExact ? `v${userApkVersion}` : t.legacyVersion;
 
   return (
     <div
@@ -210,7 +226,7 @@ export function AppUpdateModal() {
 
         <div className="app-update-badges">
           <span className="app-update-badge is-current">
-            {t.currentVersion}: v{userApkVersion}
+            {t.currentVersion}: {versionLabel}
           </span>
           <span className="app-update-arrow" aria-hidden="true">→</span>
           <span className={`app-update-badge ${isForce ? "is-target-force" : "is-target-optional"}`}>
@@ -221,10 +237,10 @@ export function AppUpdateModal() {
         <p className="app-update-desc">
           {isForce
             ? t.forceDesc
-                .replace("{version}", `v${userApkVersion}`)
+                .replace("{version}", versionLabel)
                 .replace("{latest}", `v${updateInfo.latest_version}`)
             : t.optionalDesc
-                .replace("{version}", `v${userApkVersion}`)
+                .replace("{version}", versionLabel)
                 .replace("{latest}", `v${updateInfo.latest_version}`)}
         </p>
 
