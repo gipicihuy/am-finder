@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ikon status bar AM Finder: siluet putih satu warna dari logo cincin sinyal (Android hanya memakai alpha). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <group
+        android:pivotX="24"
+        android:pivotY="25.7"
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateY="-1.7">
+        <path
+            android:pathData="M43.5,28.3294a19.5,19.5,0,0,0-39,0"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.1"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M18.4694,32.593a6.9229,6.9229,0,0,0,9.79-9.7905"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.1"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M23.25,39.1706a11.2273,11.2273,0,1,0,0-22.4545"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.1"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M34.6024,38.2223a14.6374,14.6374,0,1,0-20.7-20.7"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.1"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

@@ -891,7 +891,8 @@ public class MainActivity extends Activity {
         if (nm == null) return;
         try {
             Notification.Builder b = new Notification.Builder(this, DL_CHANNEL)
-                    .setSmallIcon(done ? android.R.drawable.stat_sys_download_done : android.R.drawable.stat_sys_download)
+                    .setSmallIcon(R.drawable.ic_stat_amfinder)
+                    .setColor(0xFF10B981)
                     .setContentTitle(title)
                     .setContentText(text)
                     .setOngoing(ongoing)
@@ -976,7 +977,8 @@ public class MainActivity extends Activity {
         try {
             ensureDownloadChannel(nm);
             Notification.Builder b = new Notification.Builder(this, DL_CHANNEL)
-                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                    .setSmallIcon(R.drawable.ic_stat_amfinder)
+                    .setColor(0xFF10B981)
                     .setContentTitle(filename)
                     .setContentText(uri != null ? "Unduhan selesai. Ketuk untuk membuka." : "Unduhan selesai. Ketuk untuk membuka folder Download.")
                     .setOngoing(false)
@@ -1009,7 +1011,8 @@ public class MainActivity extends Activity {
         try {
             ensureDownloadChannel(nm);
             nm.notify(notifId, new Notification.Builder(this, DL_CHANNEL)
-                    .setSmallIcon(android.R.drawable.stat_notify_error)
+                    .setSmallIcon(R.drawable.ic_stat_amfinder)
+                    .setColor(0xFFEF4444)
                     .setContentTitle(filename)
                     .setContentText(message)
                     .setStyle(new Notification.BigTextStyle().bigText(message))
