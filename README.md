@@ -323,6 +323,7 @@ Catatan:
 5. Ubah `config/app-update.json` **berurutan**. Config dibaca server langsung dari branch `main` di GitHub (cache ±20 detik), jadi perubahannya aktif hampir seketika:
    - Pertama `latest_version` dan `update_url` ke versi dan link baru. User lama mendapat ajakan update opsional.
    - `minimum_version` terakhir, hanya setelah APK baru benar-benar bisa diunduh. Nilai ini yang mengunci APK lama (force update).
+   - `release_notes` boleh berupa satu teks, atau objek per bahasa `{ "id": "...", "en": "...", "zh": "...", "my": "..." }`. Dialog update menampilkan sesuai bahasa yang dipilih user di web; bahasa yang kosong jatuh ke `en`, lalu `id`.
 
 `config/app-update.v2.0.json` adalah bahan siap salin untuk v2.0 dan tidak dibaca aplikasi. Ganti `update_url` di dalamnya dengan link SafelinkU v2.0 sebelum disalin ke `config/app-update.json`.
 

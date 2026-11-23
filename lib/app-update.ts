@@ -1,12 +1,29 @@
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
+import { isLocale, type Locale } from "@/lib/i18n";
+
+// Catatan pembaruan bisa berupa satu teks (semua bahasa) atau objek per bahasa: { id, en, zh, my }.
+export type ReleaseNotes = string | Partial<Record<Locale, string>>;
+
 export type AppUpdateConfig = {
   latest_version: string;
   minimum_version: string;
   update_url: string;
-  release_notes: string;
+  release_notes: ReleaseNotes;
 };
+
+function parseReleaseNotes(value: unknown): ReleaseNotes {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const out: Partial<Record<Locale, string>> = {};
+    for (const [key, text] of Object.entries(value as Record<string, unknown>)) {
+      if (isLocale(key) && typeof text === "string" && text.trim()) out[key] = text.trim();
+    }
+    if (Object.keys(out).length > 0) return out;
+  }
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return DEFAULT_UPDATE_CONFIG.release_notes;
+}
 
 const CONFIG_FILE = path.join(process.cwd(), "config", "app-update.json");
 const GITHUB_RAW_URL =
@@ -32,7 +49,7 @@ function parseConfig(raw: string): AppUpdateConfig | null {
         latest_version: String(parsed.latest_version || DEFAULT_UPDATE_CONFIG.latest_version).trim(),
         minimum_version: String(parsed.minimum_version || DEFAULT_UPDATE_CONFIG.minimum_version).trim(),
         update_url: String(parsed.update_url || DEFAULT_UPDATE_CONFIG.update_url).trim(),
-        release_notes: String(parsed.release_notes || DEFAULT_UPDATE_CONFIG.release_notes).trim(),
+        release_notes: parseReleaseNotes(parsed.release_notes),
       };
     }
   } catch {}

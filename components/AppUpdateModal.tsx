@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useUi } from "@/components/LocaleProvider";
+import { useLocale, useUi } from "@/components/LocaleProvider";
+import type { Locale } from "@/lib/i18n";
 import {
   LEGACY_FLOOR_VERSION,
   decideUpdate,
@@ -13,11 +14,25 @@ type UpdateData = {
   latest_version: string;
   minimum_version: string;
   update_url: string;
-  release_notes: string;
+  release_notes: string | Partial<Record<Locale, string>>;
 };
+
+// Pilih catatan pembaruan sesuai bahasa web; cadangan: en, lalu id, lalu bahasa apa pun yang ada.
+function pickReleaseNotes(notes: UpdateData["release_notes"] | undefined, locale: Locale): string {
+  if (!notes) return "";
+  if (typeof notes === "string") return notes;
+  return (
+    notes[locale] ||
+    notes.en ||
+    notes.id ||
+    Object.values(notes).find((text) => typeof text === "string" && text) ||
+    ""
+  );
+}
 
 export function AppUpdateModal() {
   const ui = useUi();
+  const { locale } = useLocale();
   const [modalType, setModalType] = useState<"force" | "optional" | null>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateData | null>(null);
   const [userApkVersion, setUserApkVersion] = useState<string>("1.0");
@@ -171,6 +186,7 @@ export function AppUpdateModal() {
   };
 
   const t = ui.update;
+  const releaseNotes = pickReleaseNotes(updateInfo.release_notes, locale);
   const versionLabel = userApkExact ? `v${userApkVersion}` : t.legacyVersion;
 
   return (
@@ -244,10 +260,10 @@ export function AppUpdateModal() {
                 .replace("{latest}", `v${updateInfo.latest_version}`)}
         </p>
 
-        {updateInfo.release_notes ? (
+        {releaseNotes ? (
           <div className="app-update-notes-box">
             <span className="app-update-notes-label">{t.releaseNotes}</span>
-            <p className="app-update-notes-content">{updateInfo.release_notes}</p>
+            <p className="app-update-notes-content">{releaseNotes}</p>
           </div>
         ) : null}
 
