@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const config = getAppUpdateConfig();
+  const config = await getAppUpdateConfig();
   return Response.json(
     {
       ok: true,
