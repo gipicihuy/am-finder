@@ -428,7 +428,7 @@ export function Finder({
 
   return (
     <>
-      <div className="mode-tabs" role="tablist" aria-label={ui.finder.tabsLabel}>
+      <div className="mode-tabs" data-mode={mode} role="tablist" aria-label={ui.finder.tabsLabel}>
         <button
           type="button"
           role="tab"
