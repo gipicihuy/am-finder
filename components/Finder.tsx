@@ -1,7 +1,7 @@
 "use client";
 
 import { extractVideoUrl, isVideoLink, shortCodeOf, videoIdOf } from "@/lib/tiktok-link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { FindResult } from "@/lib/types";
 import { useUi } from "@/components/LocaleProvider";
@@ -89,6 +89,24 @@ export function Finder({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const ui = useUi();
   const [mode, setMode] = useState<Mode>(initialMode ?? "url");
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return undefined;
+    const place = () => {
+      const active = el.querySelector<HTMLElement>('[aria-selected="true"]');
+      if (!active) return;
+      el.style.setProperty("--seg-x", `${active.offsetLeft}px`);
+      el.style.setProperty("--seg-w", `${active.offsetWidth}px`);
+      el.dataset.ready = "1";
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    if (document.fonts) document.fonts.ready.then(place);
+    return () => observer.disconnect();
+  }, [mode, ui.finder.tabUrl, ui.finder.tabSearch]);
   const [scanStartTime, setScanStartTime] = useState<number | null>(null);
   const pathname = usePathname();
   const [searchDetailOpen, setSearchDetailOpen] = useState(false);
@@ -428,7 +446,7 @@ export function Finder({
 
   return (
     <>
-      <div className="mode-tabs" data-mode={mode} role="tablist" aria-label={ui.finder.tabsLabel}>
+      <div ref={tabsRef} className="mode-tabs" data-mode={mode} role="tablist" aria-label={ui.finder.tabsLabel}>
         <button
           type="button"
           role="tab"
